@@ -1,80 +1,49 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 
 function App() {
+  const [token, setToken] = useState(""); // Spotify Access Token
   const [playlist, setPlaylist] = useState([]);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [trackInput, setTrackInput] = useState("");
-  const audioRef = useRef(null);
+  const [player, setPlayer] = useState(null);
 
-  // Voeg een nummer toe aan de playlist
-  const addTrack = () => {
-    if (trackInput.trim() !== "") {
-      setPlaylist([...playlist, trackInput.trim()]);
-      setTrackInput("");
-    }
+  useEffect(() => {
+    // TODO: haal token via OAuth flow
+  }, []);
+
+  const initSpotifyPlayer = () => {
+    if (!window.Spotify || !token) return;
+
+    const player = new window.Spotify.Player({
+      name: "Sportify 2.0 Player",
+      getOAuthToken: cb => { cb(token); },
+    });
+
+    player.addListener('ready', ({ device_id }) => {
+      console.log('Ready with Device ID', device_id);
+    });
+
+    setPlayer(player);
+    player.connect();
   };
 
-  // Afspelen / Pauzeren
-  const togglePlay = () => {
-    if (!playlist.length) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  // Ga naar het volgende nummer wanneer het huidige eindigt
-  const handleEnded = () => {
-    if (currentTrackIndex < playlist.length - 1) {
-      setCurrentTrackIndex(currentTrackIndex + 1);
-      setIsPlaying(true);
-      setTimeout(() => audioRef.current.play(), 100); // Kleine delay nodig
-    } else {
-      setIsPlaying(false);
-    }
+  const playTrack = (uri) => {
+    fetch(`https://api.spotify.com/v1/me/player/play`, {
+      method: "PUT",
+      body: JSON.stringify({ uris: [uri] }),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
   };
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
+    <div>
       <h1>Sportify 2.0</h1>
-
-      {/* Voor de maker */}
-      <div style={{ marginBottom: "2rem" }}>
-        <h2>Maak een playlist</h2>
-        <input
-          type="text"
-          placeholder="Voeg audio-URL toe"
-          value={trackInput}
-          onChange={(e) => setTrackInput(e.target.value)}
-          style={{ width: "300px", marginRight: "0.5rem" }}
-        />
-        <button onClick={addTrack}>Toevoegen</button>
-        <ul>
-          {playlist.map((track, idx) => (
-            <li key={idx}>{track}</li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Voor de luisteraar */}
+      <button onClick={initSpotifyPlayer}>Verbind met Spotify</button>
       <div>
-        <h2>Luister naar playlist</h2>
-        {playlist.length === 0 ? (
-          <p>Geen nummers beschikbaar</p>
-        ) : (
-          <>
-            <p>Huidig nummer: {playlist[currentTrackIndex]}</p>
-            <button onClick={togglePlay}>{isPlaying ? "Stop" : "Afspelen"}</button>
-            <audio
-              ref={audioRef}
-              src={playlist[currentTrackIndex]}
-              onEnded={handleEnded}
-            />
-          </>
-        )}
+        {playlist.map(track => (
+          <button onClick={() => playTrack(track.uri)}>Afspelen</button>
+        ))}
       </div>
     </div>
   );
