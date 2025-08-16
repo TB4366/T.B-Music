@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T.B Music - Live</title>
+    <title>T.B Music - Live Audio</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,9 +20,6 @@
             border: none;
             color: #fff;
         }
-        #stopBtn {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -30,23 +27,36 @@
     <button id="playBtn">▶️ Play</button>
     <button id="stopBtn">⏹️ Stop</button>
 
-    <audio id="musicPlayer" src="music/azizam.mp3" preload="auto"></audio>
+    <!-- Verberg het iframe zodat alleen geluid te horen is -->
+    <div id="player" style="width:0;height:0;overflow:hidden;"></div>
 
     <script>
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '0',
+                width: '0',
+                videoId: 'enZQT7jgZaU', // jouw YouTube video ID
+                playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0 },
+            });
+        }
+
         const playBtn = document.getElementById('playBtn');
         const stopBtn = document.getElementById('stopBtn');
-        const musicPlayer = document.getElementById('musicPlayer');
 
         playBtn.addEventListener('click', () => {
-            musicPlayer.volume = 1.0;     // Volume aan
-            musicPlayer.currentTime = 0;  // Start vanaf begin
-            musicPlayer.play();           // Speel af
+            player.playVideo();
             playBtn.style.display = 'none';
             stopBtn.style.display = 'inline-block';
         });
 
         stopBtn.addEventListener('click', () => {
-            musicPlayer.pause();          // Stop muziek
+            player.pauseVideo();
             stopBtn.style.display = 'none';
             playBtn.style.display = 'inline-block';
         });
