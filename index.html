@@ -19,6 +19,7 @@
             background: none;
             border: none;
             color: #fff;
+            transition: 0.3s;
         }
         button:hover {
             color: #ff4d4d;
@@ -34,7 +35,7 @@
     <button id="stopBtn">⏹️</button>
 
     <audio id="musicPlayer"></audio>
-    <audio id="voiceMessage" src="voice.mp3"></audio> <!-- Voeg hier je stembestand toe -->
+    <audio id="voiceMessage" src="music/voice.mp3"></audio> <!-- Stembestand -->
 
     <script>
         const playBtn = document.getElementById('playBtn');
@@ -42,10 +43,11 @@
         const musicPlayer = document.getElementById('musicPlayer');
         const voiceMessage = document.getElementById('voiceMessage');
 
+        // Playlist: eerste track is jouw legale SoundCloud track
         const playlist = [
-            'song1.mp3',
-            'song2.mp3',
-            'song3.mp3'
+            'music/azizam.mp3',
+            'music/song2.mp3',
+            'music/song3.mp3'
         ];
 
         let currentSongIndex = 0;
@@ -59,6 +61,7 @@
             currentSongIndex = (currentSongIndex + 1) % playlist.length;
             songCount++;
 
+            // Speel stem elke 2 nummers
             if (songCount % 2 === 0) {
                 voiceMessage.play();
             }
