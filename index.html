@@ -24,65 +24,34 @@
         button:hover {
             color: #ff4d4d;
         }
-        audio {
+        #stopBtn {
             display: none;
         }
     </style>
 </head>
 <body>
 
-    <button id="playBtn">▶️</button>
-    <button id="stopBtn">⏹️</button>
+    <button id="playBtn">▶️ Play</button>
+    <button id="stopBtn">⏹️ Stop</button>
 
-    <audio id="musicPlayer"></audio>
-    <audio id="voiceMessage" src="music/voice.mp3"></audio> <!-- Stembestand -->
+    <audio id="musicPlayer" src="music/azizam.mp3"></audio>
 
     <script>
         const playBtn = document.getElementById('playBtn');
         const stopBtn = document.getElementById('stopBtn');
         const musicPlayer = document.getElementById('musicPlayer');
-        const voiceMessage = document.getElementById('voiceMessage');
-
-        // Playlist: eerste track is jouw legale SoundCloud track
-        const playlist = [
-            'music/azizam.mp3',
-            'music/song2.mp3',
-            'music/song3.mp3'
-        ];
-
-        let currentSongIndex = 0;
-        let songCount = 0;
-        let isPlaying = false;
-
-        function playNextSong() {
-            musicPlayer.src = playlist[currentSongIndex];
-            musicPlayer.play();
-
-            currentSongIndex = (currentSongIndex + 1) % playlist.length;
-            songCount++;
-
-            // Speel stem elke 2 nummers
-            if (songCount % 2 === 0) {
-                voiceMessage.play();
-            }
-        }
-
-        musicPlayer.addEventListener('ended', () => {
-            if (isPlaying) {
-                playNextSong();
-            }
-        });
 
         playBtn.addEventListener('click', () => {
-            if (!isPlaying) {
-                isPlaying = true;
-                playNextSong();
-            }
+            musicPlayer.play();
+            playBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
         });
 
         stopBtn.addEventListener('click', () => {
-            isPlaying = false;
             musicPlayer.pause();
+            musicPlayer.currentTime = 0;
+            stopBtn.style.display = 'none';
+            playBtn.style.display = 'inline-block';
         });
     </script>
 
