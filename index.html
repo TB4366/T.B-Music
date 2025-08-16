@@ -1,413 +1,64 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+"use client";
 
-// --- Helpers ---
-const uid = () => Math.random().toString(36).slice(2);
+import { useState, useEffect } from "react";
 
-const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-const load = (k, d) => {
-  try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; }
-};
+export default function Channel() {
+  const [mijnTracks, setMijnTracks] = useState([]);
+  const [zoekTerm, setZoekTerm] = useState("");
+  const [filterdTracks, setFilterdTracks] = useState([]);
 
-const formatTime = (sec) => {
-  if (!isFinite(sec)) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
-};
-
-// --- Types ---
-// Track: { id, title, artist, src, kind: 'audio'|'video', published: bool }
-
-export default function App() {
-  // Library & public station state
-  const [myTracks, setMyTracks] = useState(() => load("tb_myTracks", []));
-  const [publicTracks, setPublicTracks] = useState(() => load("tb_publicTracks", []));
-  const [myPlaylists, setMyPlaylists] = useState(() => load("tb_myPlaylists", []));
-
-  // Player state
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [shuffle, setShuffle] = useState(() => load("tb_shuffle", false));
-  const [repeat, setRepeat] = useState(() => load("tb_repeat", "all")); // 'one'|'all'|'off'
-  const [volume, setVolume] = useState(() => load("tb_volume", 1));
-  const [tab, setTab] = useState(() => load("tb_tab", "station")); // 'station' | 'channel'
-
-  const audioRef = useRef(null);
-  const videoRef = useRef(null);
-  const progressRef = useRef(null);
-
-  const stationQueue = publicTracks;
-  const currentTrack = stationQueue[currentIndex] ?? null;
-
-  useEffect(() => { save("tb_myTracks", myTracks); }, [myTracks]);
-  useEffect(() => { save("tb_publicTracks", publicTracks); }, [publicTracks]);
-  useEffect(() => { save("tb_myPlaylists", myPlaylists); }, [myPlaylists]);
-  useEffect(() => { save("tb_shuffle", shuffle); }, [shuffle]);
-  useEffect(() => { save("tb_repeat", repeat); }, [repeat]);
-  useEffect(() => { save("tb_volume", volume); }, [volume]);
-  useEffect(() => { save("tb_tab", tab); }, [tab]);
-
-  // Keep element volumes in sync
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume;
-    if (videoRef.current) videoRef.current.volume = volume;
-  }, [volume]);
-
-  // Auto-advance logic
-  const nextIndex = () => {
-    if (stationQueue.length === 0) return 0;
-    if (shuffle) return Math.floor(Math.random() * stationQueue.length);
-    const next = currentIndex + 1;
-    if (next >= stationQueue.length) return repeat === "all" ? 0 : currentIndex;
-    return next;
-  };
-
-  const prevIndex = () => {
-    if (stationQueue.length === 0) return 0;
-    const prev = currentIndex - 1;
-    if (prev < 0) return stationQueue.length - 1;
-    return prev;
-  };
-
-  // Playback control
-  const play = async () => {
-    if (!currentTrack) return;
-    const isVideo = currentTrack.kind === "video";
-    const a = audioRef.current;
-    const v = videoRef.current;
-
-    // Pause both first
-    a && a.pause();
-    v && v.pause();
-
-    if (isVideo) {
-      v.src = currentTrack.src;
-      v.currentTime = 0;
-      try { await v.play(); setIsPlaying(true); } catch (e) { console.error(e); }
-    } else {
-      a.src = currentTrack.src;
-      a.currentTime = 0;
-      try { await a.play(); setIsPlaying(true); } catch (e) { console.error(e); }
+    async function fetchMijnTracks() {
+      try {
+        const res = await fetch("/api/mijn-tracks");
+        const data = await res.json();
+        setMijnTracks(data);
+        setFilterdTracks(data);
+      } catch (err) {
+        console.error("Fout bij het ophalen van mijn tracks:", err);
+      }
     }
-  };
 
-  const pause = () => {
-    audioRef.current?.pause();
-    videoRef.current?.pause();
-    setIsPlaying(false);
-  };
+    fetchMijnTracks();
+  }, []);
 
-  const playAt = async (idx) => {
-    setCurrentIndex(idx);
-    // Wait for state to commit
-    setTimeout(() => play(), 0);
-  };
-
-  // Handle end events
-  const onEnded = () => {
-    if (repeat === "one") {
-      play();
-      return;
-    }
-    const ni = nextIndex();
-    if (ni === currentIndex && repeat !== "all") {
-      setIsPlaying(false);
-      return;
-    }
-    setCurrentIndex(ni);
-    setTimeout(() => play(), 0);
-  };
-
-  // Progress syncing
-  const [curTime, setCurTime] = useState(0);
-  const [dur, setDur] = useState(0);
-
-  const attachMediaListeners = (el) => {
-    if (!el) return;
-    el.onloadedmetadata = () => setDur(el.duration || 0);
-    el.ontimeupdate = () => setCurTime(el.currentTime || 0);
-    el.onended = onEnded;
-  };
-
-  useEffect(() => { attachMediaListeners(audioRef.current); }, []);
-  useEffect(() => { attachMediaListeners(videoRef.current); }, []);
-
-  const seek = (value) => {
-    const el = (currentTrack?.kind === "video") ? videoRef.current : audioRef.current;
-    if (!el) return;
-    el.currentTime = Number(value);
-  };
-
-  // --- Upload & Library management ---
-  const onUpload = async (files) => {
-    const newOnes = Array.from(files).map((f) => {
-      const src = URL.createObjectURL(f);
-      const ext = (f.name.split(".").pop() || "").toLowerCase();
-      const isVideo = ["mp4","webm","mkv","mov"].includes(ext);
-      return {
-        id: uid(),
-        title: f.name.replace(/\.[^.]+$/, ""),
-        artist: "",
-        src,
-        kind: isVideo ? "video" : "audio",
-        published: false,
-      };
-    });
-    const next = [...newOnes, ...myTracks];
-    setMyTracks(next);
-  };
-
-  const addFromUrl = (url) => {
-    if (!url) return;
-    const lower = url.toLowerCase();
-    const isVideo = /(\.mp4|\.webm|\.mkv|\.mov)(\?|$)/.test(lower);
-    const track = { id: uid(), title: url, artist: "", src: url, kind: isVideo ? "video" : "audio", published: false };
-    setMyTracks((prev) => [track, ...prev]);
-  };
-
-  const publishTrack = (t) => {
-    if (publicTracks.find((x) => x.id === t.id)) return; // already
-    const next = [...publicTracks, { ...t, published: true }];
-    setPublicTracks(next);
-    setMyTracks((prev) => prev.map((x) => x.id === t.id ? { ...x, published: true } : x));
-  };
-
-  const unpublishTrack = (t) => {
-    setPublicTracks((prev) => prev.filter((x) => x.id !== t.id));
-    setMyTracks((prev) => prev.map((x) => x.id === t.id ? { ...x, published: false } : x));
-  };
-
-  // --- Playlists ---
-  const createPlaylist = (name, trackIds) => {
-    const pl = { id: uid(), name, trackIds, createdAt: Date.now() };
-    setMyPlaylists((prev) => [pl, ...prev]);
-  };
-
-  const publishPlaylist = (pl) => {
-    const tracks = myTracks.filter((t) => pl.trackIds.includes(t.id));
-    const toAdd = tracks.filter((t) => !publicTracks.some((p) => p.id === t.id)).map((t) => ({ ...t, published: true }));
-    setPublicTracks((prev) => [...prev, ...toAdd]);
-    setMyTracks((prev) => prev.map((t) => pl.trackIds.includes(t.id) ? { ...t, published: true } : t));
-  };
-
-  // --- Search / filter ---
-  const [q, setQ] = useState("");
-  const filteredLib = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return myTracks;
-    return myTracks.filter((t) =>
-      t.title.toLowerCase().includes(term) || t.artist.toLowerCase().includes(term)
+  useEffect(() => {
+    const filtered = mijnTracks.filter(track =>
+      track.title.toLowerCase().includes(zoekTerm.toLowerCase()) ||
+      track.artist.toLowerCase().includes(zoekTerm.toLowerCase())
     );
-  }, [q, myTracks]);
+    setFilterdTracks(filtered);
+  }, [zoekTerm, mijnTracks]);
 
-  // --- UI Components ---
-  const EmptyState = ({ title, subtitle, action }) => (
-    <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-300">
-      <div className="text-xl font-semibold mb-2">{title}</div>
-      <div className="text-sm opacity-80 mb-4">{subtitle}</div>
-      {action}
-    </div>
-  );
-
-  const TrackRow = ({ t, index, context }) => {
-    const active = currentTrack?.id === t.id && context === "station";
-    return (
-      <div className={`grid grid-cols-[auto_1fr_auto] gap-3 items-center p-3 rounded-2xl hover:bg-zinc-800/60 ${active ? "bg-zinc-800/80" : ""}`}>
-        <button
-          onClick={() => context === "station" ? playAt(index) : undefined}
-          className="w-10 h-10 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center"
-          title={context === "station" ? "Afspelen" : "Nummer"}
-        >
-          {active && isPlaying ? "⏸" : "▶️"}
-        </button>
-        <div className="min-w-0">
-          <div className="truncate font-medium">{t.title || "Ongetiteld"}</div>
-          <div className="text-xs text-zinc-400 truncate">{t.artist || (t.kind === 'video' ? 'Video' : 'Audio')}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          {context === "library" && (
-            t.published ? (
-              <button onClick={() => unpublishTrack(t)} className="text-xs px-3 py-1 rounded-full bg-zinc-700 hover:bg-zinc-600">Unpublish</button>
-            ) : (
-              <button onClick={() => publishTrack(t)} className="text-xs px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500">Publish</button>
-            )
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const PlayerBar = () => (
-    <div className="sticky bottom-0 left-0 right-0 bg-zinc-900/90 backdrop-blur border-t border-zinc-800 p-4 rounded-t-2xl shadow-2xl">
-      <div className="flex items-center gap-4">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold truncate">{currentTrack ? currentTrack.title : "Geen nummer geselecteerd"}</div>
-          <div className="text-xs text-zinc-400 truncate">{currentTrack ? (currentTrack.artist || (currentTrack.kind === 'video' ? 'Video' : 'Audio')) : ""}</div>
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <button onClick={() => { setCurrentIndex(prevIndex()); setTimeout(() => play(), 0); }} className="p-2 rounded-full bg-zinc-800 hover:bg-zinc-700">⏮</button>
-          {isPlaying ? (
-            <button onClick={pause} className="px-4 py-2 rounded-full bg-zinc-100 text-zinc-900 font-semibold hover:bg-white">Pause</button>
-          ) : (
-            <button onClick={play} className="px-4 py-2 rounded-full bg-emerald-500 text-white font-semibold hover:bg-emerald-400">Play</button>
-          )}
-          <button onClick={() => { setCurrentIndex(nextIndex()); setTimeout(() => play(), 0); }} className="p-2 rounded-full bg-zinc-800 hover:bg-zinc-700">⏭</button>
-        </div>
-      </div>
-      <div className="mt-3 flex items-center gap-3">
-        <span className="text-xs text-zinc-400 w-10 text-right">{formatTime(curTime)}</span>
+  return (
+    <div>
+      {/* Zoekbalk */}
+      <div className="mb-4">
         <input
-          ref={progressRef}
-          type="range" min={0} max={Math.max(1, dur)} step={0.1}
-          value={Math.min(curTime, dur)} onChange={(e) => seek(e.target.value)}
-          className="w-full"
+          type="text"
+          placeholder="Zoek je track of artiest..."
+          value={zoekTerm}
+          onChange={(e) => setZoekTerm(e.target.value)}
+          className="w-full p-2 rounded-lg border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400"
         />
-        <span className="text-xs text-zinc-400 w-10">{formatTime(dur)}</span>
-        <div className="flex items-center gap-2 ml-3">
-          <button onClick={() => setShuffle((s) => !s)} className={`px-2 py-1 rounded-full ${shuffle ? "bg-purple-600" : "bg-zinc-800 hover:bg-zinc-700"}`}>🔀</button>
-          <select value={repeat} onChange={(e) => setRepeat(e.target.value)} className="px-2 py-1 rounded-full bg-zinc-800">
-            <option value="off">Repeat: Off</option>
-            <option value="one">Repeat: One</option>
-            <option value="all">Repeat: All</option>
-          </select>
-          <input type="range" min={0} max={1} step={0.01} value={volume} onChange={(e) => setVolume(Number(e.target.value))} />
-        </div>
       </div>
-    </div>
-  );
 
-  // --- Build UI ---
-  return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <header className="max-w-5xl mx-auto px-4 pt-10 pb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">T.B Radio <span className="opacity-60">· LIVE</span></h1>
-            <p className="text-sm text-zinc-400">24/7 station van jouw gepubliceerde tracks. Klik Play om te starten.</p>
-          </div>
-          <nav className="flex items-center gap-2">
-            <button onClick={() => setTab("station")} className={`px-4 py-2 rounded-2xl ${tab === 'station' ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800'}`}>📻 Station</button>
-            <button onClick={() => setTab("channel")} className={`px-4 py-2 rounded-2xl ${tab === 'channel' ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800'}`}>🎛️ My Channel</button>
-          </nav>
+      {/* Tracklijst */}
+      {filterdTracks.length === 0 ? (
+        <div className="text-center text-zinc-400 mt-8">
+          <p>Geen tracks gevonden. Voeg nieuwe nummers toe om te beginnen!</p>
         </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 pb-28">
-        {tab === "station" ? (
-          <section>
-            {stationQueue.length === 0 ? (
-              <EmptyState
-                title="Nog geen gepubliceerde tracks"
-                subtitle="Publiceer nummers vanuit je eigen kanaal om de live-radio te vullen."
-                action={<button onClick={() => setTab('channel')} className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500">Ga naar My Channel</button>}
-              />
-            ) : (
-              <div className="space-y-3">
-                {stationQueue.map((t, i) => (
-                  <TrackRow key={t.id} t={t} index={i} context="station" />
-                ))}
-              </div>
-            )}
-          </section>
-        ) : (
-          <section className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-lg font-semibold mb-2">Upload</div>
-                <input
-                  type="file"
-                  accept="audio/*,video/*"
-                  multiple
-                  onChange={(e) => onUpload(e.target.files)}
-                  className="block w-full text-sm"
-                />
-                <div className="mt-3 text-xs text-zinc-400">Ondersteund: .mp3, .wav, .ogg, .mp4, .webm, .mov … (video wordt als audio afgespeeld)</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-lg font-semibold mb-2">Voeg toe via URL</div>
-                <UrlAdder onAdd={addFromUrl} />
-                <div className="mt-3 text-xs text-zinc-400">Gebruik directe mediabestanden (mp3/wav/mp4). YouTube-embeds spelen niet als puur audio in de achtergrond.</div>
-              </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filterdTracks.map((track) => (
+            <div key={track.id} className="p-4 border rounded-lg bg-zinc-900">
+              <h2 className="font-semibold">{track.title}</h2>
+              <p className="text-zinc-400">{track.artist}</p>
+              <p className="text-zinc-500 text-sm mt-1">Geüpload: {new Date(track.createdAt).toLocaleDateString("nl-NL")}</p>
             </div>
-
-            <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-lg font-semibold">Mijn Bibliotheek</div>
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zoek titel of artiest…" className="px-3 py-2 rounded-xl bg-zinc-800 w-full" />
-              </div>
-              {filteredLib.length === 0 ? (
-                <EmptyState title="Geen resultaten" subtitle="Upload een bestand of wijzig je zoekopdracht." />
-              ) : (
-                <div className="space-y-2">
-                  {filteredLib.map((t) => (
-                    <TrackRow key={t.id} t={t} context="library" />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <PlaylistMaker myTracks={myTracks} onCreate={createPlaylist} onPublish={publishPlaylist} />
-          </section>
-        )}
-      </main>
-
-      {/* Hidden media elements driving the audio */}
-      <audio ref={audioRef} className="hidden" />
-      <video ref={videoRef} className="w-[1px] h-[1px] opacity-0 pointer-events-none absolute" />
-
-      <PlayerBar />
-    </div>
-  );
-}
-
-function UrlAdder({ onAdd }) {
-  const [url, setUrl] = useState("");
-  return (
-    <div className="flex gap-2">
-      <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… (mp3/mp4)" className="px-3 py-2 rounded-xl bg-zinc-800 w-full" />
-      <button onClick={() => { onAdd(url); setUrl(""); }} className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500">Toevoegen</button>
-    </div>
-  );
-}
-
-function PlaylistMaker({ myTracks, onCreate, onPublish }) {
-  const [name, setName] = useState("");
-  const [selected, setSelected] = useState([]);
-
-  const toggle = (id) => setSelected((s) => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-
-  return (
-    <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-      <div className="text-lg font-semibold mb-2">Playlist maken</div>
-      <div className="grid md:grid-cols-3 gap-3">
-        <div className="md:col-span-2 space-y-2 max-h-72 overflow-auto pr-1">
-          {myTracks.length === 0 ? (
-            <div className="text-sm text-zinc-400">Upload eerst wat nummers.</div>
-          ) : (
-            myTracks.map((t) => (
-              <label key={t.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-800/60">
-                <input type="checkbox" checked={selected.includes(t.id)} onChange={() => toggle(t.id)} />
-                <span className="truncate">{t.title}</span>
-                <span className="text-xs text-zinc-500">{t.kind}</span>
-              </label>
-            ))
-          )}
+          ))}
         </div>
-        <div className="space-y-3">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Playlist naam" className="px-3 py-2 rounded-xl bg-zinc-800 w-full" />
-          <button
-            onClick={() => name && selected.length && onCreate(name, selected)}
-            className="w-full px-4 py-2 rounded-2xl bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50"
-            disabled={!name || selected.length === 0}
-          >Bewaar Playlist</button>
-          <button
-            onClick={() => selected.length && onPublish({ name, trackIds: selected })}
-            className="w-full px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50"
-            disabled={selected.length === 0}
-          >Publiceer geselecteerde</button>
-          <div className="text-xs text-zinc-400">Publiceren zet de gekozen nummers in je openbare station-queue.</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
