@@ -1,38 +1,31 @@
-import time
+import pygame
+import os
 import random
+import time
 
-# Lijst van nummers (je kunt er zoveel toevoegen als je wilt)
-songs = [
-    "Ed Sheeran - Shape of You",
-    "Dua Lipa - Levitating",
-    "Queen - Bohemian Rhapsody",
-    "Coldplay - Viva La Vida",
-    "ABBA - Dancing Queen"
-]
+# Map met nummers
+MUSIC_DIR = "playlist"
 
-# Lijst van jingles
-jingles = [
-    "🎵 Dit is Sky Radio – non-stop hits!",
-    "🎶 Sky Radio – de leukste muziek!",
-    "🌟 Jingle! Tijd voor de volgende hit!"
-]
+# Haal alle mp3-bestanden op
+songs = [os.path.join(MUSIC_DIR, f) for f in os.listdir(MUSIC_DIR) if f.endswith(".mp3")]
 
-def play_song():
-    # Kies een random nummer
-    song = random.choice(songs)
-    # Soms een jingle laten zien
-    if random.random() < 0.5:
-        jingle = random.choice(jingles)
-        print(jingle)
-        time.sleep(2)  # korte pauze voor de jingle
+# Initialiseer pygame mixer
+pygame.mixer.init()
 
-    print(f"Nu speelt: {song}")
-    time.sleep(random.randint(5, 10))  # Simuleer speeltijd
+def play_song(song_path):
+    print(f"🎵 Nu speelt: {os.path.basename(song_path)}")
+    pygame.mixer.music.load(song_path)
+    pygame.mixer.music.play()
+    
+    # Wacht tot het nummer klaar is
+    while pygame.mixer.music.get_busy():
+        time.sleep(1)
 
 def main():
-    print("🎧 Sky Radio Clone (tekstversie) gestart!")
+    print("🎧 Sky Radio Clone gestart...")
     while True:
-        play_song()
+        song = random.choice(songs)
+        play_song(song)
 
 if __name__ == "__main__":
     main()
