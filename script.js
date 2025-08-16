@@ -8,7 +8,7 @@ function onYouTubeIframeAPIReady() {
         width: '0',
         playerVars: {
             listType:'playlist',
-            list: 'https://www.youtube.com/watch?v=MI9ZpIKgyf0&list=PLC800B9699743BD19', // <-- Vervang dit met je YouTube playlist ID
+            list: 'PLC800B9699743BD19', // alleen de playlist ID
             autoplay: 0,
             loop: 1,
             modestbranding: 1,
