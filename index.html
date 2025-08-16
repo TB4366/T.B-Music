@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mijn Muziekspeler</title>
+  <title>YouTube Muziekspeler</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -23,8 +23,11 @@
     #stopBtn {
       display: none;
     }
-    iframe {
-      display: none; /* verberg de visuele player */
+    /* Player verbergen */
+    #ytPlayer {
+      width: 0;
+      height: 0;
+      border: none;
     }
   </style>
 </head>
@@ -33,38 +36,50 @@
   <button id="playBtn">▶️ Play</button>
   <button id="stopBtn">⏹️ Stop</button>
 
-  <!-- YouTube embed met autoplay uitgeschakeld -->
-  <iframe id="ytPlayer"
-          src="https://www.youtube.com/embed/QRUG0AM7Tt0?enablejsapi=1&controls=0"
-          frameborder="0"
-          allow="autoplay"
-          width="0" height="0">
-  </iframe>
+  <!-- YouTube player -->
+  <div id="ytPlayer"></div>
 
   <script>
     let player;
+
+    // Laad de YouTube Iframe API
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     document.body.appendChild(tag);
 
+    // Wanneer API geladen is → player maken
     function onYouTubeIframeAPIReady() {
-      player = new YT.Player('ytPlayer');
+      player = new YT.Player('ytPlayer', {
+        height: '0',
+        width: '0',
+        videoId: 'QRUG0AM7Tt0', // jouw link
+        playerVars: {
+          autoplay: 0,
+          controls: 0
+        }
+      });
     }
 
     const playBtn = document.getElementById('playBtn');
     const stopBtn = document.getElementById('stopBtn');
 
     playBtn.addEventListener('click', () => {
-      player.playVideo();
-      playBtn.style.display = 'none';
-      stopBtn.style.display = 'inline-block';
+      if (player && player.playVideo) {
+        player.unMute(); // heel belangrijk, anders blijft ie stil!
+        player.playVideo();
+        playBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
+      }
     });
 
     stopBtn.addEventListener('click', () => {
-      player.pauseVideo();
-      stopBtn.style.display = 'none';
-      playBtn.style.display = 'inline-block';
+      if (player && player.pauseVideo) {
+        player.pauseVideo();
+        stopBtn.style.display = 'none';
+        playBtn.style.display = 'inline-block';
+      }
     });
   </script>
+
 </body>
 </html>
