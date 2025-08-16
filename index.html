@@ -1,64 +1,37 @@
-"use client";
+import os
+import random
+from time import sleep
+from pydub import AudioSegment
+from pydub.playback import play
 
-import { useState, useEffect } from "react";
+# Map met nummers en jingles
+MUSIC_DIR = "playlist"
+JINGLE_DIR = "jingles"
 
-export default function Channel() {
-  const [mijnTracks, setMijnTracks] = useState([]);
-  const [zoekTerm, setZoekTerm] = useState("");
-  const [filterdTracks, setFilterdTracks] = useState([]);
+# Laad bestanden
+songs = [os.path.join(MUSIC_DIR, f) for f in os.listdir(MUSIC_DIR) if f.endswith(".mp3")]
+jingles = [os.path.join(JINGLE_DIR, f) for f in os.listdir(JINGLE_DIR) if f.endswith(".mp3")]
 
-  useEffect(() => {
-    async function fetchMijnTracks() {
-      try {
-        const res = await fetch("/api/mijn-tracks");
-        const data = await res.json();
-        setMijnTracks(data);
-        setFilterdTracks(data);
-      } catch (err) {
-        console.error("Fout bij het ophalen van mijn tracks:", err);
-      }
-    }
+def play_song_with_jingle(song_path, jingle_path=None):
+    song = AudioSegment.from_mp3(song_path)
+    
+    # Voeg jingle toe voor de song
+    if jingle_path:
+        jingle = AudioSegment.from_mp3(jingle_path)
+        combined = jingle + song
+    else:
+        combined = song
 
-    fetchMijnTracks();
-  }, []);
+    # Speel af
+    play(combined)
 
-  useEffect(() => {
-    const filtered = mijnTracks.filter(track =>
-      track.title.toLowerCase().includes(zoekTerm.toLowerCase()) ||
-      track.artist.toLowerCase().includes(zoekTerm.toLowerCase())
-    );
-    setFilterdTracks(filtered);
-  }, [zoekTerm, mijnTracks]);
+def main():
+    print("🎵 Sky Radio Clone gestart...")
+    while True:
+        song = random.choice(songs)
+        jingle = random.choice(jingles) if jingles else None
+        play_song_with_jingle(song, jingle)
+        sleep(1)  # korte pauze tussen nummers
 
-  return (
-    <div>
-      {/* Zoekbalk */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Zoek je track of artiest..."
-          value={zoekTerm}
-          onChange={(e) => setZoekTerm(e.target.value)}
-          className="w-full p-2 rounded-lg border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400"
-        />
-      </div>
-
-      {/* Tracklijst */}
-      {filterdTracks.length === 0 ? (
-        <div className="text-center text-zinc-400 mt-8">
-          <p>Geen tracks gevonden. Voeg nieuwe nummers toe om te beginnen!</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filterdTracks.map((track) => (
-            <div key={track.id} className="p-4 border rounded-lg bg-zinc-900">
-              <h2 className="font-semibold">{track.title}</h2>
-              <p className="text-zinc-400">{track.artist}</p>
-              <p className="text-zinc-500 text-sm mt-1">Geüpload: {new Date(track.createdAt).toLocaleDateString("nl-NL")}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+if __name__ == "__main__":
+    main()
