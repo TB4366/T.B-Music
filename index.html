@@ -19,10 +19,6 @@
             background: none;
             border: none;
             color: #fff;
-            transition: 0.3s;
-        }
-        button:hover {
-            color: #ff4d4d;
         }
         #stopBtn {
             display: none;
@@ -42,19 +38,15 @@
         const musicPlayer = document.getElementById('musicPlayer');
 
         playBtn.addEventListener('click', () => {
-            musicPlayer.volume = 1.0; // Zet volume aan
-            musicPlayer.load();       // Zorg dat het geladen wordt
-            musicPlayer.play().catch(error => {
-                console.log("Play failed:", error);
-                alert("Klik ergens op de pagina om audio te starten."); 
-            });
+            musicPlayer.volume = 1.0;     // Volume aan
+            musicPlayer.currentTime = 0;  // Start vanaf begin
+            musicPlayer.play();           // Speel af
             playBtn.style.display = 'none';
             stopBtn.style.display = 'inline-block';
         });
 
         stopBtn.addEventListener('click', () => {
-            musicPlayer.pause();
-            musicPlayer.currentTime = 0;
+            musicPlayer.pause();          // Stop muziek
             stopBtn.style.display = 'none';
             playBtn.style.display = 'inline-block';
         });
