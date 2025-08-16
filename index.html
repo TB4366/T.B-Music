@@ -1,68 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T.B Music - Live Audio</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #1a1a1a;
-            color: #fff;
-            margin-top: 100px;
-        }
-        button {
-            font-size: 50px;
-            margin: 20px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: #fff;
-        }
-        #stopBtn {
-            display: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mijn Muziekspeler</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #1a1a1a;
+      color: #fff;
+      padding-top: 100px;
+    }
+    button {
+      font-size: 50px;
+      margin: 20px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: #fff;
+    }
+    #stopBtn {
+      display: none;
+    }
+    iframe {
+      display: none; /* verberg de visuele player */
+    }
+  </style>
 </head>
 <body>
 
-    <button id="playBtn">▶️ Play</button>
-    <button id="stopBtn">⏹️ Stop</button>
+  <button id="playBtn">▶️ Play</button>
+  <button id="stopBtn">⏹️ Stop</button>
 
-    <!-- Video element verborgen -->
-    <video id="musicPlayer" src="ScreenRecording_08-16-2025 22-36-16_1.mp4" style="display:none;" controls></video>
+  <!-- YouTube embed met autoplay uitgeschakeld -->
+  <iframe id="ytPlayer"
+          src="https://www.youtube.com/embed/QRUG0AM7Tt0?enablejsapi=1&controls=0"
+          frameborder="0"
+          allow="autoplay"
+          width="0" height="0">
+  </iframe>
 
-    <script>
-        const playBtn = document.getElementById('playBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const musicPlayer = document.getElementById('musicPlayer');
+  <script>
+    let player;
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
 
-        playBtn.addEventListener('click', async () => {
-            try {
-                musicPlayer.volume = 1.0;     // Zet volume op max
-                musicPlayer.currentTime = 0;  // Start vanaf begin
-                await musicPlayer.play();     // Speel af
-                console.log("Afspelen gestart");
-                playBtn.style.display = 'none';
-                stopBtn.style.display = 'inline-block';
-            } catch (err) {
-                console.error("Fout bij afspelen:", err);
-            }
-        });
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('ytPlayer');
+    }
 
-        stopBtn.addEventListener('click', () => {
-            musicPlayer.pause();
-            console.log("Afspelen gestopt");
-            stopBtn.style.display = 'none';
-            playBtn.style.display = 'inline-block';
-        });
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
 
-        // Debug: check of er audiotracks zijn
-        musicPlayer.onloadedmetadata = () => {
-            console.log("Duur van bestand:", musicPlayer.duration, "seconden");
-        };
-    </script>
+    playBtn.addEventListener('click', () => {
+      player.playVideo();
+      playBtn.style.display = 'none';
+      stopBtn.style.display = 'inline-block';
+    });
 
+    stopBtn.addEventListener('click', () => {
+      player.pauseVideo();
+      stopBtn.style.display = 'none';
+      playBtn.style.display = 'inline-block';
+    });
+  </script>
 </body>
 </html>
