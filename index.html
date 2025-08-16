@@ -10,22 +10,18 @@
             text-align: center;
             background-color: #1a1a1a;
             color: #fff;
-        }
-        h1 {
-            margin-top: 50px;
+            margin-top: 100px;
         }
         button {
-            padding: 15px 30px;
-            font-size: 18px;
-            margin-top: 20px;
+            font-size: 50px;
+            margin: 20px;
             cursor: pointer;
-            background-color: #ff4d4d;
+            background: none;
             border: none;
-            border-radius: 10px;
             color: #fff;
         }
-        button.active {
-            background-color: #4dff4d;
+        button:hover {
+            color: #ff4d4d;
         }
         audio {
             display: none;
@@ -34,18 +30,18 @@
 </head>
 <body>
 
-    <h1>Welcome to T.B Music</h1>
-    <button id="liveBtn">Go Live</button>
+    <button id="playBtn">▶️</button>
+    <button id="stopBtn">⏹️</button>
 
     <audio id="musicPlayer"></audio>
-    <audio id="voiceMessage" src="voice.mp3"></audio> <!-- voeg hier je stembestand toe -->
+    <audio id="voiceMessage" src="voice.mp3"></audio> <!-- Voeg hier je stembestand toe -->
 
     <script>
-        const liveBtn = document.getElementById('liveBtn');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
         const musicPlayer = document.getElementById('musicPlayer');
         const voiceMessage = document.getElementById('voiceMessage');
 
-        // Voeg hier je muziekbestanden toe
         const playlist = [
             'song1.mp3',
             'song2.mp3',
@@ -54,7 +50,7 @@
 
         let currentSongIndex = 0;
         let songCount = 0;
-        let isLive = false;
+        let isPlaying = false;
 
         function playNextSong() {
             musicPlayer.src = playlist[currentSongIndex];
@@ -63,29 +59,27 @@
             currentSongIndex = (currentSongIndex + 1) % playlist.length;
             songCount++;
 
-            // Om de 2 nummers, speel de stem
             if (songCount % 2 === 0) {
                 voiceMessage.play();
             }
         }
 
         musicPlayer.addEventListener('ended', () => {
-            if (isLive) {
+            if (isPlaying) {
                 playNextSong();
             }
         });
 
-        liveBtn.addEventListener('click', () => {
-            isLive = !isLive;
-            if (isLive) {
-                liveBtn.textContent = "Live On";
-                liveBtn.classList.add('active');
+        playBtn.addEventListener('click', () => {
+            if (!isPlaying) {
+                isPlaying = true;
                 playNextSong();
-            } else {
-                liveBtn.textContent = "Go Live";
-                liveBtn.classList.remove('active');
-                musicPlayer.pause();
             }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            isPlaying = false;
+            musicPlayer.pause();
         });
     </script>
 
