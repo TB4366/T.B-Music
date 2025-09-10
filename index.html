@@ -3,199 +3,100 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T.B Snay.io</title>
+<title>Mini IO Game</title>
 <style>
-body,html{margin:0;padding:0;overflow:hidden;background:#222;color:#fff;font-family:Arial;}
-canvas{display:block;}
-#uiButtons{position:absolute;bottom:20px;right:20px;}
-#uiButtons button{padding:15px;font-size:18px;margin:5px;border-radius:50%;border:none;background:#0f0;color:#000;cursor:pointer;}
-#joystick{position:absolute;bottom:20px;left:20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.2);}
-#joystickThumb{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.5);left:35px;top:35px;pointer-events:none;}
-#leaderboard{position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.5);padding:10px;border-radius:5px;}
-#startScreen,#gameOverScreen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;background:#222;}
-#startScreen h1,#gameOverScreen h1{font-size:3em;margin-bottom:20px;}
-#startScreen input{padding:10px;font-size:1.2em;margin-bottom:10px;}
-#startScreen button,#gameOverScreen button{padding:10px 20px;font-size:1.2em;background:#0f0;border:none;border-radius:5px;cursor:pointer;}
+  body { margin: 0; overflow: hidden; background: #222; }
+  canvas { display: block; margin: 0 auto; background: #333; }
 </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
-
-<div id="startScreen">
-<h1>T.B Snay.io</h1>
-<input type="text" id="playerName" placeholder="Naam">
-<button onclick="startGame()">Start</button>
-</div>
-
-<div id="gameOverScreen" style="display:none;">
-<h1>Je bent dood!</h1>
-<button onclick="restartGame()">Herstart</button>
-</div>
-
-<div id="uiButtons" style="display:none;">
-<button onclick="splitPlayer()">Split</button>
-<button onclick="feedPlayer()">Feed</button>
-</div>
-
-<div id="leaderboard" style="display:none;">
-<h3>Leaderboard</h3>
-<ol id="leaders"></ol>
-</div>
-
-<div id="joystick" style="display:none;"><div id="joystickThumb"></div></div>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
 
 <script>
-// Canvas setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
 
-// Game variables
-const mapSize = 2000;
-let player = {alive:true, name:"", segments:[], color:"#0f0", vx:0, vy:0};
-let bots = [];
-let foods = [];
-let viruses = [];
-let joystickVector = {x:0,y:0};
-let activeTouchId = null;
-let gameRunning = false;
-const maxSegments = 100;
+const player = { x: 400, y: 300, radius: 20, color: 'blue', speed: 3 };
+const foods = [];
+const foodCount = 50;
 
-// Utility
-function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
-function randomColor(){return '#'+Math.floor(Math.random()*16777215).toString(16);}
-function createFood(count=100){foods=[];for(let i=0;i<count;i++) foods.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:5});}
-function createVirus(count=10){viruses=[];for(let i=0;i<count;i++) viruses.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:30});}
-function createBots(count=5){bots=[];for(let i=0;i<count;i++) bots.push({name:"Bot"+(i+1),segments:[{x:Math.random()*mapSize,y:Math.random()*mapSize}],color:randomColor(),vx:0,vy:0});}
-
-// Start/Restart
-function startGame(){
-    const name = document.getElementById('playerName').value;
-    if(!name){alert("Voer een naam in!"); return;}
-    player.name = name;
-    player.segments = [{x:mapSize/2,y:mapSize/2}];
-    player.color = randomColor();
-    createFood();
-    createVirus();
-    createBots();
-    document.getElementById('startScreen').style.display='none';
-    document.getElementById('uiButtons').style.display='block';
-    document.getElementById('leaderboard').style.display='block';
-    document.getElementById('joystick').style.display='block';
-    gameRunning = true;
-    gameLoop();
-}
-
-function restartGame(){
-    document.getElementById('gameOverScreen').style.display='none';
-    startGame();
-}
-
-function gameOver(){
-    gameRunning=false;
-    document.getElementById('gameOverScreen').style.display='flex';
-    document.getElementById('uiButtons').style.display='none';
-    document.getElementById('leaderboard').style.display='none';
-    document.getElementById('joystick').style.display='none';
-}
-
-// Game logic
-function movePlayer(){
-    player.segments.forEach(seg=>{
-        seg.x += joystickVector.x*3 + player.vx;
-        seg.y += joystickVector.y*3 + player.vy;
-    });
-    player.vx*=0.9; player.vy*=0.9;
-}
-
-function moveBots(){
-    bots.forEach(b=>{
-        if(Math.random()<0.01){b.vx=(Math.random()-0.5)*2;b.vy=(Math.random()-0.5)*2;}
-        b.segments.forEach(seg=>{seg.x+=b.vx; seg.y+=b.vy;});
-        b.vx*=0.9;b.vy*=0.9;
+// Maak voedsel
+for(let i = 0; i < foodCount; i++){
+    foods.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: 5 + Math.random() * 5,
+        color: 'green'
     });
 }
 
-function eatFood(){
-    player.segments.forEach(seg=>{
-        for(let i=foods.length-1;i>=0;i--){
-            if(distance(seg,foods[i])<10){
-                foods.splice(i,1);
-                if(player.segments.length<maxSegments)
-                    player.segments.push({x:seg.x,y:seg.y});
-            }
+// Muis positie
+const mouse = { x: player.x, y: player.y };
+
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+});
+
+// Functie om afstand te berekenen
+function distance(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+// Update spelerpositie
+function updatePlayer() {
+    const dx = mouse.x - player.x;
+    const dy = mouse.y - player.y;
+    const dist = Math.hypot(dx, dy);
+
+    if(dist > player.speed){
+        player.x += (dx / dist) * player.speed;
+        player.y += (dy / dist) * player.speed;
+    } else {
+        player.x = mouse.x;
+        player.y = mouse.y;
+    }
+}
+
+// Check voedsel collisions
+function checkFood() {
+    for(let i = foods.length - 1; i >= 0; i--){
+        if(distance(player, foods[i]) < player.radius + foods[i].radius){
+            player.radius += 0.5; // Groei speler
+            foods.splice(i, 1); // Verwijder voedsel
         }
-    });
-}
-
-// Draw
-function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    // Camera
-    let camX=player.segments[0].x - canvas.width/2;
-    let camY=player.segments[0].y - canvas.height/2;
-    // Food
-    foods.forEach(f=>{ctx.fillStyle="#0f0";ctx.beginPath();ctx.arc(f.x-camX,f.y-camY,f.radius,0,2*Math.PI);ctx.fill();});
-    // Viruses
-    viruses.forEach(v=>{ctx.fillStyle="#0ff";ctx.beginPath();ctx.arc(v.x-camX,v.y-camY,v.radius,0,2*Math.PI);ctx.fill();});
-    // Player
-    ctx.fillStyle=player.color;
-    player.segments.forEach(seg=>{ctx.beginPath();ctx.arc(seg.x-camX,seg.y-camY,10,0,2*Math.PI);ctx.fill();});
-    // Bots
-    bots.forEach(b=>{
-        ctx.fillStyle=b.color;
-        b.segments.forEach(seg=>{ctx.beginPath();ctx.arc(seg.x-camX,seg.y-camY,10,0,2*Math.PI);ctx.fill();});
-    });
-    requestAnimationFrame(draw);
-}
-
-// Split & Feed (simplified)
-function splitPlayer(){
-    if(player.segments.length>1){
-        player.segments.push({x:player.segments[0].x+20,y:player.segments[0].y+20});
     }
 }
-function feedPlayer(){
-    if(player.segments.length>1){
-        let seg = player.segments.pop();
-        foods.push({x:seg.x+Math.random()*20-10,y:seg.y+Math.random()*20-10,radius:5});
-    }
+
+// Teken alles
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Teken speler
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+    ctx.fillStyle = player.color;
+    ctx.fill();
+
+    // Teken voedsel
+    foods.forEach(f => {
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+        ctx.fillStyle = f.color;
+        ctx.fill();
+    });
 }
 
 // Game loop
-function gameLoop(){
-    if(!gameRunning) return;
-    movePlayer();
-    moveBots();
-    eatFood();
-    if(player.segments.length===0) gameOver();
+function gameLoop() {
+    updatePlayer();
+    checkFood();
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// Joystick (mobile)
-const joystick = document.getElementById('joystick');
-const thumb = document.getElementById('joystickThumb');
-joystick.addEventListener('touchstart',e=>{if(activeTouchId===null){activeTouchId=e.changedTouches[0].identifier; updateJoystick(e.changedTouches[0]);}});
-joystick.addEventListener('touchmove',e=>{for(let t of e.changedTouches) if(t.identifier===activeTouchId) updateJoystick(t);});
-joystick.addEventListener('touchend',e=>{for(let t of e.changedTouches) if(t.identifier===activeTouchId){joystickVector={x:0,y:0};thumb.style.left='35px';thumb.style.top='35px';activeTouchId=null;}});
-
-function updateJoystick(touch){
-    const rect=joystick.getBoundingClientRect();
-    let x=touch.clientX-rect.left-rect.width/2;
-    let y=touch.clientY-rect.top-rect.height/2;
-    const maxDist=rect.width/2-25;
-    const dist=Math.hypot(x,y);
-    if(dist>maxDist){x=x/dist*maxDist;y=y/dist*maxDist;}
-    thumb.style.left=(x+rect.width/2-25)+'px';
-    thumb.style.top=(y+rect.height/2-25)+'px';
-    joystickVector.x=x/maxDist;
-    joystickVector.y=y/maxDist;
-}
-
-// Resize
-window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+gameLoop();
 </script>
 </body>
 </html>
