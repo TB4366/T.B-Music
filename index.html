@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T.B Agar.io iOS</title>
+<title>T.B Agar.io Advanced</title>
 <style>
 body, html {
     margin: 0;
@@ -12,73 +12,53 @@ body, html {
     background: #222;
     overflow: hidden;
     color: #fff;
-    touch-action: none; /* belangrijk voor mobiel */
-}
-#startScreen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #222;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-#startScreen h1 { font-size: 3em; margin-bottom: 20px; }
-#startScreen input { padding: 10px; font-size: 1.2em; margin-bottom: 10px; }
-#startScreen button { padding: 10px 20px; font-size: 1.2em; cursor: pointer; background-color: #0f0; border: none; border-radius: 5px; }
-canvas { display: block; }
-
-#uiButtons { position: absolute; bottom: 20px; right: 20px; }
-#uiButtons button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; border-radius: 5px; border: none; }
-
-#leaderboard { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }
-
-#joystick {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.2);
     touch-action: none;
 }
-#joystickThumb {
+#startScreen, #gameOverScreen {
     position: absolute;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.5);
-    left: 35px;
-    top: 35px;
-    pointer-events: none;
+    top:0; left:0; width:100%; height:100%;
+    background: #222;
+    display:flex; justify-content:center; align-items:center; flex-direction:column;
 }
+#startScreen h1, #gameOverScreen h1 { font-size:3em; margin-bottom:20px; }
+#startScreen input { padding:10px; font-size:1.2em; margin-bottom:10px; }
+#startScreen button, #gameOverScreen button { padding:10px 20px; font-size:1.2em; cursor:pointer; background-color:#0f0; border:none; border-radius:5px; }
+
+canvas { display:block; }
+
+#uiButtons { position:absolute; bottom:20px; right:20px; }
+#uiButtons button { padding:10px 20px; margin:5px; font-size:16px; cursor:pointer; border-radius:5px; border:none; }
+
+#leaderboard { position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); padding:10px; border-radius:5px; }
+
+#joystick { position:absolute; bottom:20px; left:20px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.2); touch-action:none; }
+#joystickThumb { position:absolute; width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,0.5); left:35px; top:35px; pointer-events:none; }
 </style>
 </head>
 <body>
 
 <div id="startScreen">
-    <h1>T.B Agar.io iOS</h1>
-    <input type="text" id="playerName" placeholder="Voer je naam in">
-    <button onclick="startGame()">Start Game</button>
+<h1>T.B Agar.io</h1>
+<input type="text" id="playerName" placeholder="Voer je naam in">
+<button onclick="startGame()">Start Game</button>
+</div>
+
+<div id="gameOverScreen" style="display:none;">
+<h1>Je bent dood!</h1>
+<button onclick="restartGame()">Herstart</button>
 </div>
 
 <div id="uiButtons" style="display:none;">
-    <button onclick="splitPlayer()">Split</button>
-    <button onclick="feedPlayer()">Feed</button>
+<button onclick="splitPlayer()">Split</button>
+<button onclick="feedPlayer()">Feed</button>
 </div>
 
 <div id="leaderboard" style="display:none;">
-    <h3>Leaderboard</h3>
-    <ol id="leaders"></ol>
+<h3>Leaderboard</h3>
+<ol id="leaders"></ol>
 </div>
 
-<div id="joystick" style="display:none;">
-    <div id="joystickThumb"></div>
-</div>
+<div id="joystick" style="display:none;"><div id="joystickThumb"></div></div>
 
 <canvas id="gameCanvas"></canvas>
 
@@ -88,102 +68,83 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Game state
-let gameRunning = false;
+let gameRunning=false;
 let player;
-let foods = [];
-let bots = [];
-const foodCount = 50;
-const botCount = 5;
+let foods=[], bots=[];
+const foodCount=50;
+const botCount=5;
+const mapSize=3000; // grote map
+let camera={x:0,y:0};
+let joystickVector={x:0,y:0};
+let activeTouchId=null;
 
-// Joystick
-const joystick = document.getElementById('joystick');
-const thumb = document.getElementById('joystickThumb');
-let joystickVector = {x:0, y:0};
+function getRandomColor(){ const colors=['#FF4136','#FF851B','#2ECC40','#0074D9','#B10DC9','#FFDC00']; return colors[Math.floor(Math.random()*colors.length)]; }
+function distance(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
 
-function getRandomColor() {
-    const colors = ['#FF4136','#FF851B','#2ECC40','#0074D9','#B10DC9','#FFDC00'];
-    return colors[Math.floor(Math.random()*colors.length)];
-}
-function distance(a,b) { return Math.hypot(a.x-b.x, a.y-b.y); }
+function createPlayer(name){ return { x:mapSize/2, y:mapSize/2, radius:20, color:getRandomColor(), name:name, alive:true }; }
+function createBot(name){ return { x:Math.random()*mapSize, y:Math.random()*mapSize, radius:20, color:getRandomColor(), name:name }; }
+function createFood(){ foods=[]; for(let i=0;i<foodCount;i++) foods.push({x:Math.random()*mapSize, y:Math.random()*mapSize, radius:5, color:getRandomColor()}); }
 
-function createPlayer(name) {
-    return { x: canvas.width/2, y: canvas.height/2, radius: 20, color: getRandomColor(), name: name };
+// movement
+function movePlayer(){
+    if(!player.alive) return;
+    const speed=Math.max(2,6-player.radius/10);
+    player.x+=joystickVector.x*speed;
+    player.y+=joystickVector.y*speed;
+    player.x=Math.max(player.radius, Math.min(mapSize-player.radius, player.x));
+    player.y=Math.max(player.radius, Math.min(mapSize-player.radius, player.y));
 }
-function createBot(name) {
-    return { x: Math.random()*canvas.width, y: Math.random()*canvas.height, radius: 20, color: getRandomColor(), name: name, vx:0, vy:0 };
-}
-function createFood() {
-    foods = [];
-    for(let i=0;i<foodCount;i++){
-        foods.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, radius:5, color:getRandomColor()});
-    }
-}
-
-// Movement
-function movePlayer() {
-    const speed = Math.max(2,6-player.radius/10);
-    player.x += joystickVector.x*speed;
-    player.y += joystickVector.y*speed;
-    // keep in canvas
-    player.x = Math.max(player.radius, Math.min(canvas.width-player.radius, player.x));
-    player.y = Math.max(player.radius, Math.min(canvas.height-player.radius, player.y));
-}
-
-function moveBots() {
+function moveBots(){
     for(let bot of bots){
-        if(Math.random()<0.02){
-            bot.vx = (Math.random()-0.5)*2;
-            bot.vy = (Math.random()-0.5)*2;
-        }
-        bot.x += bot.vx;
-        bot.y += bot.vy;
-        bot.x = Math.max(bot.radius, Math.min(canvas.width-bot.radius, bot.x));
-        bot.y = Math.max(bot.radius, Math.min(canvas.height-bot.radius, bot.y));
+        if(Math.random()<0.02){ bot.vx=(Math.random()-0.5)*2; bot.vy=(Math.random()-0.5)*2; }
+        bot.x+=bot.vx; bot.y+=bot.vy;
+        bot.x=Math.max(bot.radius, Math.min(mapSize-bot.radius, bot.x));
+        bot.y=Math.max(bot.radius, Math.min(mapSize-bot.radius, bot.y));
     }
 }
 
-// Eating
-function eat(playerObj) {
+// eating and death
+function eatAndCheck(playerObj){
+    // food
     for(let i=foods.length-1;i>=0;i--){
         let f=foods[i];
-        if(distance(playerObj,f)<playerObj.radius+f.radius){
-            foods.splice(i,1);
-            playerObj.radius += 0.5;
+        if(distance(playerObj,f)<playerObj.radius+f.radius){ foods.splice(i,1); playerObj.radius+=0.5; }
+    }
+    // other players
+    if(playerObj===player){
+        for(let b of bots){
+            if(distance(playerObj,b)<playerObj.radius && playerObj.radius>b.radius*1.1){
+                playerObj.radius+=b.radius/2;
+                b.radius=0; // bot "eaten"
+            } else if(distance(playerObj,b)<b.radius && b.radius>playerObj.radius*1.1){
+                player.alive=false;
+                showGameOver();
+            }
+        }
+    } else {
+        // bot eats player
+        if(player.alive && distance(playerObj,player)<playerObj.radius && playerObj.radius>player.radius*1.1){
+            player.alive=false;
+            showGameOver();
         }
     }
 }
 
-// Split & Feed
-function splitPlayer() { player.radius = Math.max(10,player.radius/2); }
-function feedPlayer() { 
-    player.radius = Math.max(10,player.radius-2);
-    foods.push({x:player.x+Math.random()*20-10, y:player.y+Math.random()*20-10, radius:5, color:getRandomColor()});
-}
+function splitPlayer(){ if(player.alive) player.radius=Math.max(10,player.radius/2); }
+function feedPlayer(){ if(player.alive){ player.radius=Math.max(10,player.radius-2); foods.push({x:player.x+Math.random()*20-10, y:player.y+Math.random()*20-10, radius:5, color:getRandomColor()}); } }
 
-// Draw
-function drawPlayer(p) {
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
-    ctx.fillStyle = p.color;
-    ctx.fill();
-    ctx.closePath();
-    ctx.fillStyle="#fff";
-    ctx.font=`${Math.max(p.radius/2,12)}px Arial`;
-    ctx.textAlign="center";
-    ctx.fillText(p.name,p.x,p.y+4);
+function drawPlayer(p){ 
+    if(p.radius<=0) return;
+    ctx.beginPath(); ctx.arc(p.x-camera.x, p.y-camera.y, p.radius,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill(); ctx.closePath();
+    ctx.fillStyle="#fff"; ctx.font=`${Math.max(p.radius/2,12)}px Arial`; ctx.textAlign="center"; ctx.fillText(p.name,p.x-camera.x,p.y-camera.y+4);
 }
-function drawFood(){ for(let f of foods){ ctx.beginPath(); ctx.arc(f.x,f.y,f.radius,0,Math.PI*2); ctx.fillStyle=f.color; ctx.fill(); ctx.closePath(); } }
+function drawFood(){ for(let f of foods){ ctx.beginPath(); ctx.arc(f.x-camera.x,f.y-camera.y,f.radius,0,Math.PI*2); ctx.fillStyle=f.color; ctx.fill(); ctx.closePath(); } }
+
 function drawLeaderboard(){
     let allPlayers=[player,...bots];
     allPlayers.sort((a,b)=>b.radius-a.radius);
-    const leaders=document.getElementById('leaders');
-    leaders.innerHTML='';
-    allPlayers.slice(0,5).forEach(p=>{
-        const li=document.createElement('li');
-        li.textContent=`${p.name} (${Math.floor(p.radius)})`;
-        leaders.appendChild(li);
-    });
+    const leaders=document.getElementById('leaders'); leaders.innerHTML='';
+    allPlayers.slice(0,5).forEach(p=>{ const li=document.createElement('li'); li.textContent=`${p.name} (${Math.floor(p.radius)})`; leaders.appendChild(li); });
 }
 
 // Game loop
@@ -192,76 +153,46 @@ function gameLoop(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     movePlayer();
     moveBots();
-    eat(player);
-    bots.forEach(b=>eat(b));
+    eatAndCheck(player);
+    bots.forEach(b=>{ eatAndCheck(b); });
+    // camera follows player
+    camera.x=player.x-canvas.width/2; camera.y=player.y-canvas.height/2;
     drawFood();
     drawPlayer(player);
     bots.forEach(drawPlayer);
     drawLeaderboard();
     if(foods.length<foodCount) createFood();
-    requestAnimationFrame(gameLoop);
+    if(player.alive) requestAnimationFrame(gameLoop);
 }
 
-// Joystick touch
-let activeTouchId = null;
-joystick.addEventListener('touchstart', e=>{
-    e.preventDefault();
-    if(activeTouchId === null){
-        activeTouchId = e.changedTouches[0].identifier;
-        updateJoystick(e.changedTouches[0]);
-    }
-});
-joystick.addEventListener('touchmove', e=>{
-    for(let t of e.changedTouches){
-        if(t.identifier === activeTouchId){
-            updateJoystick(t);
-        }
-    }
-});
-joystick.addEventListener('touchend', e=>{
-    for(let t of e.changedTouches){
-        if(t.identifier === activeTouchId){
-            joystickVector={x:0,y:0};
-            thumb.style.left='35px';
-            thumb.style.top='35px';
-            activeTouchId = null;
-        }
-    }
-});
-
-function updateJoystick(touch){
-    const rect=joystick.getBoundingClientRect();
-    let x = touch.clientX - rect.left - rect.width/2;
-    let y = touch.clientY - rect.top - rect.height/2;
-    const maxDist = rect.width/2 - 25;
-    const dist = Math.hypot(x,y);
-    if(dist>maxDist){
-        x = x/dist*maxDist;
-        y = y/dist*maxDist;
-    }
-    thumb.style.left=(x+rect.width/2-25)+'px';
-    thumb.style.top=(y+rect.height/2-25)+'px';
-    joystickVector.x = x/maxDist;
-    joystickVector.y = y/maxDist;
-}
-
-// Start game
 function startGame(){
-    const name=document.getElementById('playerName').value;
-    if(!name){ alert('Voer een naam in!'); return; }
+    const name=document.getElementById('playerName').value; if(!name){ alert('Voer een naam in!'); return; }
     player=createPlayer(name);
-    bots=[];
-    for(let i=0;i<botCount;i++) bots.push(createBot('Bot'+(i+1)));
+    bots=[]; for(let i=0;i<botCount;i++) bots.push(createBot('Bot'+(i+1)));
     createFood();
     document.getElementById('startScreen').style.display='none';
     document.getElementById('uiButtons').style.display='block';
     document.getElementById('leaderboard').style.display='block';
-    joystick.style.display='block';
-    gameRunning=true;
-    gameLoop();
+    document.getElementById('joystick').style.display='block';
+    gameRunning=true; gameLoop();
+}
+function showGameOver(){ document.getElementById('gameOverScreen').style.display='flex'; }
+function restartGame(){ document.getElementById('gameOverScreen').style.display='none'; startGame(); }
+
+// joystick touch
+const joystick=document.getElementById('joystick'); const thumb=document.getElementById('joystickThumb');
+joystick.addEventListener('touchstart', e=>{ e.preventDefault(); if(activeTouchId===null){ activeTouchId=e.changedTouches[0].identifier; updateJoystick(e.changedTouches[0]); }});
+joystick.addEventListener('touchmove', e=>{ for(let t of e.changedTouches){ if(t.identifier===activeTouchId){ updateJoystick(t); } } });
+joystick.addEventListener('touchend', e=>{ for(let t of e.changedTouches){ if(t.identifier===activeTouchId){ joystickVector={x:0,y:0}; thumb.style.left='35px'; thumb.style.top='35px'; activeTouchId=null; } } });
+function updateJoystick(touch){
+    const rect=joystick.getBoundingClientRect();
+    let x=touch.clientX-rect.left-rect.width/2; let y=touch.clientY-rect.top-rect.height/2;
+    const maxDist=rect.width/2-25; const dist=Math.hypot(x,y);
+    if(dist>maxDist){ x=x/dist*maxDist; y=y/dist*maxDist; }
+    thumb.style.left=(x+rect.width/2-25)+'px'; thumb.style.top=(y+rect.height/2-25)+'px';
+    joystickVector.x=x/maxDist; joystickVector.y=y/maxDist;
 }
 
-// Resize
 window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
 </script>
 
