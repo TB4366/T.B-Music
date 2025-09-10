@@ -3,34 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T.B Agar.io Advanced</title>
+<title>T.B Agar.io Physics</title>
 <style>
-body, html {
-    margin: 0; padding: 0; font-family: Arial; background: #222; overflow: hidden; color:#fff; touch-action: none;
-}
-canvas { display:block; }
-#startScreen,#gameOverScreen {
-    position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; flex-direction:column; background:#222;
-}
-#startScreen h1,#gameOverScreen h1 { font-size:3em; margin-bottom:20px; }
-#startScreen input { padding:10px; font-size:1.2em; margin-bottom:10px; }
-#startScreen button,#gameOverScreen button { padding:10px 20px; font-size:1.2em; cursor:pointer; background-color:#0f0; border:none; border-radius:5px; }
-
-#uiButtons { position:absolute; bottom:20px; right:20px; }
-#uiButtons button { padding:10px 20px; margin:5px; font-size:16px; cursor:pointer; border-radius:5px; border:none; }
-
-#leaderboard { position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); padding:10px; border-radius:5px; }
-
-#joystick { position:absolute; bottom:20px; left:20px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.2); touch-action:none; }
-#joystickThumb { position:absolute; width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,0.5); left:35px; top:35px; pointer-events:none; }
+body,html{margin:0;padding:0;overflow:hidden;background:#222;color:#fff;font-family:Arial;}
+canvas{display:block;}
+#uiButtons{position:absolute;bottom:20px;right:20px;}
+#uiButtons button{padding:15px;font-size:18px;margin:5px;border-radius:50%;border:none;background:#0f0;color:#000;cursor:pointer;}
+#joystick{position:absolute;bottom:20px;left:20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.2);}
+#joystickThumb{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.5);left:35px;top:35px;pointer-events:none;}
+#leaderboard{position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.5);padding:10px;border-radius:5px;}
+#startScreen,#gameOverScreen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;background:#222;}
+#startScreen h1,#gameOverScreen h1{font-size:3em;margin-bottom:20px;}
+#startScreen input{padding:10px;font-size:1.2em;margin-bottom:10px;}
+#startScreen button,#gameOverScreen button{padding:10px 20px;font-size:1.2em;background:#0f0;border:none;border-radius:5px;cursor:pointer;}
 </style>
 </head>
 <body>
+<canvas id="gameCanvas"></canvas>
 
 <div id="startScreen">
 <h1>T.B Agar.io</h1>
-<input type="text" id="playerName" placeholder="Voer je naam in">
-<button onclick="startGame()">Start Game</button>
+<input type="text" id="playerName" placeholder="Naam">
+<button onclick="startGame()">Start</button>
 </div>
 
 <div id="gameOverScreen" style="display:none;">
@@ -50,181 +44,72 @@ canvas { display:block; }
 
 <div id="joystick" style="display:none;"><div id="joystickThumb"></div></div>
 
-<canvas id="gameCanvas"></canvas>
-
 <script>
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
 canvas.width=window.innerWidth; canvas.height=window.innerHeight;
 
-const mapSize=3000; // map size
-let gameRunning=false;
-let player;
-let playerCells=[]; // support multiple splits
-let bots=[], foods=[], viruses=[];
-const botCount=5, foodCount=100, virusCount=15, maxSplit=16;
-
+const mapSize=3000;
 let camera={x:0,y:0};
 let joystickVector={x:0,y:0};
 let activeTouchId=null;
 
-function getRandomColor(){ const colors=['#FF4136','#FF851B','#2ECC40','#0074D9','#B10DC9','#FFDC00']; return colors[Math.floor(Math.random()*colors.length)]; }
-function distance(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+let player={alive:true,cells:[]};
+let bots=[],foods=[],viruses=[];
+const botCount=5,foodCount=100,virusCount=15,maxSplit=16;
 
-// Create entities
-function createPlayer(name){ player={name:name, alive:true}; playerCells=[{x:mapSize/2,y:mapSize/2,radius:30,color:getRandomColor()}]; }
-function createBot(name){ bots.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:20,color:getRandomColor(),name:name}); }
-function createFood(){ foods=[]; for(let i=0;i<foodCount;i++) foods.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:5,color:getRandomColor()}); }
-function createVirus(){ viruses=[]; for(let i=0;i<virusCount;i++) viruses.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:30,color:'#00FF00'}); }
+function getRandomColor(){const colors=['#FF4136','#FF851B','#2ECC40','#0074D9','#B10DC9','#FFDC00'];return colors[Math.floor(Math.random()*colors.length)];}
+function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 
-// Drawing
-function drawGrid(){
-    const size=50;
-    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-    for(let x=0;x<mapSize;x+=size){
-        ctx.beginPath(); ctx.moveTo(x-camera.x,0-camera.y); ctx.lineTo(x-camera.x,mapSize-camera.y); ctx.stroke();
-    }
-    for(let y=0;y<mapSize;y+=size){
-        ctx.beginPath(); ctx.moveTo(0-camera.x,y-camera.y); ctx.lineTo(mapSize-camera.x,y-camera.y); ctx.stroke();
-    }
-}
+// Entities
+function createPlayer(name){player={alive:true,name:name,cells:[{x:mapSize/2,y:mapSize/2,radius:30,color:getRandomColor(),vx:0,vy:0}]}};
+function createBot(name){bots.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:20,color:getRandomColor(),vx:0,vy:0,name:name});}
+function createFood(){foods=[];for(let i=0;i<foodCount;i++)foods.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:5,color:getRandomColor()});}
+function createVirus(){viruses=[];for(let i=0;i<virusCount;i++)viruses.push({x:Math.random()*mapSize,y:Math.random()*mapSize,radius:30,color:'#00FF00'});}
 
-function drawPlayerCell(c){ ctx.beginPath(); ctx.arc(c.x-camera.x,c.y-camera.y,c.radius,0,Math.PI*2); ctx.fillStyle=c.color; ctx.fill(); ctx.closePath(); }
-function drawBot(b){ ctx.beginPath(); ctx.arc(b.x-camera.x,b.y-camera.y,b.radius,0,Math.PI*2); ctx.fillStyle=b.color; ctx.fill(); ctx.closePath(); ctx.fillStyle="#fff"; ctx.font=`12px Arial`; ctx.textAlign="center"; ctx.fillText(b.name,b.x-camera.x,b.y-camera.y+4); }
-function drawFood(){ foods.forEach(f=>{ ctx.beginPath(); ctx.arc(f.x-camera.x,f.y-camera.y,f.radius,0,Math.PI*2); ctx.fillStyle=f.color; ctx.fill(); ctx.closePath(); }); }
-function drawVirus(){ viruses.forEach(v=>{ ctx.beginPath(); ctx.arc(v.x-camera.x,v.y-camera.y,v.radius,0,Math.PI*2); ctx.fillStyle=v.color; ctx.fill(); ctx.closePath(); }); }
+// Draw
+function drawGrid(){const size=50; ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+for(let x=0;x<mapSize;x+=size){ctx.beginPath();ctx.moveTo(x-camera.x,0-camera.y);ctx.lineTo(x-camera.x,mapSize-camera.y);ctx.stroke();}
+for(let y=0;y<mapSize;y+=size){ctx.beginPath();ctx.moveTo(0-camera.x,y-camera.y);ctx.lineTo(mapSize-camera.x,y-camera.y);ctx.stroke();}}
+function drawCells(){player.cells.forEach(c=>{ctx.beginPath();ctx.arc(c.x-camera.x,c.y-camera.y,c.radius,0,Math.PI*2);ctx.fillStyle=c.color;ctx.fill();ctx.closePath();});}
+function drawBots(){bots.forEach(b=>{ctx.beginPath();ctx.arc(b.x-camera.x,b.y-camera.y,b.radius,0,Math.PI*2);ctx.fillStyle=b.color;ctx.fill();ctx.closePath();ctx.fillStyle="#fff";ctx.font="12px Arial";ctx.textAlign="center";ctx.fillText(b.name,b.x-camera.x,b.y-camera.y+4);});}
+function drawFood(){foods.forEach(f=>{ctx.beginPath();ctx.arc(f.x-camera.x,f.y-camera.y,f.radius,0,Math.PI*2);ctx.fillStyle=f.color;ctx.fill();ctx.closePath();});}
+function drawVirus(){viruses.forEach(v=>{ctx.beginPath();ctx.arc(v.x-camera.x,v.y-camera.y,v.radius,0,Math.PI*2);ctx.fillStyle=v.color;ctx.fill();ctx.closePath();});}
 
 // Movement
-function movePlayerCells(){
-    const speed=3;
-    playerCells.forEach(c=>{
-        c.x+=joystickVector.x*speed;
-        c.y+=joystickVector.y*speed;
-        c.x=Math.max(c.radius,Math.min(mapSize-c.radius,c.x));
-        c.y=Math.max(c.radius,Math.min(mapSize-c.radius,c.y));
-    });
-}
-function moveBots(){
-    bots.forEach(b=>{
-        if(Math.random()<0.02){ b.vx=(Math.random()-0.5)*2; b.vy=(Math.random()-0.5)*2; }
-        b.x+=b.vx; b.y+=b.vy;
-        b.x=Math.max(b.radius,Math.min(mapSize-b.radius,b.x));
-        b.y=Math.max(b.radius,Math.min(mapSize-b.radius,b.y));
-    });
-}
+function movePlayerCells(){player.cells.forEach(c=>{c.x+=joystickVector.x*3+c.vx; c.y+=joystickVector.y*3+c.vy; c.vx*=0.95;c.vy*=0.95; c.x=Math.max(c.radius,Math.min(mapSize-c.radius,c.x)); c.y=Math.max(c.radius,Math.min(mapSize-c.radius,c.y));});}
+function moveBots(){bots.forEach(b=>{if(Math.random()<0.02){b.vx=(Math.random()-0.5)*2;b.vy=(Math.random()-0.5)*2;} b.x+=b.vx; b.y+=b.vy; b.x=Math.max(b.radius,Math.min(mapSize-b.radius,b.x)); b.y=Math.max(b.radius,Math.min(mapSize-b.radius,b.y));});}
 
-// Eating
-function eatFood(cells,foods){
-    cells.forEach(c=>{
-        for(let i=foods.length-1;i>=0;i--){
-            if(distance(c,foods[i])<c.radius+foods[i].radius){ foods.splice(i,1); c.radius+=0.5; }
-        }
-    });
-}
+// Eating and collision
+function eatFood(cells){cells.forEach(c=>{for(let i=foods.length-1;i>=0;i--){if(distance(c,foods[i])<c.radius+foods[i].radius){foods.splice(i,1);c.radius+=0.5;}}});}
+function checkVirus(){let newCells=[];player.cells.forEach((c,i)=>{viruses.forEach(v=>{if(distance(c,v)<c.radius+v.radius){player.cells.splice(i,1);for(let s=0;s<2;s++){newCells.push({x:c.x+Math.random()*20-10,y:c.y+Math.random()*20-10,radius:c.radius/2,color:c.color,vx:(Math.random()-0.5)*5,vy:(Math.random()-0.5)*5});}}});});player.cells.push(...newCells);if(player.cells.length>maxSplit)player.cells=player.cells.slice(0,maxSplit);}
+function eatBots(){bots.forEach((b,i)=>{player.cells.forEach((c,j)=>{if(distance(c,b)<c.radius && c.radius>b.radius*1.1){c.radius+=b.radius/2;b.radius=0;}else if(distance(c,b)<b.radius && b.radius>c.radius*1.1){player.cells.splice(j,1);}});}); if(player.cells.length===0) showGameOver();}
 
-// Player vs Bot and Player vs Player
-function eatBots(){
-    bots.forEach((b,i)=>{
-        playerCells.forEach((c,j)=>{
-            if(distance(c,b)<c.radius && c.radius>b.radius*1.1){
-                c.radius+=b.radius/2; bots.splice(i,1);
-            }else if(distance(c,b)<b.radius && b.radius>c.radius*1.1){
-                playerCells.splice(j,1);
-            }
-        });
-    });
-    if(playerCells.length===0) showGameOver();
-}
-
-// Viruses
-function checkVirus(){
-    let newCells=[];
-    playerCells.forEach((c,i)=>{
-        viruses.forEach(v=>{
-            if(distance(c,v)<c.radius+v.radius){
-                playerCells.splice(i,1);
-                for(let s=0;s<2;s++){ newCells.push({x:c.x+Math.random()*20-10,y:c.y+Math.random()*20-10,radius:c.radius/2,color:c.color}); }
-            }
-        });
-    });
-    playerCells.push(...newCells);
-    if(playerCells.length>maxSplit) playerCells=playerCells.slice(0,maxSplit);
-}
-
-// Split and Feed
-function splitPlayer(){
-    if(playerCells.length>=maxSplit) return;
-    let newCells=[];
-    playerCells.forEach(c=>{
-        let clone={x:c.x+Math.random()*20-10,y:c.y+Math.random()*20-10,radius:c.radius/2,color:c.color};
-        c.radius/=2;
-        newCells.push(clone);
-    });
-    playerCells.push(...newCells);
-}
-function feedPlayer(){
-    playerCells.forEach(c=>{
-        c.radius=Math.max(10,c.radius-2);
-        for(let i=0;i<3;i++){
-            foods.push({x:c.x+Math.random()*20-10,y:c.y+Math.random()*20-10,radius:5,color:getRandomColor()});
-        }
-    });
-}
+// Split & Feed
+function splitPlayer(){let newCells=[];player.cells.forEach(c=>{if(player.cells.length+newCells.length<maxSplit){let clone={x:c.x,y:c.y,radius:c.radius/2,color:c.color,vx:joystickVector.x*15,vy:joystickVector.y*15};c.radius/=2;newCells.push(clone);}});player.cells.push(...newCells);}
+function feedPlayer(){player.cells.forEach(c=>{c.radius=Math.max(10,c.radius-2);for(let i=0;i<3;i++){foods.push({x:c.x+Math.random()*20-10,y:c.y+Math.random()*20-10,radius:5,color:getRandomColor()});}});}
 
 // Leaderboard
-function drawLeaderboard(){
-    let all=[...playerCells,...bots];
-    all.sort((a,b)=>b.radius-a.radius);
-    const leaders=document.getElementById('leaders'); leaders.innerHTML='';
-    all.slice(0,5).forEach(p=>{ const li=document.createElement('li'); li.textContent=`${p.name||'Bot'} (${Math.floor(p.radius)})`; leaders.appendChild(li); });
-}
+function drawLeaderboard(){let all=[...player.cells,...bots];all.sort((a,b)=>b.radius-a.radius);const leaders=document.getElementById('leaders');leaders.innerHTML='';all.slice(0,5).forEach(p=>{const li=document.createElement('li');li.textContent=`${p.name||'Bot'} (${Math.floor(p.radius)})`;leaders.appendChild(li);});}
 
-// Game Loop
-function gameLoop(){
-    if(!gameRunning) return;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    drawGrid();
-    movePlayerCells();
-    moveBots();
-    eatFood(playerCells,foods);
-    eatFood(bots,foods);
-    eatBots();
-    checkVirus();
-    // camera follow average of player cells
-    let avgX=0,avgY=0; playerCells.forEach(c=>{avgX+=c.x; avgY+=c.y;});
-    if(playerCells.length>0){ avgX/=playerCells.length; avgY/=playerCells.length; camera.x=avgX-canvas.width/2; camera.y=avgY-canvas.height/2; }
-    drawFood(); drawVirus(); playerCells.forEach(drawPlayerCell); bots.forEach(drawBot); drawLeaderboard();
-    if(foods.length<foodCount) createFood();
-    requestAnimationFrame(gameLoop);
-}
+// Game loop
+function gameLoop(){ctx.clearRect(0,0,canvas.width,canvas.height);drawGrid();movePlayerCells();moveBots();eatFood(player.cells);eatFood(bots);eatBots();checkVirus();
+let avgX=0,avgY=0;player.cells.forEach(c=>{avgX+=c.x;avgY+=c.y;}); if(player.cells.length>0){avgX/=player.cells.length; avgY/=player.cells.length; camera.x=avgX-canvas.width/2; camera.y=avgY-canvas.height/2;}
+drawFood();drawVirus();drawCells();drawBots();drawLeaderboard();if(foods.length<foodCount)createFood();requestAnimationFrame(gameLoop);}
 
 // Start/Restart
-function startGame(){
-    const name=document.getElementById('playerName').value; if(!name){ alert('Voer een naam in!'); return; }
-    createPlayer(name); bots=[]; for(let i=0;i<botCount;i++) createBot('Bot'+(i+1));
-    createFood(); createVirus();
-    document.getElementById('startScreen').style.display='none';
-    document.getElementById('uiButtons').style.display='block';
-    document.getElementById('leaderboard').style.display='block';
-    document.getElementById('joystick').style.display='block';
-    gameRunning=true; gameLoop();
-}
-function showGameOver(){ document.getElementById('gameOverScreen').style.display='flex'; gameRunning=false; }
-function restartGame(){ document.getElementById('gameOverScreen').style.display='none'; startGame(); }
+function startGame(){const name=document.getElementById('playerName').value;if(!name){alert('Voer een naam in!');return;}createPlayer(name);bots=[];for(let i=0;i<botCount;i++)createBot('Bot'+(i+1));createFood();createVirus();document.getElementById('startScreen').style.display='none';document.getElementById('uiButtons').style.display='block';document.getElementById('leaderboard').style.display='block';document.getElementById('joystick').style.display='block';gameLoop();}
+function showGameOver(){document.getElementById('gameOverScreen').style.display='flex';}
+function restartGame(){document.getElementById('gameOverScreen').style.display='none';startGame();}
 
 // Joystick
 const joystick=document.getElementById('joystick'); const thumb=document.getElementById('joystickThumb');
-joystick.addEventListener('touchstart', e=>{ e.preventDefault(); if(activeTouchId===null){ activeTouchId=e.changedTouches[0].identifier; updateJoystick(e.changedTouches[0]); }});
+joystick.addEventListener('touchstart', e=>{ e.preventDefault(); if(activeTouchId===null){activeTouchId=e.changedTouches[0].identifier; updateJoystick(e.changedTouches[0]); }});
 joystick.addEventListener('touchmove', e=>{ for(let t of e.changedTouches){ if(t.identifier===activeTouchId) updateJoystick(t); } });
 joystick.addEventListener('touchend', e=>{ for(let t of e.changedTouches){ if(t.identifier===activeTouchId){ joystickVector={x:0,y:0}; thumb.style.left='35px'; thumb.style.top='35px'; activeTouchId=null; } } });
-function updateJoystick(touch){ const rect=joystick.getBoundingClientRect();
-let x=touch.clientX-rect.left-rect.width/2; let y=touch.clientY-rect.top-rect.height/2;
-const maxDist=rect.width/2-25; const dist=Math.hypot(x,y); if(dist>maxDist){ x=x/dist*maxDist; y=y/dist*maxDist; }
-thumb.style.left=(x+rect.width/2-25)+'px'; thumb.style.top=(y+rect.height/2-25)+'px';
-joystickVector.x=x/maxDist; joystickVector.y=y/maxDist; }
+function updateJoystick(touch){ const rect=joystick.getBoundingClientRect(); let x=touch.clientX-rect.left-rect.width/2; let y=touch.clientY-rect.top-rect.height/2; const maxDist=rect.width/2-25; const dist=Math.hypot(x,y); if(dist>maxDist){x=x/dist*maxDist;y=y/dist*maxDist;} thumb.style.left=(x+rect.width/2-25)+'px'; thumb.style.top=(y+rect.height/2-25)+'px'; joystickVector.x=x/maxDist; joystickVector.y=y/maxDist;}
 
-window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
 </script>
-
 </body>
 </html>
