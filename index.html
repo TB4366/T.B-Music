@@ -3,103 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interactief Werkrooster</title>
+<title>Geavanceerd Werkrooster</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        padding: 20px;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    h1 { text-align: center; }
 
-    h1 {
-        text-align: center;
-        color: #333;
-    }
+    .controls { text-align: center; margin-bottom: 15px; }
+    .controls button { margin: 0 5px; padding: 8px 15px; }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        background-color: #fff;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
+    table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+    th { background: #007bff; color: white; }
 
-    th, td {
-        padding: 10px;
-        text-align: center;
-        border: 1px solid #ddd;
-    }
+    td.shift { cursor: pointer; transition: 0.3s; border-radius: 4px; }
+    td.shift:hover { opacity: 0.8; }
 
-    th {
-        background-color: #007bff;
-        color: white;
-    }
+    td.employee { text-align: left; font-weight: bold; background: #f2f2f2; }
 
-    td.shift {
-        background-color: #cce5ff;
-        cursor: pointer;
-        transition: background 0.3s;
-    }
+    /* Shift kleuren per type */
+    .shift.work { background: #cce5ff; }
+    .shift.off { background: #d4edda; }
+    .shift.vacation { background: #f8d7da; }
 
-    td.shift:hover {
-        background-color: #99ccff;
-    }
-
-    .employee-name {
-        text-align: left;
-        font-weight: bold;
-        background-color: #f2f2f2;
-    }
-
-    /* Popup Styling */
-    .popup {
+    .popup, .overlay {
         display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        z-index: 1000;
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     }
-
-    .popup input {
-        padding: 5px;
-        width: 120px;
-        margin-right: 10px;
-    }
-
-    .overlay {
-        display: none;
-        position: fixed;
-        top:0;
-        left:0;
-        width:100%;
-        height:100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 500;
-    }
-
-    .settings-btn {
-        margin-bottom: 15px;
-        padding: 8px 15px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-
+    .overlay { background: rgba(0,0,0,0.5); z-index: 500; }
+    .popup { background: #fff; padding: 20px; border-radius: 8px; width: 300px; top:50%; left:50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
+    .popup input, .popup select { margin-bottom: 10px; width: 100%; padding:5px; }
 </style>
 </head>
 <body>
 
-<h1>Interactief Werkrooster</h1>
+<h1>Geavanceerd Werkrooster</h1>
 
-<button class="settings-btn" onclick="openSettings()">Instellingen</button>
+<div class="controls">
+    <button onclick="prevWeek()">&#8592; Vorige Week</button>
+    <span id="weekLabel"></span>
+    <button onclick="nextWeek()">Volgende Week &#8594;</button>
+    <button onclick="addEmployee()">Medewerker Toevoegen</button>
+</div>
 
-<table id="rooster">
+<table id="schedule">
     <thead>
         <tr>
             <th>Medewerker</th>
@@ -113,74 +59,95 @@
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <td class="employee-name">Jan</td>
-            <td class="shift">09:00 - 17:00</td>
-            <td class="shift">09:00 - 17:00</td>
-            <td class="shift">Vrij</td>
-            <td class="shift">12:00 - 20:00</td>
-            <td class="shift">09:00 - 17:00</td>
-            <td class="shift">10:00 - 14:00</td>
-            <td class="shift">Vrij</td>
-        </tr>
-        <tr>
-            <td class="employee-name">Lisa</td>
-            <td class="shift">12:00 - 20:00</td>
-            <td class="shift">12:00 - 20:00</td>
-            <td class="shift">12:00 - 20:00</td>
-            <td class="shift">Vrij</td>
-            <td class="shift">09:00 - 17:00</td>
-            <td class="shift">Vrij</td>
-            <td class="shift">10:00 - 14:00</td>
-        </tr>
+        <!-- Dynamisch ingevuld -->
     </tbody>
 </table>
 
 <div class="overlay" id="overlay"></div>
-
 <div class="popup" id="popup">
-    <h3>Wijzig werktijd</h3>
-    <input type="text" id="shiftInput" placeholder="bijv. 09:00 - 17:00">
+    <h3>Shift Instellingen</h3>
+    <label>Type shift:</label>
+    <select id="shiftType">
+        <option value="work">Werk</option>
+        <option value="off">Vrij</option>
+        <option value="vacation">Verlof</option>
+    </select>
+    <label>Tijd (bijv. 09:00-17:00):</label>
+    <input type="text" id="shiftTime" placeholder="09:00-17:00">
     <button onclick="saveShift()">Opslaan</button>
     <button onclick="closePopup()">Annuleren</button>
 </div>
 
 <script>
+let employees = ["Jan", "Lisa"];
 let selectedCell = null;
+let currentWeek = 0; // offset van huidige week
 
-// Klik op een shift cel
-document.querySelectorAll('td.shift').forEach(cell => {
-    cell.addEventListener('click', () => {
-        selectedCell = cell;
-        document.getElementById('shiftInput').value = cell.innerText;
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById('popup').style.display = 'block';
-    });
-});
+function renderWeek() {
+    const tbody = document.querySelector("#schedule tbody");
+    tbody.innerHTML = "";
 
-// Opslaan van shift
-function saveShift() {
-    if(selectedCell) {
-        const newTime = document.getElementById('shiftInput').value.trim();
-        if(newTime === "") {
-            selectedCell.innerText = "Vrij";
-        } else {
-            selectedCell.innerText = newTime;
+    document.getElementById("weekLabel").innerText = "Week " + (currentWeek + 1);
+
+    employees.forEach(emp => {
+        const row = document.createElement("tr");
+        const nameCell = document.createElement("td");
+        nameCell.innerText = emp;
+        nameCell.classList.add("employee");
+        row.appendChild(nameCell);
+
+        for(let i=0; i<7; i++){
+            const cell = document.createElement("td");
+            cell.classList.add("shift","work");
+            cell.innerText = "09:00-17:00";
+            cell.addEventListener("click", ()=> openPopup(cell));
+            row.appendChild(cell);
         }
-    }
+        tbody.appendChild(row);
+    });
+}
+
+// Popup functies
+function openPopup(cell){
+    selectedCell = cell;
+    document.getElementById("overlay").style.display = "block";
+    document.getElementById("popup").style.display = "block";
+    // Zet huidige waarden
+    document.getElementById("shiftTime").value = cell.innerText;
+    if(cell.classList.contains("work")) document.getElementById("shiftType").value = "work";
+    else if(cell.classList.contains("off")) document.getElementById("shiftType").value = "off";
+    else if(cell.classList.contains("vacation")) document.getElementById("shiftType").value = "vacation";
+}
+
+function saveShift(){
+    if(!selectedCell) return;
+    const type = document.getElementById("shiftType").value;
+    const time = document.getElementById("shiftTime").value || (type==="off" ? "Vrij" : "");
+    selectedCell.innerText = time;
+
+    selectedCell.classList.remove("work","off","vacation");
+    selectedCell.classList.add(type);
+
     closePopup();
 }
 
-// Sluit popup
-function closePopup() {
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('popup').style.display = 'none';
+function closePopup(){
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("popup").style.display = "none";
 }
 
-// Settings knop (voorbeeld, kan later uitgebreid worden)
-function openSettings() {
-    alert("Hier kun je extra instellingen toevoegen, zoals werkuren of kleurcodes.");
+// Week navigatie
+function nextWeek(){ currentWeek++; renderWeek(); }
+function prevWeek(){ currentWeek--; renderWeek(); }
+
+// Medewerker toevoegen
+function addEmployee(){
+    const name = prompt("Naam nieuwe medewerker:");
+    if(name){ employees.push(name); renderWeek(); }
 }
+
+// Initiële render
+renderWeek();
 </script>
 
 </body>
