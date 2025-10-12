@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
 <meta charset="UTF-8">
 <title>Game Helper</title>
@@ -105,55 +105,68 @@
         font-size: 20px;
         user-select: none;
     }
+    .warning {
+        color: #b33;
+        font-weight: 600;
+        margin-top: 8px;
+    }
 </style>
 </head>
 <body>
 <div class="container">
     <div class="top-bar">
         <div class="lang-buttons">
-            <button id="lang-nl">🇳🇱 NL</button>
+            <button id="lang-nl" class="active">🇳🇱 NL</button>
             <button id="lang-en">🇬🇧 EN</button>
         </div>
         <div class="theme-toggle" id="themeToggle">🌙</div>
     </div>
     
-    <h2 id="title">Start a Game Helper</h2>
+    <h2 id="title">Start een Game Helper</h2>
 
     <label id="label-uid">Console ID / Skin Key (UID)</label>
-    <input id="uid" placeholder="">
-    <label><input type="checkbox" id="hideKey" checked> <span id="label-hidekey">Hide secret key</span></label>
+    <input id="uid" placeholder="Plak je UID hier" autocomplete="off" inputmode="text">
+    <label><input type="checkbox" id="hideKey" checked> <span id="label-hidekey">Verberg geheime sleutel</span></label>
 
     <div class="row">
-        <button id="verifyBtn">Check & Link UID</button>
+        <button id="verifyBtn">Controleer & Koppel UID</button>
     </div>
 
     <div id="status" style="margin-top:10px; font-weight:500;"></div>
+    <div id="warning" class="warning" style="display:none;"></div>
 
-    <label id="label-region">Choose Bot Region</label>
+    <label id="label-region">Kies Bot Regio</label>
     <select id="region">
         <option>ME South 1</option>
         <option>EU West</option>
         <option>US East</option>
     </select>
 
-    <label id="label-mode">Set Bot Game Mode</label>
+    <label id="label-mode">Kies Bot Game Modus</label>
     <select id="mode">
         <option>Burst</option>
         <option>Classic</option>
     </select>
 
-    <label id="label-botname">Put Bot Name</label>
-    <input id="botName" placeholder="">
+    <label id="label-botname">Bot Naam invullen</label>
+    <input id="botName" placeholder="bijv. T.B">
 
-    <label id="label-party">Put Bot Party (link)</label>
-    <input id="party" placeholder="https://...">
+    <label id="label-party">Bot Party (link)</label>
+    <input id="party" placeholder="https://r.agar.io/?party=...">
 
     <button id="startBotBtn" style="margin-top:20px;">Start Bot</button>
 
-    <p class="small" id="note">For security, only a hash of your UID is stored on the server.</p>
+    <p class="small" id="note">Voor veiligheid wordt alleen een hash van je UID opgeslagen en verzonden.</p>
 </div>
 
 <script>
+/*
+  Veiligheids- en privacyverbeteringen:
+  - Client-side hashing (SHA-256) via Web Crypto API vóór verzending.
+  - Geen plain UID in localStorage; alleen hash.
+  - UID-extractie: zoekt naar UUID-achtige substring(s) in de invoer en gebruikt deze.
+*/
+
 const translations = {
     en: {
         title: "Start a Game Helper",
@@ -169,7 +182,8 @@ const translations = {
         placeholderUid: "Paste your UID here",
         placeholderBotName: "e.g. T.B",
         placeholderParty: "https://r.agar.io/?party=...",
-        errorNoUid: "Please enter a UID first."
+        errorNoUid: "Please enter a UID first.",
+        multipleUids: "Multiple UID-like strings detected. Using the first one found."
     },
     nl: {
         title: "Start een Game Helper",
@@ -185,11 +199,12 @@ const translations = {
         placeholderUid: "Plak je UID hier",
         placeholderBotName: "bijv. T.B",
         placeholderParty: "https://r.agar.io/?party=...",
-        errorNoUid: "Voer eerst een UID in."
+        errorNoUid: "Voer eerst een UID in.",
+        multipleUids: "Meerdere UID-achtige strings gedetecteerd. Gebruik de eerste."
     }
 };
 
-let currentLang = localStorage.getItem('lang') || 'en';
+let currentLang = localStorage.getItem('lang') || 'nl';
 let linkedUser = JSON.parse(localStorage.getItem('linkedUser') || 'null');
 
 function applyLanguage() {
@@ -235,6 +250,16 @@ document.getElementById('themeToggle').onclick = toggleTheme;
 
 applyLanguage();
 
+// toggle masked input when hideKey checkbox changes
+const uidInput = document.getElementById('uid');
+const hideKeyCheckbox = document.getElementById('hideKey');
+hideKeyCheckbox.addEventListener('change', () => {
+    // Use password type to mask; text to show.
+    uidInput.type = hideKeyCheckbox.checked ? 'password' : 'text';
+});
+// initialize
+uidInput.type = hideKeyCheckbox.checked ? 'password' : 'text';
+
 async function postJSON(url, data) {
     const res = await fetch(url, {
         method: 'POST',
@@ -245,49 +270,107 @@ async function postJSON(url, data) {
 }
 
 const statusDiv = document.getElementById('status');
+const warnDiv = document.getElementById('warning');
+
+/**
+ * Finds UUID-like substrings in input.
+ * Pattern matches typical UUID v4-like: 8-4-4-4-12 hex groups.
+ */
+function extractUUIDs(text) {
+    if (!text) return [];
+    const regex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g;
+    return text.match(regex) || [];
+}
+
+/**
+ * SHA-256 hash using Web Crypto API.
+ * Returns hex string.
+ */
+async function sha256Hex(message) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
 
 document.getElementById('verifyBtn').onclick = async () => {
-    const uid = document.getElementById('uid').value.trim();
-    if (!uid) {
+    warnDiv.style.display = 'none';
+    const raw = uidInput.value.trim();
+    if (!raw) {
         statusDiv.textContent = translations[currentLang].errorNoUid;
         return;
     }
-    statusDiv.textContent = "...";
+
+    statusDiv.textContent = "Bezig...";
     try {
-        const resp = await postJSON('/api/verify-uid', { uid });
+        // extract UUID-like substrings if present
+        const found = extractUUIDs(raw);
+        let uidToUse = raw;
+        if (found.length >= 1) {
+            // if multiple found, warn user and use the first one
+            if (found.length > 1) {
+                warnDiv.textContent = translations[currentLang].multipleUids;
+                warnDiv.style.display = 'block';
+            }
+            uidToUse = found[0];
+        } else {
+            // no UUID pattern found — we'll still allow using the raw input but warn the user
+            // keep this behavior: it's up to user to paste valid identifier
+            // (we do NOT send raw UID to server — only hash)
+        }
+
+        // Hash the uidToUse client-side
+        const hashed = await sha256Hex(uidToUse);
+
+        // Send only the hash to server
+        const resp = await postJSON('/api/verify-uid', { uidHash: hashed });
         if (resp.ok) {
-            linkedUser = resp.user;
-            localStorage.setItem('linkedUser', JSON.stringify(resp.user));
+            // store only minimal info locally and never the raw UID
+            linkedUser = {
+                id: resp.user.id,
+                uidHash: hashed,
+                display: resp.user.display || null
+            };
+            localStorage.setItem('linkedUser', JSON.stringify(linkedUser));
             statusDiv.textContent = "✅ UID gekoppeld! User ID: " + resp.user.id;
         } else {
-            statusDiv.textContent = "❌ " + resp.message;
+            statusDiv.textContent = "❌ " + (resp.message || "Verificatie mislukt.");
         }
     } catch (e) {
+        console.error(e);
         statusDiv.textContent = "❌ Server error";
     }
 };
 
 document.getElementById('startBotBtn').onclick = async () => {
+    warnDiv.style.display = 'none';
     if (!linkedUser) {
         statusDiv.textContent = "❌ UID niet gekoppeld.";
         return;
     }
+
     const data = {
         userId: linkedUser.id,
-        botName: document.getElementById('botName').value,
+        // we still avoid sending any raw UID; if server needs proof it should use the stored hash
+        uidHash: linkedUser.uidHash,
+        botName: document.getElementById('botName').value.trim(),
         region: document.getElementById('region').value,
         mode: document.getElementById('mode').value,
-        party: document.getElementById('party').value
+        party: document.getElementById('party').value.trim()
     };
+
     statusDiv.textContent = "...";
     try {
         const resp = await postJSON('/api/start-bot', data);
         if (resp.ok) {
             statusDiv.textContent = "✅ Bot gestart! Session ID: " + resp.sessionId;
         } else {
-            statusDiv.textContent = "❌ " + resp.message;
+            statusDiv.textContent = "❌ " + (resp.message || "Kon bot niet starten.");
         }
     } catch (e) {
+        console.error(e);
         statusDiv.textContent = "❌ Server error";
     }
 };
