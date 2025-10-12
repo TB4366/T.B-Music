@@ -6,14 +6,14 @@
 <title>Tamigo-achtig Rooster</title>
 <style>
 body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
-h1 { text-align:center; margin:15px 0; }
+h1 { text-align:center; margin:10px 0; }
 #controls { text-align:center; margin-bottom:10px; }
 #controls button { margin:0 5px; padding:6px 10px; }
-.container { display:flex; justify-content:center; flex-wrap:wrap; }
-.day-column { width:250px; background:white; border-radius:10px; padding:10px; margin:10px; box-shadow:0 3px 10px rgba(0,0,0,0.2); flex-shrink:0; }
+.week-container { display:flex; overflow-x:auto; padding:10px; }
+.day-column { min-width:200px; background:white; border-radius:10px; padding:10px; margin:0 10px; box-shadow:0 3px 10px rgba(0,0,0,0.2); flex-shrink:0; }
 .day-column h3 { text-align:center; margin-bottom:10px; }
-.shift { display:flex; align-items:center; padding:5px; margin:5px 0; border-radius:5px; cursor:pointer; user-select:none; }
-.role-circle { width:20px; height:20px; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-weight:bold; margin-right:5px; flex-shrink:0; }
+.shift { display:flex; align-items:center; padding:5px; margin:5px 0; border-radius:5px; cursor:grab; user-select:none; }
+.role-circle { width:25px; height:25px; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-weight:bold; margin-right:5px; flex-shrink:0; font-size:0.8em;}
 .shift-line { flex:1; height:2px; background:#ccc; margin:0 5px; }
 .shift-time { width:70px; text-align:center; margin-right:5px; font-size:0.9em; flex-shrink:0;}
 .shift-name { flex-shrink:1; font-weight:bold; display:flex; align-items:center; }
@@ -23,6 +23,8 @@ h1 { text-align:center; margin:15px 0; }
 #popup, #rolePopup, #personnelPopup { background:#fff; padding:20px; border-radius:10px; width:350px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
 input, select { width:100%; margin-bottom:10px; padding:5px; }
 button { cursor:pointer; margin-top:5px; }
+.employee-info { font-size:0.85em; margin-bottom:5px; }
+.dragging { opacity:0.5; }
 </style>
 </head>
 <body>
@@ -38,7 +40,7 @@ button { cursor:pointer; margin-top:5px; }
     <button onclick="openRoles()">Rollen Beheren</button>
 </div>
 
-<div class="container" id="weekContainer"></div>
+<div class="week-container" id="weekContainer"></div>
 
 <div id="overlay"></div>
 
@@ -81,9 +83,11 @@ let currentWeek=1;
 let employees=[];
 let roles=[];
 let scheduleData={};
+let draggingShift=null;
 
+// --- Data ---
 function loadData(){
-    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","age":25,"hourly":15,"role":"Leidinggevende","available":true}]');
+    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","age":25,"hourly":15,"role":"Leidinggevende","available":true,"maxHoursPerWeek":40}]');
     roles=JSON.parse(localStorage.getItem("roles")||'[{"name":"Leidinggevende","color":"red"},{"name":"Medewerker","color":"blue"}]');
     scheduleData=JSON.parse(localStorage.getItem("scheduleData")||'{}');
     if(!scheduleData[getWeekKey()]){
@@ -97,55 +101,63 @@ function saveData(){
     localStorage.setItem("scheduleData",JSON.stringify(scheduleData)); 
 }
 function getWeekKey(){ return "week"+currentWeek; }
-
 function renderWeekLabel(){ document.getElementById("weekLabel").innerText="Week "+currentWeek; }
 function nextWeek(){ currentWeek++; if(!scheduleData[getWeekKey()]){ scheduleData[getWeekKey()]={}; days.forEach(d=>scheduleData[getWeekKey()][d]=[]);} renderWeek(); }
 function prevWeek(){ if(currentWeek>1){ currentWeek--; if(!scheduleData[getWeekKey()]){ scheduleData[getWeekKey()]={}; days.forEach(d=>scheduleData[getWeekKey()][d]=[]);} renderWeek(); } }
 
+// --- Week Render ---
 function renderWeek(){
     renderWeekLabel();
     saveData();
     const container=document.getElementById("weekContainer");
     container.innerHTML="";
     const week=scheduleData[getWeekKey()];
-
     days.forEach(day=>{
-        const col=document.createElement("div"); col.classList.add("day-column"); col.innerHTML=`<h3>${day}</h3>`;
+        const col=document.createElement("div"); col.classList.add("day-column"); col.dataset.day=day;
+        col.innerHTML=`<h3>${day}</h3>`;
         let dayShifts=week[day];
         dayShifts.forEach((shift,index)=>{
             const empObj=employees.find(e=>e.name===shift.employee);
             const div=document.createElement("div"); div.classList.add("shift");
+            div.draggable=true;
+            div.dataset.day=day;
+            div.dataset.index=index;
             const roleObj=roles.find(r=>r.name===shift.role);
             const circle=document.createElement("div"); circle.classList.add("role-circle");
             circle.style.backgroundColor=(empObj && empObj.available)?(roleObj?roleObj.color:"#666"):"#888";
             circle.innerText=shift.employee.charAt(0).toUpperCase();
-
             const line=document.createElement("div"); line.classList.add("shift-line"); 
             if(empObj && !empObj.available) line.style.background="#888";
-
-            const timeDiv=document.createElement("div"); timeDiv.classList.add("shift-time"); 
-            timeDiv.innerText=`${shift.start}-${shift.end}`;
-
+            const timeDiv=document.createElement("div"); timeDiv.classList.add("shift-time"); timeDiv.innerText=`${shift.start}-${shift.end}`;
             const nameDiv=document.createElement("div"); nameDiv.classList.add("shift-name");
             if(empObj && !empObj.available){ 
-                const dot=document.createElement("span"); dot.classList.add("gray-dot"); 
-                nameDiv.appendChild(dot);
+                const dot=document.createElement("span"); dot.classList.add("gray-dot"); nameDiv.appendChild(dot);
             }
             nameDiv.appendChild(document.createTextNode(shift.employee));
-
             div.appendChild(circle); div.appendChild(line); div.appendChild(timeDiv); div.appendChild(nameDiv);
 
-            // Shift verwijderen bij klik
-            div.addEventListener("click",()=>{
-                if(confirm("Shift verwijderen?")){
-                    dayShifts.splice(index,1); 
-                    if(dayShifts.length===0) delete week[day];
-                    saveData(); renderWeek();
-                }
-            });
+            // Click voor verwijderen
+            div.addEventListener("click",()=>{ if(confirm("Shift verwijderen?")){ dayShifts.splice(index,1); if(dayShifts.length===0) delete week[day]; saveData(); renderWeek(); } });
+
+            // Drag events
+            div.addEventListener("dragstart",(e)=>{ draggingShift={shift,index,fromDay:day}; e.target.classList.add("dragging"); });
+            div.addEventListener("dragend",(e)=>{ draggingShift=null; e.target.classList.remove("dragging"); });
 
             col.appendChild(div);
         });
+
+        // Dragover drop
+        col.addEventListener("dragover",(e)=>{ e.preventDefault(); });
+        col.addEventListener("drop",(e)=>{
+            if(draggingShift){
+                const fromShifts=week[draggingShift.fromDay];
+                fromShifts.splice(draggingShift.index,1);
+                if(!week[day]) week[day]=[];
+                week[day].push(draggingShift.shift);
+                saveData(); renderWeek();
+            }
+        });
+
         container.appendChild(col);
     });
 }
@@ -157,7 +169,6 @@ function addShiftPrompt(){
     const selectRole=document.getElementById("selectRole"); selectRole.innerHTML=""; roles.forEach(r=>{ const o=document.createElement("option"); o.value=r.name; o.innerText=r.name; selectRole.appendChild(o);});
     const selectDay=document.getElementById("selectDay"); selectDay.innerHTML=""; days.forEach(d=>{ const o=document.createElement("option"); o.value=d; o.innerText=d; selectDay.appendChild(o);});
 }
-
 function saveShift(){
     const start=document.getElementById("startTime").value;
     const end=document.getElementById("endTime").value;
@@ -166,7 +177,7 @@ function saveShift(){
     const day=document.getElementById("selectDay").value;
     if(!scheduleData[getWeekKey()][day]) scheduleData[getWeekKey()][day]=[];
     scheduleData[getWeekKey()][day].push({start,end,employee:emp,role});
-    closePopup(); saveData(); renderWeek();
+    closePopup(); renderWeek(); saveData();
 }
 function closePopup(){ document.getElementById("overlay").style.display="none"; document.getElementById("popup").style.display="none"; }
 
@@ -190,9 +201,9 @@ function openPersonnel(){ document.getElementById("overlay").style.display="bloc
 function renderPersonnel(){
     const list=document.getElementById("employeeList"); list.innerHTML="";
     employees.forEach(emp=>{
-        const div=document.createElement("div");
         const roleObj=roles.find(r=>r.name===emp.role);
-        div.innerHTML=`<span style="background:${roleObj?roleObj.color:"#666"};color:white;padding:2px 5px;border-radius:3px;">${emp.role || "Geen rol"}</span> ${emp.name} - Leeftijd: ${emp.age || "-"} - Uurloon: €${emp.hourly || "-"} - Beschikbaar: <input type="checkbox" ${emp.available?"checked":""} onchange="toggleAvailability('${emp.name}',this)"> 
+        const div=document.createElement("div");
+        div.innerHTML=`<span style="background:${roleObj?roleObj.color:"#666"};color:white;padding:2px 5px;border-radius:3px;">${emp.role || "Geen rol"}</span> ${emp.name} - Leeftijd: ${emp.age || "-"} - Uurloon: €${emp.hourly || "-"} - Max Uren/Wk: ${emp.maxHoursPerWeek || "-"} - Beschikbaar: <input type="checkbox" ${emp.available?"checked":""} onchange="toggleAvailability('${emp.name}',this)">
         <button onclick="editEmployee('${emp.name}')">Bewerk</button> <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
         list.appendChild(div);
     });
@@ -202,7 +213,8 @@ function addEmployeePrompt(){
     const age=parseInt(prompt("Leeftijd:")); 
     const hourly=parseFloat(prompt("Uurloon:")); 
     const role=prompt("Rol:"); 
-    if(name){ employees.push({name,age:age||0,hourly:hourly||0,role:role||"",available:true}); saveData(); renderPersonnel(); renderWeek(); } 
+    const maxH=parseFloat(prompt("Max uren per week:"));
+    if(name){ employees.push({name,age:age||0,hourly:hourly||0,role:role||"",maxHoursPerWeek:maxH||40,available:true}); saveData(); renderPersonnel(); renderWeek(); } 
 }
 function editEmployee(name){
     const emp=employees.find(e=>e.name===name);
@@ -211,7 +223,8 @@ function editEmployee(name){
     const age=parseInt(prompt("Leeftijd:",emp.age));
     const hourly=parseFloat(prompt("Uurloon:",emp.hourly));
     const role=prompt("Rol:",emp.role);
-    emp.name=newName||emp.name; emp.age=age||emp.age; emp.hourly=hourly||emp.hourly; emp.role=role||emp.role;
+    const maxH=parseFloat(prompt("Max uren per week:",emp.maxHoursPerWeek));
+    emp.name=newName||emp.name; emp.age=age||emp.age; emp.hourly=hourly||emp.hourly; emp.role=role||emp.role; emp.maxHoursPerWeek=maxH||emp.maxHoursPerWeek;
     saveData(); renderPersonnel(); renderWeek();
 }
 function closePersonnel(){ document.getElementById("overlay").style.display="none"; document.getElementById("personnelPopup").style.display="none"; }
