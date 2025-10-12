@@ -1,102 +1,296 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>Game Helper</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini IO Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; overflow: hidden; background: #222; }
-  canvas { display: block; margin: 0 auto; background: #333; }
+    :root {
+        --bg-light: #f5f5f5;
+        --bg-dark: #1e1e1e;
+        --card-light: #ffffff;
+        --card-dark: #2a2a2a;
+        --text-light: #000000;
+        --text-dark: #ffffff;
+        --primary: #007bff;
+    }
+    body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-light);
+        color: var(--text-light);
+        transition: 0.3s;
+    }
+    body.dark {
+        background: var(--bg-dark);
+        color: var(--text-dark);
+    }
+    .container {
+        max-width: 450px;
+        margin: 40px auto;
+        background: var(--card-light);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: 0.3s;
+    }
+    body.dark .container {
+        background: var(--card-dark);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    h2 {
+        margin-top: 0;
+        text-align: center;
+    }
+    label {
+        display: block;
+        margin-top: 15px;
+        font-weight: 500;
+    }
+    input, select, button {
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        margin-top: 5px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    body.dark input, body.dark select {
+        background: #3a3a3a;
+        color: #fff;
+        border: 1px solid #444;
+    }
+    .row {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    button:hover {
+        opacity: 0.9;
+    }
+    .small {
+        font-size: 12px;
+        opacity: 0.8;
+        margin-top: 10px;
+    }
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        align-items: center;
+    }
+    .lang-buttons button {
+        width: auto;
+        padding: 6px 10px;
+        margin-left: 5px;
+        border: 1px solid #ccc;
+        background: transparent;
+        color: inherit;
+    }
+    .lang-buttons button.active {
+        border-color: var(--primary);
+        font-weight: 600;
+    }
+    .theme-toggle {
+        cursor: pointer;
+        font-size: 20px;
+        user-select: none;
+    }
 </style>
 </head>
 <body>
-<canvas id="gameCanvas" width="800" height="600"></canvas>
+<div class="container">
+    <div class="top-bar">
+        <div class="lang-buttons">
+            <button id="lang-nl">🇳🇱 NL</button>
+            <button id="lang-en">🇬🇧 EN</button>
+        </div>
+        <div class="theme-toggle" id="themeToggle">🌙</div>
+    </div>
+    
+    <h2 id="title">Start a Game Helper</h2>
+
+    <label id="label-uid">Console ID / Skin Key (UID)</label>
+    <input id="uid" placeholder="">
+    <label><input type="checkbox" id="hideKey" checked> <span id="label-hidekey">Hide secret key</span></label>
+
+    <div class="row">
+        <button id="verifyBtn">Check & Link UID</button>
+    </div>
+
+    <div id="status" style="margin-top:10px; font-weight:500;"></div>
+
+    <label id="label-region">Choose Bot Region</label>
+    <select id="region">
+        <option>ME South 1</option>
+        <option>EU West</option>
+        <option>US East</option>
+    </select>
+
+    <label id="label-mode">Set Bot Game Mode</label>
+    <select id="mode">
+        <option>Burst</option>
+        <option>Classic</option>
+    </select>
+
+    <label id="label-botname">Put Bot Name</label>
+    <input id="botName" placeholder="">
+
+    <label id="label-party">Put Bot Party (link)</label>
+    <input id="party" placeholder="https://...">
+
+    <button id="startBotBtn" style="margin-top:20px;">Start Bot</button>
+
+    <p class="small" id="note">For security, only a hash of your UID is stored on the server.</p>
+</div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const translations = {
+    en: {
+        title: "Start a Game Helper",
+        uid: "Console ID / Skin Key (UID)",
+        hideKey: "Hide secret key",
+        verify: "Check & Link UID",
+        region: "Choose Bot Region",
+        mode: "Set Bot Game Mode",
+        botName: "Put Bot Name",
+        party: "Put Bot Party (link)",
+        start: "Start Bot",
+        note: "For security, only a hash of your UID is stored on the server.",
+        placeholderUid: "Paste your UID here",
+        placeholderBotName: "e.g. T.B",
+        placeholderParty: "https://r.agar.io/?party=...",
+        errorNoUid: "Please enter a UID first."
+    },
+    nl: {
+        title: "Start een Game Helper",
+        uid: "Console ID / Skin Key (UID)",
+        hideKey: "Verberg geheime sleutel",
+        verify: "Controleer & Koppel UID",
+        region: "Kies Bot Regio",
+        mode: "Kies Bot Game Modus",
+        botName: "Bot Naam invullen",
+        party: "Bot Party (link)",
+        start: "Start Bot",
+        note: "Voor veiligheid wordt alleen een hash van je UID opgeslagen.",
+        placeholderUid: "Plak je UID hier",
+        placeholderBotName: "bijv. T.B",
+        placeholderParty: "https://r.agar.io/?party=...",
+        errorNoUid: "Voer eerst een UID in."
+    }
+};
 
-const player = { x: 400, y: 300, radius: 20, color: 'blue', speed: 3 };
-const foods = [];
-const foodCount = 50;
+let currentLang = localStorage.getItem('lang') || 'en';
+let linkedUser = JSON.parse(localStorage.getItem('linkedUser') || 'null');
 
-// Maak voedsel
-for(let i = 0; i < foodCount; i++){
-    foods.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: 5 + Math.random() * 5,
-        color: 'green'
-    });
+function applyLanguage() {
+    const t = translations[currentLang];
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('label-uid').textContent = t.uid;
+    document.getElementById('label-hidekey').textContent = t.hideKey;
+    document.getElementById('verifyBtn').textContent = t.verify;
+    document.getElementById('label-region').textContent = t.region;
+    document.getElementById('label-mode').textContent = t.mode;
+    document.getElementById('label-botname').textContent = t.botName;
+    document.getElementById('label-party').textContent = t.party;
+    document.getElementById('startBotBtn').textContent = t.start;
+    document.getElementById('note').textContent = t.note;
+    document.getElementById('uid').placeholder = t.placeholderUid;
+    document.getElementById('botName').placeholder = t.placeholderBotName;
+    document.getElementById('party').placeholder = t.placeholderParty;
+
+    document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
+    document.getElementById('lang-nl').classList.toggle('active', currentLang === 'nl');
 }
+document.getElementById('lang-en').onclick = () => { currentLang = 'en'; localStorage.setItem('lang', 'en'); applyLanguage(); };
+document.getElementById('lang-nl').onclick = () => { currentLang = 'nl'; localStorage.setItem('lang', 'nl'); applyLanguage(); };
 
-// Muis positie
-const mouse = { x: player.x, y: player.y };
-
-canvas.addEventListener('mousemove', e => {
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-});
-
-// Functie om afstand te berekenen
-function distance(a, b) {
-    return Math.hypot(a.x - b.x, a.y - b.y);
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle('dark');
+    const isDark = body.classList.contains('dark');
+    document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
 }
+document.getElementById('themeToggle').onclick = toggleTheme;
 
-// Update spelerpositie
-function updatePlayer() {
-    const dx = mouse.x - player.x;
-    const dy = mouse.y - player.y;
-    const dist = Math.hypot(dx, dy);
-
-    if(dist > player.speed){
-        player.x += (dx / dist) * player.speed;
-        player.y += (dy / dist) * player.speed;
+(function initTheme() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+        document.body.classList.add('dark');
+        document.getElementById('themeToggle').textContent = '☀️';
     } else {
-        player.x = mouse.x;
-        player.y = mouse.y;
+        document.getElementById('themeToggle').textContent = '🌙';
     }
-}
+})();
 
-// Check voedsel collisions
-function checkFood() {
-    for(let i = foods.length - 1; i >= 0; i--){
-        if(distance(player, foods[i]) < player.radius + foods[i].radius){
-            player.radius += 0.5; // Groei speler
-            foods.splice(i, 1); // Verwijder voedsel
-        }
-    }
-}
+applyLanguage();
 
-// Teken alles
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Teken speler
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-    ctx.fillStyle = player.color;
-    ctx.fill();
-
-    // Teken voedsel
-    foods.forEach(f => {
-        ctx.beginPath();
-        ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
-        ctx.fillStyle = f.color;
-        ctx.fill();
+async function postJSON(url, data) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
     });
+    return await res.json();
 }
 
-// Game loop
-function gameLoop() {
-    updatePlayer();
-    checkFood();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
+const statusDiv = document.getElementById('status');
 
-gameLoop();
+document.getElementById('verifyBtn').onclick = async () => {
+    const uid = document.getElementById('uid').value.trim();
+    if (!uid) {
+        statusDiv.textContent = translations[currentLang].errorNoUid;
+        return;
+    }
+    statusDiv.textContent = "...";
+    try {
+        const resp = await postJSON('/api/verify-uid', { uid });
+        if (resp.ok) {
+            linkedUser = resp.user;
+            localStorage.setItem('linkedUser', JSON.stringify(resp.user));
+            statusDiv.textContent = "✅ UID gekoppeld! User ID: " + resp.user.id;
+        } else {
+            statusDiv.textContent = "❌ " + resp.message;
+        }
+    } catch (e) {
+        statusDiv.textContent = "❌ Server error";
+    }
+};
+
+document.getElementById('startBotBtn').onclick = async () => {
+    if (!linkedUser) {
+        statusDiv.textContent = "❌ UID niet gekoppeld.";
+        return;
+    }
+    const data = {
+        userId: linkedUser.id,
+        botName: document.getElementById('botName').value,
+        region: document.getElementById('region').value,
+        mode: document.getElementById('mode').value,
+        party: document.getElementById('party').value
+    };
+    statusDiv.textContent = "...";
+    try {
+        const resp = await postJSON('/api/start-bot', data);
+        if (resp.ok) {
+            statusDiv.textContent = "✅ Bot gestart! Session ID: " + resp.sessionId;
+        } else {
+            statusDiv.textContent = "❌ " + resp.message;
+        }
+    } catch (e) {
+        statusDiv.textContent = "❌ Server error";
+    }
+};
 </script>
 </body>
 </html>
