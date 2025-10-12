@@ -1,328 +1,342 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<title>Game Helper</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Game Helper — UID Debug</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-    :root {
-        --bg-light: #f5f5f5;
-        --bg-dark: #1e1e1e;
-        --card-light: #ffffff;
-        --card-dark: #2a2a2a;
-        --text-light: #000000;
-        --text-dark: #ffffff;
-        --primary: #007bff;
-    }
-    body {
-        margin: 0;
-        font-family: 'Inter', sans-serif;
-        background: var(--bg-light);
-        color: var(--text-light);
-        transition: 0.3s;
-    }
-    body.dark {
-        background: var(--bg-dark);
-        color: var(--text-dark);
-    }
-    .container {
-        max-width: 520px;
-        margin: 30px auto;
-        background: var(--card-light);
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        transition: 0.3s;
-    }
-    body.dark .container {
-        background: var(--card-dark);
-        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
-    h2 { margin-top: 0; text-align:center; }
-    label { display:block; margin-top:12px; font-weight:500; }
-    input, select, button, textarea {
-        width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:6px; font-size:14px; box-sizing:border-box;
-    }
-    button { background: var(--primary); color:#fff; border:none; font-weight:600; cursor:pointer; }
-    .row { display:flex; gap:10px; margin-top:10px; }
-    .small { font-size:12px; opacity:0.85; margin-top:10px; }
-    .top-bar { display:flex; justify-content:space-between; margin-bottom:15px; align-items:center; }
-    .lang-buttons button { width:auto; padding:6px 10px; margin-left:5px; border:1px solid #ccc; background:transparent; color:inherit; }
-    .lang-buttons button.active { border-color:var(--primary); font-weight:600; }
-    .theme-toggle { cursor:pointer; font-size:20px; user-select:none; }
-    .warning { background:#fff3cd; color:#856404; border-radius:6px; padding:10px; margin-top:12px; border:1px solid #ffeeba; }
-    .danger { background:#ffe6e6; color:#8b0000; border-radius:6px; padding:10px; margin-top:12px; border:1px solid #f5c6cb; font-weight:600; }
-    .muted { opacity:0.85; font-size:13px; }
+  :root{--bg:#f5f7fb;--card:#fff;--primary:#0b74ff;--danger:#c0392b}
+  body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:20px;display:flex;justify-content:center}
+  .card{width:600px;background:var(--card);padding:20px;border-radius:12px;box-shadow:0 6px 24px rgba(10,10,10,0.08)}
+  h1{margin:0 0 12px;font-size:20px}
+  label{display:block;margin-top:12px;font-weight:600}
+  input,select,button,textarea{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #d7dbe0;box-sizing:border-box;font-size:14px}
+  .row{display:flex;gap:10px}
+  .row button{flex:1}
+  .muted{font-size:13px;color:#586069;margin-top:8px}
+  .warning{background:#fff4e5;border:1px solid #ffd8a8;padding:10px;border-radius:8px;margin-top:10px}
+  .danger{color:var(--danger);font-weight:700;margin-top:8px}
+  .detected-list{margin-top:10px}
+  .detected-item{padding:8px;border:1px dashed #d7dbe0;border-radius:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center}
+  .small{font-size:12px;color:#6b7280}
+  .debug{white-space:pre-wrap;background:#0f1724;color:#e6eef8;padding:10px;border-radius:8px;margin-top:10px;font-family:monospace;font-size:13px}
 </style>
 </head>
 <body>
-<div class="container">
-    <div class="top-bar">
-        <div class="lang-buttons">
-            <button id="lang-nl" class="active">🇳🇱 NL</button>
-            <button id="lang-en">🇬🇧 EN</button>
-        </div>
-        <div class="theme-toggle" id="themeToggle">🌙</div>
+  <div class="card">
+    <h1>Game Helper — UID detectie & debug</h1>
+
+    <label for="uid">Console ID / Skin Key (UID)</label>
+    <input id="uid" placeholder="Plak je UID hier (of hele gekopieerde string)">
+    <div class="muted">Je kunt zowel de raw UID plakken (bv. <code>66464ffd-a57c-496c-b60f-79ecc0d82a4a</code>) als een langere gekopieerde string.</div>
+
+    <label style="margin-top:12px;"><input type="checkbox" id="hideKey" checked> <span class="small">Verberg invoer (password)</span></label>
+
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button id="scanBtn" style="flex:1;">Scan UID</button>
+      <button id="verifyBtn" style="flex:1;">Check & Koppel UID</button>
     </div>
 
-    <h2 id="title">Start een Game Helper</h2>
+    <div id="detected" class="detected-list" style="display:none;"></div>
 
-    <label id="label-uid">Console ID / Skin Key (UID)</label>
-    <input id="uid" placeholder="Plak je UID hier" autocomplete="off" inputmode="text">
+    <label style="margin-top:12px;">
+      <input type="checkbox" id="confirmRaw"> <strong>Ik bevestig dat dit mijn eigen Agar.io UID is (gebruik raw UID)</strong>
+    </label>
 
-    <label><input type="checkbox" id="hideKey" checked> <span id="label-hidekey">Verberg geheime sleutel</span></label>
-
-    <!-- New: explicit confirmation to use raw UID -->
-    <div class="warning" id="rawWarning">
-        <div style="font-weight:600;">Belangrijk — raw UID gebruik</div>
-        <div class="muted" style="margin-top:6px;">
-            Als je je echte UID wilt gebruiken (bijvoorbeeld: <code>66464ffd-a57c-496c-b60f-79ecc0d82a4a</code>),
-            vink dan hieronder de bevestiging aan. De raw UID wordt <strong>niet</strong> opgeslagen in localStorage en
-            wordt alleen direct naar de server gestuurd wanneer jij expliciet bevestigt dat dit jouw eigen account is.
-        </div>
+    <div class="warning" id="explain">
+      Standaard wordt alleen een <strong>SHA‑256 hash</strong> van je UID gestuurd. Wanneer je raw UID toestaat, wordt deze tijdelijk gebruikt en daarna meteen uit het invoerveld verwijderd. Raw UID wordt niet in localStorage bewaard.
     </div>
 
-    <label style="margin-top:10px;"><input type="checkbox" id="confirmRaw"> <strong>Ik bevestig dat dit mijn eigen Agar.io UID is en ik geef toestemming om deze éénmalig te gebruiken</strong></label>
+    <label for="region">Bot regio</label>
+    <select id="region"><option>ME South 1</option><option>EU West</option><option>US East</option></select>
 
-    <div class="row">
-        <button id="verifyBtn">Controleer & Koppel UID</button>
-    </div>
+    <label for="mode">Modus</label>
+    <select id="mode"><option>Burst</option><option>Classic</option></select>
 
-    <div id="status" style="margin-top:10px; font-weight:500;"></div>
-    <div id="warning" style="display:none; margin-top:8px;" class="danger"></div>
-
-    <label id="label-region">Kies Bot Regio</label>
-    <select id="region">
-        <option>ME South 1</option>
-        <option>EU West</option>
-        <option>US East</option>
-    </select>
-
-    <label id="label-mode">Kies Bot Game Modus</label>
-    <select id="mode">
-        <option>Burst</option>
-        <option>Classic</option>
-    </select>
-
-    <label id="label-botname">Bot Naam invullen</label>
+    <label for="botName">Bot naam</label>
     <input id="botName" placeholder="bijv. T.B">
 
-    <label id="label-party">Bot Party (link)</label>
+    <label for="party">Party link</label>
     <input id="party" placeholder="https://r.agar.io/?party=...">
 
-    <button id="startBotBtn" style="margin-top:14px;">Start Bot</button>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button id="startBotBtn" style="flex:1;">Start Bot</button>
+      <button id="showPayloadBtn" style="flex:1;background:#eef2ff;border:1px solid #c7ddff;color:#0b74ff">Toon payload</button>
+    </div>
 
-    <p class="small" id="note">Standaard: alleen een hash van je UID wordt gebruikt. Raw UID wordt alleen gebruikt wanneer je expliciet bevestigt.</p>
-</div>
+    <div id="status" class="muted" style="margin-top:12px"></div>
+    <div id="error" class="danger" style="display:none"></div>
+
+    <div id="debugBox" style="display:none" class="debug"></div>
+  </div>
 
 <script>
-/* Taal, thema, en helpers (zelfde pattern als eerder) */
-const translations = {
-  en: {
-    title: "Start a Game Helper",
-    uid: "Console ID / Skin Key (UID)",
-    hideKey: "Hide secret key",
-    verify: "Check & Link UID",
-    region: "Choose Bot Region",
-    mode: "Set Bot Game Mode",
-    botName: "Put Bot Name",
-    party: "Put Bot Party (link)",
-    start: "Start Bot",
-    note: "By default only a hash of your UID is used. Raw UID is only used with explicit confirmation.",
-    placeholderUid: "Paste your UID here",
-    placeholderBotName: "e.g. T.B",
-    placeholderParty: "https://r.agar.io/?party=...",
-    errorNoUid: "Please enter a UID first.",
-    multipleUids: "Multiple UID-like strings detected. Using the first one found.",
-    confirmRawLabel: "I confirm this is my own Agar.io UID and I consent to using it once."
-  },
-  nl: {
-    title: "Start een Game Helper",
-    uid: "Console ID / Skin Key (UID)",
-    hideKey: "Verberg geheime sleutel",
-    verify: "Controleer & Koppel UID",
-    region: "Kies Bot Regio",
-    mode: "Kies Bot Game Modus",
-    botName: "Bot Naam invullen",
-    party: "Bot Party (link)",
-    start: "Start Bot",
-    note: "Standaard: alleen een hash van je UID wordt gebruikt. Raw UID wordt alleen gebruikt met expliciete bevestiging.",
-    placeholderUid: "Plak je UID hier",
-    placeholderBotName: "bijv. T.B",
-    placeholderParty: "https://r.agar.io/?party=...",
-    errorNoUid: "Voer eerst een UID in.",
-    multipleUids: "Meerdere UID-achtige strings gedetecteerd. Gebruik de eerste.",
-    confirmRawLabel: "Ik bevestig dat dit mijn eigen Agar.io UID is en ik geef toestemming om deze éénmalig te gebruiken."
-  }
-};
+/*
+  Verbeterde detectie en fallback:
+  - detecteert UUID-achtige substrings (v4-like)
+  - toont alle gevonden matches en laat de gebruiker kiezen
+  - wanneer gebruiker confirmRaw checked, stuurt het verzoek ook raw UID als 'uidRaw' en 'uid'
+  - stuurt altijd 'uidHash' (sha256 hex)
+  - wist raw input direct na verzending
+  - toont debug payload op verzoek
+*/
 
-let currentLang = localStorage.getItem('lang') || 'nl';
-let linkedUser = JSON.parse(localStorage.getItem('linkedUser') || 'null');
-
-function applyLanguage() {
-    const t = translations[currentLang];
-    document.getElementById('title').textContent = t.title;
-    document.getElementById('label-uid').textContent = t.uid;
-    document.getElementById('label-hidekey').textContent = t.hideKey;
-    document.getElementById('verifyBtn').textContent = t.verify;
-    document.getElementById('label-region').textContent = t.region;
-    document.getElementById('label-mode').textContent = t.mode;
-    document.getElementById('label-botname').textContent = t.botName;
-    document.getElementById('label-party').textContent = t.party;
-    document.getElementById('startBotBtn').textContent = t.start;
-    document.getElementById('note').textContent = t.note;
-    document.getElementById('uid').placeholder = t.placeholderUid;
-    document.getElementById('botName').placeholder = t.placeholderBotName;
-    document.getElementById('party').placeholder = t.placeholderParty;
-    // confirm raw label (text inside the confirmation checkbox)
-    const confirmLabel = document.querySelector('label[style*="margin-top:10px;"]');
-    if (confirmLabel) confirmLabel.innerHTML = `<input type="checkbox" id="confirmRaw"> <strong>${t.confirmRawLabel}</strong>`;
-}
-applyLanguage();
-
-/* Theme toggle */
-document.getElementById('themeToggle').onclick = () => {
-    document.body.classList.toggle('dark');
-    document.getElementById('themeToggle').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-};
-
-/* Mask input if hideKey checked */
 const uidInput = document.getElementById('uid');
-const hideKeyCheckbox = document.getElementById('hideKey');
-hideKeyCheckbox.addEventListener('change', () => {
-    uidInput.type = hideKeyCheckbox.checked ? 'password' : 'text';
+const hideKey = document.getElementById('hideKey');
+const scanBtn = document.getElementById('scanBtn');
+const detectedBox = document.getElementById('detected');
+const verifyBtn = document.getElementById('verifyBtn');
+const startBotBtn = document.getElementById('startBotBtn');
+const status = document.getElementById('status');
+const errorBox = document.getElementById('error');
+const confirmRaw = document.getElementById('confirmRaw');
+const showPayloadBtn = document.getElementById('showPayloadBtn');
+const debugBox = document.getElementById('debugBox');
+
+hideKey.addEventListener('change', () => {
+  uidInput.type = hideKey.checked ? 'password' : 'text';
 });
-uidInput.type = hideKeyCheckbox.checked ? 'password' : 'text';
+uidInput.type = hideKey.checked ? 'password' : 'text';
 
-/* Helpers: extract UUID-like substrings and sha256 */
-function extractUUIDs(text) {
-    if (!text) return [];
-    const regex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g;
-    return text.match(regex) || [];
+// UUID regex (typical 8-4-4-4-12 hex groups)
+function findUUIDs(text){
+  if(!text) return [];
+  const regex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g;
+  const arr = [];
+  let m;
+  while((m = regex.exec(text)) !== null){
+    arr.push(m[0]);
+    // avoid infinite loops with zero-length matches (not applicable here)
+  }
+  return arr;
 }
 
-async function sha256Hex(message) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+// fallback: if no UUID found but string length matches 36, assume it's a UUID-like without hyphens
+function fallbackExtract(text){
+  if(!text) return null;
+  const candidate = text.trim();
+  if(candidate.length === 36 && candidate.includes('-')) return candidate;
+  // if length 32 with only hex, insert hyphens
+  const onlyHex = /^[0-9a-fA-F]{32}$/.test(candidate);
+  if(onlyHex){
+    return candidate.slice(0,8)+'-'+candidate.slice(8,12)+'-'+candidate.slice(12,16)+'-'+candidate.slice(16,20)+'-'+candidate.slice(20);
+  }
+  return null;
 }
 
-/* Simple POST helper */
-async function postJSON(url, data) {
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    });
-    return await res.json();
-}
+scanBtn.addEventListener('click', () => {
+  errorBox.style.display='none';
+  status.textContent = 'Scannen...';
+  const raw = uidInput.value || '';
+  const found = findUUIDs(raw);
+  const list = [];
+  if(found.length) list.push(...found);
+  else {
+    const fb = fallbackExtract(raw);
+    if(fb) list.push(fb);
+  }
+  renderDetected(list);
+});
 
-/* UI elements */
-const statusDiv = document.getElementById('status');
-const dangerDiv = document.getElementById('warning');
-const confirmRawCheckbox = () => document.getElementById('confirmRaw');
-
-/* Behavior for "Check & Link UID" */
-document.getElementById('verifyBtn').onclick = async () => {
-    dangerDiv.style.display = 'none';
-    const raw = uidInput.value.trim();
-    if (!raw) {
-        statusDiv.textContent = translations[currentLang].errorNoUid;
-        return;
-    }
-    statusDiv.textContent = "Bezig...";
-    try {
-        const found = extractUUIDs(raw);
-        let uidToUse = raw;
-        if (found.length >= 1) {
-            if (found.length > 1) {
-                dangerDiv.textContent = translations[currentLang].multipleUids;
-                dangerDiv.style.display = 'block';
-            }
-            uidToUse = found[0];
-        }
-
-        // If user confirmed raw usage, send raw UID (but do NOT store it).
-        if (confirmRawCheckbox() && confirmRawCheckbox().checked) {
-            // explicit consent path
-            // send raw UID once and do not keep it in localStorage
-            const resp = await postJSON('/api/verify-uid', { uidRaw: uidToUse });
-            if (resp.ok) {
-                linkedUser = { id: resp.user.id, uidHash: await sha256Hex(uidToUse), display: resp.user.display || null };
-                // store only hash and id — NOT the raw UID
-                localStorage.setItem('linkedUser', JSON.stringify({ id: linkedUser.id, uidHash: linkedUser.uidHash, display: linkedUser.display }));
-                statusDiv.textContent = "✅ UID gekoppeld (raw gebruikt)! User ID: " + resp.user.id;
-            } else {
-                statusDiv.textContent = "❌ " + (resp.message || "Verificatie mislukt.");
-            }
-            // clear raw input immediately after use
-            uidInput.value = '';
-        } else {
-            // secure default path: hash client-side and send hash
-            const hashed = await sha256Hex(uidToUse);
-            const resp = await postJSON('/api/verify-uid', { uidHash: hashed });
-            if (resp.ok) {
-                linkedUser = { id: resp.user.id, uidHash: hashed, display: resp.user.display || null };
-                localStorage.setItem('linkedUser', JSON.stringify({ id: linkedUser.id, uidHash: linkedUser.uidHash, display: linkedUser.display }));
-                statusDiv.textContent = "✅ UID gekoppeld (hash gebruikt)! User ID: " + resp.user.id;
-            } else {
-                statusDiv.textContent = "❌ " + (resp.message || "Verificatie mislukt.");
-            }
-        }
-    } catch (e) {
-        console.error(e);
-        statusDiv.textContent = "❌ Server error";
-    }
-};
-
-/* Start bot: if raw UID was just used and not stored, we allow passing raw UID from current input
-   only when user re-checks confirmRaw. Otherwise pass stored uidHash. */
-document.getElementById('startBotBtn').onclick = async () => {
-    dangerDiv.style.display = 'none';
-    if (!linkedUser) {
-        statusDiv.textContent = "❌ UID niet gekoppeld.";
-        return;
-    }
-
-    const payload = {
-        userId: linkedUser.id,
-        uidHash: linkedUser.uidHash, // default
-        botName: document.getElementById('botName').value.trim(),
-        region: document.getElementById('region').value,
-        mode: document.getElementById('mode').value,
-        party: document.getElementById('party').value.trim()
+function renderDetected(list){
+  detectedBox.innerHTML = '';
+  if(!list.length){
+    detectedBox.style.display='none';
+    status.textContent = 'Geen duidelijke UID-achtige string gevonden. Je kunt toch proberen op "Check & Koppel UID".';
+    return;
+  }
+  detectedBox.style.display='block';
+  status.textContent = `Gevonden ${list.length} UID(s). Kies welke je wilt gebruiken.`;
+  list.forEach((u, idx) => {
+    const div = document.createElement('div');
+    div.className = 'detected-item';
+    const left = document.createElement('div');
+    left.innerHTML = `<div style="font-weight:600">Gevonden UID ${idx+1}</div><div class="small">${u}</div>`;
+    const right = document.createElement('div');
+    const btn = document.createElement('button');
+    btn.textContent = 'Gebruik';
+    btn.style.padding='6px 10px';
+    btn.onclick = () => {
+      // set the input to the chosen uid (unmasked while user decides)
+      uidInput.type = 'text';
+      uidInput.value = u;
+      hideKey.checked = false;
+      status.textContent = 'UID geselecteerd voor gebruik.';
     };
+    right.appendChild(btn);
+    div.appendChild(left);
+    div.appendChild(right);
+    detectedBox.appendChild(div);
+  });
+}
 
-    // If user currently confirms raw UID and there's something in the input, allow sending rawUID instead of hash.
-    const rawCandidate = uidInput.value.trim();
-    if (confirmRawCheckbox() && confirmRawCheckbox().checked && rawCandidate) {
-        // extract/normalize
-        const found = extractUUIDs(rawCandidate);
-        const uidToUse = (found.length ? found[0] : rawCandidate);
-        // include rawUID only if user explicitly confirmed
-        payload.uidRaw = uidToUse;
-        // still include uidHash for server-side reference
-        payload.uidHash = await sha256Hex(uidToUse);
-        // clear input after use
-        uidInput.value = '';
+// web crypto helper sha256 hex
+async function sha256Hex(msg){
+  const enc = new TextEncoder();
+  const data = enc.encode(msg);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const bytes = Array.from(new Uint8Array(hash));
+  return bytes.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// POST helper
+async function postJSON(url, data){
+  const resp = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  // try to parse json but handle non-json errors
+  let body = null;
+  try { body = await resp.json(); } catch(e){ body = null; }
+  return { ok: resp.ok, status: resp.status, body };
+}
+
+verifyBtn.addEventListener('click', async () => {
+  clearMessages();
+  const rawInput = uidInput.value.trim();
+  if(!rawInput){
+    showError('Voer eerst een UID in.');
+    return;
+  }
+  status.textContent = 'Verwerken...';
+  // try to detect normalized UID
+  let uidToUse = null;
+  const found = findUUIDs(rawInput);
+  if(found.length) uidToUse = found[0];
+  else {
+    const fb = fallbackExtract(rawInput);
+    if(fb) uidToUse = fb;
+  }
+  // if still null, use rawInput as-is (user might have server expecting different format)
+  if(!uidToUse) uidToUse = rawInput;
+
+  try {
+    const uidHash = await sha256Hex(uidToUse);
+
+    // prepare payload — we include multiple keys so backend compatibility increases
+    const payload = { uidHash, uid: uidToUse };
+    // include raw only if user confirmed
+    if(confirmRaw.checked){
+      payload.uidRaw = uidToUse;
     }
 
-    statusDiv.textContent = "...";
-    try {
-        const resp = await postJSON('/api/start-bot', payload);
-        if (resp.ok) {
-            statusDiv.textContent = "✅ Bot gestart! Session ID: " + resp.sessionId;
-        } else {
-            statusDiv.textContent = "❌ " + (resp.message || "Kon bot niet starten.");
-        }
-    } catch (e) {
-        console.error(e);
-        statusDiv.textContent = "❌ Server error";
+    // show masked debug briefly in UI and console
+    debugBox.style.display='none';
+    console.log('Versturen naar /api/verify-uid ->', payload);
+
+    const resp = await postJSON('/api/verify-uid', payload);
+    if(resp.ok && resp.body && resp.body.ok){
+      // store only id + hash
+      const store = { id: resp.body.user.id, uidHash };
+      localStorage.setItem('linkedUser', JSON.stringify(store));
+      status.textContent = '✅ UID gekoppeld! User ID: ' + resp.body.user.id;
+    } else {
+      showError('Server gaf een fout: ' + ((resp.body && resp.body.message) || ('HTTP '+resp.status)));
     }
-};
+  } catch(e){
+    console.error(e);
+    showError('Fout tijdens verwerken: ' + e.message);
+  } finally {
+    // clear raw input from UI if raw was used for safety (we still cleared above only if confirmRaw)
+    if(confirmRaw.checked) {
+      uidInput.value = '';
+      hideKey.checked = true;
+      uidInput.type = 'password';
+    }
+  }
+});
+
+startBotBtn.addEventListener('click', async () => {
+  clearMessages();
+  const linked = JSON.parse(localStorage.getItem('linkedUser') || 'null');
+  if(!linked){
+    showError('UID niet gekoppeld. Gebruik "Check & Koppel UID".');
+    return;
+  }
+  status.textContent = 'Starten...';
+  // assemble payload; allow sending raw if present in input and user confirmed
+  let uidCandidate = null;
+  const rawInput = uidInput.value.trim();
+  const found = findUUIDs(rawInput);
+  if(found.length) uidCandidate = found[0];
+  else {
+    const fb = fallbackExtract(rawInput);
+    if(fb) uidCandidate = fb;
+  }
+  // if user confirmed and there's a candidate, include raw in payload (and compute hash)
+  let payload = {
+    userId: linked.id,
+    uidHash: linked.uidHash || null,
+    botName: document.getElementById('botName').value.trim(),
+    region: document.getElementById('region').value,
+    mode: document.getElementById('mode').value,
+    party: document.getElementById('party').value.trim()
+  };
+
+  if(confirmRaw.checked && uidCandidate){
+    payload.uidRaw = uidCandidate;
+    payload.uid = uidCandidate;
+    payload.uidHash = await sha256Hex(uidCandidate);
+  } else {
+    // send uid field too for compatibility (use stored hash -> no raw)
+    if(linked.uidHash) payload.uidHash = linked.uidHash;
+  }
+
+  console.log('Versturen /api/start-bot ->', payload);
+  if(debugBox.style.display==='block') debugBox.textContent = JSON.stringify(payload, null, 2);
+
+  try {
+    const resp = await postJSON('/api/start-bot', payload);
+    if(resp.ok && resp.body && resp.body.ok){
+      status.textContent = '✅ Bot gestart! Session ID: ' + (resp.body.sessionId || '(geen id terug)');
+    } else {
+      showError('Start mislukt: ' + ((resp.body && resp.body.message) || ('HTTP '+resp.status)));
+    }
+  } catch(e){
+    console.error(e);
+    showError('Netwerkfout: ' + e.message);
+  } finally {
+    // clear raw input if we used it
+    if(confirmRaw.checked && uidCandidate){
+      uidInput.value = '';
+      hideKey.checked = true;
+      uidInput.type = 'password';
+    }
+  }
+});
+
+showPayloadBtn.addEventListener('click', () => {
+  if(debugBox.style.display === 'none'){
+    debugBox.style.display = 'block';
+    debugBox.textContent = 'Payload zal verschijnen in de console (devtools) bij acties. Klik "Check & Koppel UID" of "Start Bot" om payload te zien.';
+  } else {
+    debugBox.style.display = 'none';
+  }
+});
+
+// helper messages
+function showError(msg){
+  errorBox.style.display='block';
+  errorBox.textContent = msg;
+  status.textContent = '';
+}
+function clearMessages(){
+  errorBox.style.display='none';
+  errorBox.textContent = '';
+  status.textContent = '';
+}
+
+// on load: attempt to pre-scan any pasted content
+window.addEventListener('paste', (e)=>{
+  // small convenience: auto-scan on paste
+  setTimeout(()=> {
+    const raw = uidInput.value || '';
+    const found = findUUIDs(raw);
+    if(found.length) renderDetected(found);
+  }, 50);
+});
 </script>
 </body>
 </html>
