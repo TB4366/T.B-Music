@@ -16,7 +16,8 @@ h1 { text-align:center; margin:15px 0; }
 .role-circle { width:20px; height:20px; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-weight:bold; margin-right:5px; flex-shrink:0; }
 .shift-line { flex:1; height:2px; background:#ccc; margin:0 5px; }
 .shift-time { width:70px; text-align:center; margin-right:5px; font-size:0.9em; flex-shrink:0;}
-.shift-name { flex-shrink:1; font-weight:bold; }
+.shift-name { flex-shrink:1; font-weight:bold; display:flex; align-items:center; }
+.gray-dot { width:10px; height:10px; border-radius:50%; background:#888; display:inline-block; margin-right:5px; }
 #popup, #rolePopup, #personnelPopup, #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; }
 #overlay { background: rgba(0,0,0,0.5); z-index:500; }
 #popup, #rolePopup, #personnelPopup { background:#fff; padding:20px; border-radius:10px; width:320px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
@@ -83,7 +84,7 @@ let scheduleData={};
 let selectedShift=null;
 
 function loadData(){
-    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","age":25,"hourly":15,"role":"Leidinggevende","available":true}]');
+    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","role":"Leidinggevende","available":true}]');
     roles=JSON.parse(localStorage.getItem("roles")||'[{"name":"Leidinggevende","color":"red"},{"name":"Medewerker","color":"blue"}]');
     scheduleData=JSON.parse(localStorage.getItem("scheduleData")||'{}');
     if(!scheduleData[getWeekKey()]){
@@ -107,7 +108,8 @@ function renderWeek(){
 
     days.forEach(day=>{
         const col=document.createElement("div"); col.classList.add("day-column"); col.innerHTML=`<h3>${day}</h3>`;
-        week[day].forEach(shift=>{
+        let dayShifts=week[day];
+        dayShifts.forEach((shift,index)=>{
             const empObj=employees.find(e=>e.name===shift.employee);
             const div=document.createElement("div"); div.classList.add("shift");
             const roleObj=roles.find(r=>r.name===shift.role);
@@ -116,9 +118,12 @@ function renderWeek(){
             circle.innerText=shift.employee.charAt(0).toUpperCase();
             const line=document.createElement("div"); line.classList.add("shift-line"); if(empObj && !empObj.available) line.style.background="#888";
             const timeDiv=document.createElement("div"); timeDiv.classList.add("shift-time"); timeDiv.innerText=`${shift.start}-${shift.end}`;
-            const nameDiv=document.createElement("div"); nameDiv.classList.add("shift-name"); nameDiv.innerText=shift.employee;
+            const nameDiv=document.createElement("div"); nameDiv.classList.add("shift-name");
+            if(empObj && !empObj.available){ const dot=document.createElement("span"); dot.classList.add("gray-dot"); nameDiv.appendChild(dot);}
+            const textNode=document.createTextNode(shift.employee); nameDiv.appendChild(textNode);
+
             div.appendChild(circle); div.appendChild(line); div.appendChild(timeDiv); div.appendChild(nameDiv);
-            div.addEventListener("click",()=>editShift(shift,day));
+            div.addEventListener("click",()=>{ if(confirm("Shift verwijderen?")){ dayShifts.splice(index,1); if(dayShifts.length===0) delete week[day]; saveData(); renderWeek(); } });
             col.appendChild(div);
         });
         container.appendChild(col);
@@ -134,14 +139,6 @@ function addShiftPrompt(){
     selectedShift=null;
 }
 
-function editShift(shift,day){
-    document.getElementById("overlay").style.display="block"; document.getElementById("popup").style.display="block";
-    document.getElementById("startTime").value=shift.start; document.getElementById("endTime").value=shift.end;
-    document.getElementById("selectEmployee").value=shift.employee; document.getElementById("selectRole").value=shift.role;
-    document.getElementById("selectDay").value=day;
-    selectedShift=shift;
-}
-
 function saveShift(){
     const start=document.getElementById("startTime").value;
     const end=document.getElementById("endTime").value;
@@ -149,8 +146,7 @@ function saveShift(){
     const role=document.getElementById("selectRole").value;
     const day=document.getElementById("selectDay").value;
     if(!scheduleData[getWeekKey()][day]) scheduleData[getWeekKey()][day]=[];
-    if(selectedShift){ selectedShift.start=start; selectedShift.end=end; selectedShift.employee=emp; selectedShift.role=role; }
-    else{ scheduleData[getWeekKey()][day].push({start,end,employee:emp,role}); }
+    scheduleData[getWeekKey()][day].push({start,end,employee:emp,role});
     closePopup(); saveData(); renderWeek();
 }
 function closePopup(){ document.getElementById("overlay").style.display="none"; document.getElementById("popup").style.display="none"; }
@@ -167,7 +163,7 @@ function renderPersonnel(){
     const list=document.getElementById("employeeList"); list.innerHTML="";
     employees.forEach(emp=>{
         const div=document.createElement("div");
-        div.innerHTML=`${emp.name} - Rol: ${emp.role} - Beschikbaar: <input type="checkbox" ${emp.available!==false?"checked":""} onchange="toggleAvailability('${emp.name}',this)"> <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
+        div.innerHTML=`${emp.name} - Rol: ${emp.role} - Beschikbaar: <input type="checkbox" ${emp.available?"checked":""} onchange="toggleAvailability('${emp.name}',this)"> <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
         list.appendChild(div);
     });
 }
@@ -181,6 +177,5 @@ function removeEmployee(name){ if(confirm(`Weet je zeker dat je ${name} wilt ver
 loadData();
 renderWeek();
 </script>
-
 </body>
 </html>
