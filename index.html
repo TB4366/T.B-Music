@@ -20,9 +20,9 @@ h1 { text-align:center; margin:15px 0; }
 .gray-dot { width:10px; height:10px; border-radius:50%; background:#888; display:inline-block; margin-right:5px; }
 #popup, #rolePopup, #personnelPopup, #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; }
 #overlay { background: rgba(0,0,0,0.5); z-index:500; }
-#popup, #rolePopup, #personnelPopup { background:#fff; padding:20px; border-radius:10px; width:320px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
+#popup, #rolePopup, #personnelPopup { background:#fff; padding:20px; border-radius:10px; width:350px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
 input, select { width:100%; margin-bottom:10px; padding:5px; }
-button { cursor:pointer; }
+button { cursor:pointer; margin-top:5px; }
 </style>
 </head>
 <body>
@@ -81,10 +81,9 @@ let currentWeek=1;
 let employees=[];
 let roles=[];
 let scheduleData={};
-let selectedShift=null;
 
 function loadData(){
-    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","role":"Leidinggevende","available":true}]');
+    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","age":25,"hourly":15,"role":"Leidinggevende","available":true}]');
     roles=JSON.parse(localStorage.getItem("roles")||'[{"name":"Leidinggevende","color":"red"},{"name":"Medewerker","color":"blue"}]');
     scheduleData=JSON.parse(localStorage.getItem("scheduleData")||'{}');
     if(!scheduleData[getWeekKey()]){
@@ -92,7 +91,11 @@ function loadData(){
         days.forEach(d=>scheduleData[getWeekKey()][d]=[]);
     }
 }
-function saveData(){ localStorage.setItem("employees",JSON.stringify(employees)); localStorage.setItem("roles",JSON.stringify(roles)); localStorage.setItem("scheduleData",JSON.stringify(scheduleData)); }
+function saveData(){ 
+    localStorage.setItem("employees",JSON.stringify(employees)); 
+    localStorage.setItem("roles",JSON.stringify(roles)); 
+    localStorage.setItem("scheduleData",JSON.stringify(scheduleData)); 
+}
 function getWeekKey(){ return "week"+currentWeek; }
 
 function renderWeekLabel(){ document.getElementById("weekLabel").innerText="Week "+currentWeek; }
@@ -116,14 +119,31 @@ function renderWeek(){
             const circle=document.createElement("div"); circle.classList.add("role-circle");
             circle.style.backgroundColor=(empObj && empObj.available)?(roleObj?roleObj.color:"#666"):"#888";
             circle.innerText=shift.employee.charAt(0).toUpperCase();
-            const line=document.createElement("div"); line.classList.add("shift-line"); if(empObj && !empObj.available) line.style.background="#888";
-            const timeDiv=document.createElement("div"); timeDiv.classList.add("shift-time"); timeDiv.innerText=`${shift.start}-${shift.end}`;
+
+            const line=document.createElement("div"); line.classList.add("shift-line"); 
+            if(empObj && !empObj.available) line.style.background="#888";
+
+            const timeDiv=document.createElement("div"); timeDiv.classList.add("shift-time"); 
+            timeDiv.innerText=`${shift.start}-${shift.end}`;
+
             const nameDiv=document.createElement("div"); nameDiv.classList.add("shift-name");
-            if(empObj && !empObj.available){ const dot=document.createElement("span"); dot.classList.add("gray-dot"); nameDiv.appendChild(dot);}
-            const textNode=document.createTextNode(shift.employee); nameDiv.appendChild(textNode);
+            if(empObj && !empObj.available){ 
+                const dot=document.createElement("span"); dot.classList.add("gray-dot"); 
+                nameDiv.appendChild(dot);
+            }
+            nameDiv.appendChild(document.createTextNode(shift.employee));
 
             div.appendChild(circle); div.appendChild(line); div.appendChild(timeDiv); div.appendChild(nameDiv);
-            div.addEventListener("click",()=>{ if(confirm("Shift verwijderen?")){ dayShifts.splice(index,1); if(dayShifts.length===0) delete week[day]; saveData(); renderWeek(); } });
+
+            // Shift verwijderen bij klik
+            div.addEventListener("click",()=>{
+                if(confirm("Shift verwijderen?")){
+                    dayShifts.splice(index,1); 
+                    if(dayShifts.length===0) delete week[day];
+                    saveData(); renderWeek();
+                }
+            });
+
             col.appendChild(div);
         });
         container.appendChild(col);
@@ -136,7 +156,6 @@ function addShiftPrompt(){
     const select=document.getElementById("selectEmployee"); select.innerHTML=""; employees.forEach(emp=>{ const o=document.createElement("option"); o.value=emp.name; o.innerText=emp.name; select.appendChild(o);});
     const selectRole=document.getElementById("selectRole"); selectRole.innerHTML=""; roles.forEach(r=>{ const o=document.createElement("option"); o.value=r.name; o.innerText=r.name; selectRole.appendChild(o);});
     const selectDay=document.getElementById("selectDay"); selectDay.innerHTML=""; days.forEach(d=>{ const o=document.createElement("option"); o.value=d; o.innerText=d; selectDay.appendChild(o);});
-    selectedShift=null;
 }
 
 function saveShift(){
@@ -153,8 +172,17 @@ function closePopup(){ document.getElementById("overlay").style.display="none"; 
 
 // --- Roles ---
 function openRoles(){ document.getElementById("overlay").style.display="block"; document.getElementById("rolePopup").style.display="block"; renderRoles(); }
-function renderRoles(){ const list=document.getElementById("roleList"); list.innerHTML=""; roles.forEach(r=>{ const div=document.createElement("div"); div.innerHTML=`<span style="background:${r.color};color:white;padding:2px 5px;border-radius:3px;">${r.name}</span>`; list.appendChild(div);}); }
-function addRolePrompt(){ const name=prompt("Naam rol:"); const color=prompt("Kleur rol (bijv red/#ff0000):"); if(name && color){ roles.push({name,color}); saveData(); renderRoles(); } }
+function renderRoles(){ 
+    const list=document.getElementById("roleList"); list.innerHTML="";
+    roles.forEach(r=>{ 
+        const div=document.createElement("div"); 
+        div.innerHTML=`<span style="background:${r.color};color:white;padding:2px 5px;border-radius:3px;">${r.name}</span> 
+        <button onclick="deleteRole('${r.name}')">Verwijderen</button>`; 
+        list.appendChild(div);
+    });
+}
+function addRolePrompt(){ const name=prompt("Naam rol:"); const color=prompt("Kleur rol (bijv red/#ff0000):"); if(name && color){ roles.push({name,color}); saveData(); renderRoles(); renderWeek(); } }
+function deleteRole(name){ if(confirm(`Weet je zeker dat je rol "${name}" wilt verwijderen?`)){ roles=roles.filter(r=>r.name!==name); employees.forEach(e=>{ if(e.role===name) e.role=""; }); saveData(); renderRoles(); renderWeek(); } }
 function closeRoles(){ document.getElementById("overlay").style.display="none"; document.getElementById("rolePopup").style.display="none"; }
 
 // --- Personnel ---
@@ -163,19 +191,37 @@ function renderPersonnel(){
     const list=document.getElementById("employeeList"); list.innerHTML="";
     employees.forEach(emp=>{
         const div=document.createElement("div");
-        div.innerHTML=`${emp.name} - Rol: ${emp.role} - Beschikbaar: <input type="checkbox" ${emp.available?"checked":""} onchange="toggleAvailability('${emp.name}',this)"> <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
+        const roleObj=roles.find(r=>r.name===emp.role);
+        div.innerHTML=`<span style="background:${roleObj?roleObj.color:"#666"};color:white;padding:2px 5px;border-radius:3px;">${emp.role || "Geen rol"}</span> ${emp.name} - Leeftijd: ${emp.age || "-"} - Uurloon: €${emp.hourly || "-"} - Beschikbaar: <input type="checkbox" ${emp.available?"checked":""} onchange="toggleAvailability('${emp.name}',this)"> 
+        <button onclick="editEmployee('${emp.name}')">Bewerk</button> <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
         list.appendChild(div);
     });
 }
-function addEmployeePrompt(){ const name=prompt("Naam:"); const role=prompt("Rol:"); if(name && role){ employees.push({name,role,available:true}); saveData(); renderPersonnel(); } }
+function addEmployeePrompt(){ 
+    const name=prompt("Naam:"); 
+    const age=parseInt(prompt("Leeftijd:")); 
+    const hourly=parseFloat(prompt("Uurloon:")); 
+    const role=prompt("Rol:"); 
+    if(name){ employees.push({name,age:age||0,hourly:hourly||0,role:role||"",available:true}); saveData(); renderPersonnel(); renderWeek(); } 
+}
+function editEmployee(name){
+    const emp=employees.find(e=>e.name===name);
+    if(!emp) return;
+    const newName=prompt("Naam:",emp.name);
+    const age=parseInt(prompt("Leeftijd:",emp.age));
+    const hourly=parseFloat(prompt("Uurloon:",emp.hourly));
+    const role=prompt("Rol:",emp.role);
+    emp.name=newName||emp.name; emp.age=age||emp.age; emp.hourly=hourly||emp.hourly; emp.role=role||emp.role;
+    saveData(); renderPersonnel(); renderWeek();
+}
 function closePersonnel(){ document.getElementById("overlay").style.display="none"; document.getElementById("personnelPopup").style.display="none"; }
 
 function toggleAvailability(name,checkbox){ const emp=employees.find(e=>e.name===name); if(emp){ emp.available=checkbox.checked; saveData(); renderWeek(); } }
 function removeEmployee(name){ if(confirm(`Weet je zeker dat je ${name} wilt verwijderen?`)){ employees=employees.filter(e=>e.name!==name); for(const w in scheduleData){ for(const d of days){ scheduleData[w][d]=scheduleData[w][d].filter(s=>s.employee!==name); } } saveData(); renderWeek(); renderPersonnel(); } }
 
 // --- Init ---
-loadData();
-renderWeek();
+loadData(); renderWeek();
 </script>
+
 </body>
 </html>
