@@ -27,8 +27,8 @@
         color: var(--text-dark);
     }
     .container {
-        max-width: 450px;
-        margin: 40px auto;
+        max-width: 520px;
+        margin: 30px auto;
         background: var(--card-light);
         padding: 20px;
         border-radius: 12px;
@@ -39,77 +39,21 @@
         background: var(--card-dark);
         box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
-    h2 {
-        margin-top: 0;
-        text-align: center;
+    h2 { margin-top: 0; text-align:center; }
+    label { display:block; margin-top:12px; font-weight:500; }
+    input, select, button, textarea {
+        width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:6px; font-size:14px; box-sizing:border-box;
     }
-    label {
-        display: block;
-        margin-top: 15px;
-        font-weight: 500;
-    }
-    input, select, button {
-        width: 100%;
-        padding: 10px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        margin-top: 5px;
-        font-size: 14px;
-        box-sizing: border-box;
-    }
-    body.dark input, body.dark select {
-        background: #3a3a3a;
-        color: #fff;
-        border: 1px solid #444;
-    }
-    .row {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-    }
-    button {
-        background: var(--primary);
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-weight: 600;
-    }
-    button:hover {
-        opacity: 0.9;
-    }
-    .small {
-        font-size: 12px;
-        opacity: 0.8;
-        margin-top: 10px;
-    }
-    .top-bar {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 15px;
-        align-items: center;
-    }
-    .lang-buttons button {
-        width: auto;
-        padding: 6px 10px;
-        margin-left: 5px;
-        border: 1px solid #ccc;
-        background: transparent;
-        color: inherit;
-    }
-    .lang-buttons button.active {
-        border-color: var(--primary);
-        font-weight: 600;
-    }
-    .theme-toggle {
-        cursor: pointer;
-        font-size: 20px;
-        user-select: none;
-    }
-    .warning {
-        color: #b33;
-        font-weight: 600;
-        margin-top: 8px;
-    }
+    button { background: var(--primary); color:#fff; border:none; font-weight:600; cursor:pointer; }
+    .row { display:flex; gap:10px; margin-top:10px; }
+    .small { font-size:12px; opacity:0.85; margin-top:10px; }
+    .top-bar { display:flex; justify-content:space-between; margin-bottom:15px; align-items:center; }
+    .lang-buttons button { width:auto; padding:6px 10px; margin-left:5px; border:1px solid #ccc; background:transparent; color:inherit; }
+    .lang-buttons button.active { border-color:var(--primary); font-weight:600; }
+    .theme-toggle { cursor:pointer; font-size:20px; user-select:none; }
+    .warning { background:#fff3cd; color:#856404; border-radius:6px; padding:10px; margin-top:12px; border:1px solid #ffeeba; }
+    .danger { background:#ffe6e6; color:#8b0000; border-radius:6px; padding:10px; margin-top:12px; border:1px solid #f5c6cb; font-weight:600; }
+    .muted { opacity:0.85; font-size:13px; }
 </style>
 </head>
 <body>
@@ -121,19 +65,32 @@
         </div>
         <div class="theme-toggle" id="themeToggle">🌙</div>
     </div>
-    
+
     <h2 id="title">Start een Game Helper</h2>
 
     <label id="label-uid">Console ID / Skin Key (UID)</label>
     <input id="uid" placeholder="Plak je UID hier" autocomplete="off" inputmode="text">
+
     <label><input type="checkbox" id="hideKey" checked> <span id="label-hidekey">Verberg geheime sleutel</span></label>
+
+    <!-- New: explicit confirmation to use raw UID -->
+    <div class="warning" id="rawWarning">
+        <div style="font-weight:600;">Belangrijk — raw UID gebruik</div>
+        <div class="muted" style="margin-top:6px;">
+            Als je je echte UID wilt gebruiken (bijvoorbeeld: <code>66464ffd-a57c-496c-b60f-79ecc0d82a4a</code>),
+            vink dan hieronder de bevestiging aan. De raw UID wordt <strong>niet</strong> opgeslagen in localStorage en
+            wordt alleen direct naar de server gestuurd wanneer jij expliciet bevestigt dat dit jouw eigen account is.
+        </div>
+    </div>
+
+    <label style="margin-top:10px;"><input type="checkbox" id="confirmRaw"> <strong>Ik bevestig dat dit mijn eigen Agar.io UID is en ik geef toestemming om deze éénmalig te gebruiken</strong></label>
 
     <div class="row">
         <button id="verifyBtn">Controleer & Koppel UID</button>
     </div>
 
     <div id="status" style="margin-top:10px; font-weight:500;"></div>
-    <div id="warning" class="warning" style="display:none;"></div>
+    <div id="warning" style="display:none; margin-top:8px;" class="danger"></div>
 
     <label id="label-region">Kies Bot Regio</label>
     <select id="region">
@@ -154,54 +111,50 @@
     <label id="label-party">Bot Party (link)</label>
     <input id="party" placeholder="https://r.agar.io/?party=...">
 
-    <button id="startBotBtn" style="margin-top:20px;">Start Bot</button>
+    <button id="startBotBtn" style="margin-top:14px;">Start Bot</button>
 
-    <p class="small" id="note">Voor veiligheid wordt alleen een hash van je UID opgeslagen en verzonden.</p>
+    <p class="small" id="note">Standaard: alleen een hash van je UID wordt gebruikt. Raw UID wordt alleen gebruikt wanneer je expliciet bevestigt.</p>
 </div>
 
 <script>
-/*
-  Veiligheids- en privacyverbeteringen:
-  - Client-side hashing (SHA-256) via Web Crypto API vóór verzending.
-  - Geen plain UID in localStorage; alleen hash.
-  - UID-extractie: zoekt naar UUID-achtige substring(s) in de invoer en gebruikt deze.
-*/
-
+/* Taal, thema, en helpers (zelfde pattern als eerder) */
 const translations = {
-    en: {
-        title: "Start a Game Helper",
-        uid: "Console ID / Skin Key (UID)",
-        hideKey: "Hide secret key",
-        verify: "Check & Link UID",
-        region: "Choose Bot Region",
-        mode: "Set Bot Game Mode",
-        botName: "Put Bot Name",
-        party: "Put Bot Party (link)",
-        start: "Start Bot",
-        note: "For security, only a hash of your UID is stored on the server.",
-        placeholderUid: "Paste your UID here",
-        placeholderBotName: "e.g. T.B",
-        placeholderParty: "https://r.agar.io/?party=...",
-        errorNoUid: "Please enter a UID first.",
-        multipleUids: "Multiple UID-like strings detected. Using the first one found."
-    },
-    nl: {
-        title: "Start een Game Helper",
-        uid: "Console ID / Skin Key (UID)",
-        hideKey: "Verberg geheime sleutel",
-        verify: "Controleer & Koppel UID",
-        region: "Kies Bot Regio",
-        mode: "Kies Bot Game Modus",
-        botName: "Bot Naam invullen",
-        party: "Bot Party (link)",
-        start: "Start Bot",
-        note: "Voor veiligheid wordt alleen een hash van je UID opgeslagen.",
-        placeholderUid: "Plak je UID hier",
-        placeholderBotName: "bijv. T.B",
-        placeholderParty: "https://r.agar.io/?party=...",
-        errorNoUid: "Voer eerst een UID in.",
-        multipleUids: "Meerdere UID-achtige strings gedetecteerd. Gebruik de eerste."
-    }
+  en: {
+    title: "Start a Game Helper",
+    uid: "Console ID / Skin Key (UID)",
+    hideKey: "Hide secret key",
+    verify: "Check & Link UID",
+    region: "Choose Bot Region",
+    mode: "Set Bot Game Mode",
+    botName: "Put Bot Name",
+    party: "Put Bot Party (link)",
+    start: "Start Bot",
+    note: "By default only a hash of your UID is used. Raw UID is only used with explicit confirmation.",
+    placeholderUid: "Paste your UID here",
+    placeholderBotName: "e.g. T.B",
+    placeholderParty: "https://r.agar.io/?party=...",
+    errorNoUid: "Please enter a UID first.",
+    multipleUids: "Multiple UID-like strings detected. Using the first one found.",
+    confirmRawLabel: "I confirm this is my own Agar.io UID and I consent to using it once."
+  },
+  nl: {
+    title: "Start een Game Helper",
+    uid: "Console ID / Skin Key (UID)",
+    hideKey: "Verberg geheime sleutel",
+    verify: "Controleer & Koppel UID",
+    region: "Kies Bot Regio",
+    mode: "Kies Bot Game Modus",
+    botName: "Bot Naam invullen",
+    party: "Bot Party (link)",
+    start: "Start Bot",
+    note: "Standaard: alleen een hash van je UID wordt gebruikt. Raw UID wordt alleen gebruikt met expliciete bevestiging.",
+    placeholderUid: "Plak je UID hier",
+    placeholderBotName: "bijv. T.B",
+    placeholderParty: "https://r.agar.io/?party=...",
+    errorNoUid: "Voer eerst een UID in.",
+    multipleUids: "Meerdere UID-achtige strings gedetecteerd. Gebruik de eerste.",
+    confirmRawLabel: "Ik bevestig dat dit mijn eigen Agar.io UID is en ik geef toestemming om deze éénmalig te gebruiken."
+  }
 };
 
 let currentLang = localStorage.getItem('lang') || 'nl';
@@ -222,44 +175,42 @@ function applyLanguage() {
     document.getElementById('uid').placeholder = t.placeholderUid;
     document.getElementById('botName').placeholder = t.placeholderBotName;
     document.getElementById('party').placeholder = t.placeholderParty;
-
-    document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
-    document.getElementById('lang-nl').classList.toggle('active', currentLang === 'nl');
+    // confirm raw label (text inside the confirmation checkbox)
+    const confirmLabel = document.querySelector('label[style*="margin-top:10px;"]');
+    if (confirmLabel) confirmLabel.innerHTML = `<input type="checkbox" id="confirmRaw"> <strong>${t.confirmRawLabel}</strong>`;
 }
-document.getElementById('lang-en').onclick = () => { currentLang = 'en'; localStorage.setItem('lang', 'en'); applyLanguage(); };
-document.getElementById('lang-nl').onclick = () => { currentLang = 'nl'; localStorage.setItem('lang', 'nl'); applyLanguage(); };
-
-function toggleTheme() {
-    const body = document.body;
-    body.classList.toggle('dark');
-    const isDark = body.classList.contains('dark');
-    document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-}
-document.getElementById('themeToggle').onclick = toggleTheme;
-
-(function initTheme() {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark') {
-        document.body.classList.add('dark');
-        document.getElementById('themeToggle').textContent = '☀️';
-    } else {
-        document.getElementById('themeToggle').textContent = '🌙';
-    }
-})();
-
 applyLanguage();
 
-// toggle masked input when hideKey checkbox changes
+/* Theme toggle */
+document.getElementById('themeToggle').onclick = () => {
+    document.body.classList.toggle('dark');
+    document.getElementById('themeToggle').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+};
+
+/* Mask input if hideKey checked */
 const uidInput = document.getElementById('uid');
 const hideKeyCheckbox = document.getElementById('hideKey');
 hideKeyCheckbox.addEventListener('change', () => {
-    // Use password type to mask; text to show.
     uidInput.type = hideKeyCheckbox.checked ? 'password' : 'text';
 });
-// initialize
 uidInput.type = hideKeyCheckbox.checked ? 'password' : 'text';
 
+/* Helpers: extract UUID-like substrings and sha256 */
+function extractUUIDs(text) {
+    if (!text) return [];
+    const regex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g;
+    return text.match(regex) || [];
+}
+
+async function sha256Hex(message) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* Simple POST helper */
 async function postJSON(url, data) {
     const res = await fetch(url, {
         method: 'POST',
@@ -269,74 +220,57 @@ async function postJSON(url, data) {
     return await res.json();
 }
 
+/* UI elements */
 const statusDiv = document.getElementById('status');
-const warnDiv = document.getElementById('warning');
+const dangerDiv = document.getElementById('warning');
+const confirmRawCheckbox = () => document.getElementById('confirmRaw');
 
-/**
- * Finds UUID-like substrings in input.
- * Pattern matches typical UUID v4-like: 8-4-4-4-12 hex groups.
- */
-function extractUUIDs(text) {
-    if (!text) return [];
-    const regex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g;
-    return text.match(regex) || [];
-}
-
-/**
- * SHA-256 hash using Web Crypto API.
- * Returns hex string.
- */
-async function sha256Hex(message) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-}
-
+/* Behavior for "Check & Link UID" */
 document.getElementById('verifyBtn').onclick = async () => {
-    warnDiv.style.display = 'none';
+    dangerDiv.style.display = 'none';
     const raw = uidInput.value.trim();
     if (!raw) {
         statusDiv.textContent = translations[currentLang].errorNoUid;
         return;
     }
-
     statusDiv.textContent = "Bezig...";
     try {
-        // extract UUID-like substrings if present
         const found = extractUUIDs(raw);
         let uidToUse = raw;
         if (found.length >= 1) {
-            // if multiple found, warn user and use the first one
             if (found.length > 1) {
-                warnDiv.textContent = translations[currentLang].multipleUids;
-                warnDiv.style.display = 'block';
+                dangerDiv.textContent = translations[currentLang].multipleUids;
+                dangerDiv.style.display = 'block';
             }
             uidToUse = found[0];
-        } else {
-            // no UUID pattern found — we'll still allow using the raw input but warn the user
-            // keep this behavior: it's up to user to paste valid identifier
-            // (we do NOT send raw UID to server — only hash)
         }
 
-        // Hash the uidToUse client-side
-        const hashed = await sha256Hex(uidToUse);
-
-        // Send only the hash to server
-        const resp = await postJSON('/api/verify-uid', { uidHash: hashed });
-        if (resp.ok) {
-            // store only minimal info locally and never the raw UID
-            linkedUser = {
-                id: resp.user.id,
-                uidHash: hashed,
-                display: resp.user.display || null
-            };
-            localStorage.setItem('linkedUser', JSON.stringify(linkedUser));
-            statusDiv.textContent = "✅ UID gekoppeld! User ID: " + resp.user.id;
+        // If user confirmed raw usage, send raw UID (but do NOT store it).
+        if (confirmRawCheckbox() && confirmRawCheckbox().checked) {
+            // explicit consent path
+            // send raw UID once and do not keep it in localStorage
+            const resp = await postJSON('/api/verify-uid', { uidRaw: uidToUse });
+            if (resp.ok) {
+                linkedUser = { id: resp.user.id, uidHash: await sha256Hex(uidToUse), display: resp.user.display || null };
+                // store only hash and id — NOT the raw UID
+                localStorage.setItem('linkedUser', JSON.stringify({ id: linkedUser.id, uidHash: linkedUser.uidHash, display: linkedUser.display }));
+                statusDiv.textContent = "✅ UID gekoppeld (raw gebruikt)! User ID: " + resp.user.id;
+            } else {
+                statusDiv.textContent = "❌ " + (resp.message || "Verificatie mislukt.");
+            }
+            // clear raw input immediately after use
+            uidInput.value = '';
         } else {
-            statusDiv.textContent = "❌ " + (resp.message || "Verificatie mislukt.");
+            // secure default path: hash client-side and send hash
+            const hashed = await sha256Hex(uidToUse);
+            const resp = await postJSON('/api/verify-uid', { uidHash: hashed });
+            if (resp.ok) {
+                linkedUser = { id: resp.user.id, uidHash: hashed, display: resp.user.display || null };
+                localStorage.setItem('linkedUser', JSON.stringify({ id: linkedUser.id, uidHash: linkedUser.uidHash, display: linkedUser.display }));
+                statusDiv.textContent = "✅ UID gekoppeld (hash gebruikt)! User ID: " + resp.user.id;
+            } else {
+                statusDiv.textContent = "❌ " + (resp.message || "Verificatie mislukt.");
+            }
         }
     } catch (e) {
         console.error(e);
@@ -344,26 +278,41 @@ document.getElementById('verifyBtn').onclick = async () => {
     }
 };
 
+/* Start bot: if raw UID was just used and not stored, we allow passing raw UID from current input
+   only when user re-checks confirmRaw. Otherwise pass stored uidHash. */
 document.getElementById('startBotBtn').onclick = async () => {
-    warnDiv.style.display = 'none';
+    dangerDiv.style.display = 'none';
     if (!linkedUser) {
         statusDiv.textContent = "❌ UID niet gekoppeld.";
         return;
     }
 
-    const data = {
+    const payload = {
         userId: linkedUser.id,
-        // we still avoid sending any raw UID; if server needs proof it should use the stored hash
-        uidHash: linkedUser.uidHash,
+        uidHash: linkedUser.uidHash, // default
         botName: document.getElementById('botName').value.trim(),
         region: document.getElementById('region').value,
         mode: document.getElementById('mode').value,
         party: document.getElementById('party').value.trim()
     };
 
+    // If user currently confirms raw UID and there's something in the input, allow sending rawUID instead of hash.
+    const rawCandidate = uidInput.value.trim();
+    if (confirmRawCheckbox() && confirmRawCheckbox().checked && rawCandidate) {
+        // extract/normalize
+        const found = extractUUIDs(rawCandidate);
+        const uidToUse = (found.length ? found[0] : rawCandidate);
+        // include rawUID only if user explicitly confirmed
+        payload.uidRaw = uidToUse;
+        // still include uidHash for server-side reference
+        payload.uidHash = await sha256Hex(uidToUse);
+        // clear input after use
+        uidInput.value = '';
+    }
+
     statusDiv.textContent = "...";
     try {
-        const resp = await postJSON('/api/start-bot', data);
+        const resp = await postJSON('/api/start-bot', payload);
         if (resp.ok) {
             statusDiv.textContent = "✅ Bot gestart! Session ID: " + resp.sessionId;
         } else {
