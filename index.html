@@ -3,34 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tamigo-achtig Werkrooster</title>
+<title>Tamigo-achtig Werkrooster Uitgebreid</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
-.container { width:360px; height:600px; background:white; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.3); overflow:hidden; position:relative; display:flex; flex-direction:column; }
-.day-display { flex:1; display:flex; flex-direction:column; align-items:center; padding:20px; transition:transform 0.3s; width:100%; text-align:center; overflow-y:auto; }
-.day-display h2 { margin-bottom:15px; }
-.shift { width:90%; padding:10px; margin:5px 0; border-radius:5px; color:white; cursor:pointer; }
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+h1 { text-align:center; margin:20px 0; }
+#controls { text-align:center; margin-bottom:10px; }
+#controls button { margin:0 5px; padding:8px 12px; }
+.container { display:flex; flex-direction:column; align-items:center; }
+.week-view { display:flex; justify-content:center; margin-bottom:10px; overflow-x:auto; }
+.day-column { width:150px; background:white; border-radius:10px; padding:10px; margin:5px; box-shadow:0 3px 10px rgba(0,0,0,0.2); flex-shrink:0; }
+.day-column h3 { text-align:center; margin-bottom:10px; }
+.shift { width:90%; padding:5px; margin:5px 0; border-radius:5px; color:white; cursor:pointer; user-select:none; }
 .shift.work { background:#007bff; }
 .shift.off { background:#28a745; }
 .shift.vacation { background:#dc3545; }
-.arrow { position:absolute; top:50%; transform:translateY(-50%); font-size:2em; cursor:pointer; user-select:none; }
-.left { left:10px; }
-.right { right:10px; }
 #popup, #personnelPopup, #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; }
 #overlay { background: rgba(0,0,0,0.5); z-index:500; }
 #popup, #personnelPopup { background:#fff; padding:20px; border-radius:10px; width:300px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
 input, select { width:100%; margin-bottom:10px; padding:5px; }
-button { padding:5px 10px; margin-top:5px; }
+.shift.dragging { opacity:0.5; }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="arrow left" onclick="prevDay()">&#8592;</div>
-    <div class="arrow right" onclick="nextDay()">&#8594;</div>
-    <div id="dayContainer"></div>
-    <button onclick="addShiftPrompt()" style="margin:10px;">Shift Toevoegen</button>
+<h1>Tamigo-achtig Werkrooster</h1>
+<div id="controls">
+    <button onclick="addShiftPrompt()">Shift Toevoegen</button>
     <button onclick="openPersonnel()">Personeel</button>
+    <button onclick="toggleWeekView()">Weekweergave</button>
+</div>
+
+<div class="container" id="container">
+    <div class="week-view" id="weekContainer"></div>
 </div>
 
 <div id="overlay"></div>
@@ -44,6 +48,12 @@ button { padding:5px 10px; margin-top:5px; }
     <input type="time" id="endTime" value="17:00">
     <label>Medewerker:</label>
     <select id="selectEmployee"></select>
+    <label>Type shift:</label>
+    <select id="shiftType">
+        <option value="work">Werk</option>
+        <option value="off">Vrij</option>
+        <option value="vacation">Verlof</option>
+    </select>
     <button onclick="saveShift()">Opslaan</button>
     <button onclick="closePopup()">Annuleren</button>
 </div>
@@ -57,31 +67,46 @@ button { padding:5px 10px; margin-top:5px; }
 </div>
 
 <script>
-const days = ["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag","Zondag"];
-let employees = [
+const days=["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag","Zondag"];
+let employees=[
     {name:"Jan",age:25,hourly:15,maxHours:40,workedHours:0},
     {name:"Lisa",age:30,hourly:20,maxHours:40,workedHours:0}
 ];
-let scheduleData = {};
+let scheduleData={}; // day -> array of shifts
 days.forEach(day=>scheduleData[day]=[]);
-
-let currentDay=0;
 let selectedShift=null;
+let weekView=false;
 
-function renderDay(){
-    const container=document.getElementById("dayContainer");
+function renderWeek(){
+    const container=document.getElementById("weekContainer");
     container.innerHTML="";
-    const dayDiv=document.createElement("div");
-    dayDiv.classList.add("day-display");
-    dayDiv.innerHTML=`<h2>${days[currentDay]}</h2>`;
-    scheduleData[days[currentDay]].forEach(shift=>{
-        const div=document.createElement("div");
-        div.classList.add("shift",shift.type);
-        div.innerText=`${shift.start} - ${shift.end}\n${shift.employee}`;
-        div.addEventListener("click",()=>editShift(shift));
-        dayDiv.appendChild(div);
+    days.forEach(day=>{
+        const col=document.createElement("div");
+        col.classList.add("day-column");
+        col.innerHTML=`<h3>${day}</h3>`;
+        scheduleData[day].forEach(shift=>{
+            const div=document.createElement("div");
+            div.classList.add("shift",shift.type);
+            div.draggable=true;
+            div.innerText=`${shift.start} - ${shift.end}\n${shift.employee}`;
+            div.addEventListener("click",()=>editShift(shift));
+            div.addEventListener("dragstart",e=>{ e.dataTransfer.setData("text", JSON.stringify(shift)); div.classList.add("dragging"); });
+            div.addEventListener("dragend",e=>{ div.classList.remove("dragging"); });
+            col.appendChild(div);
+        });
+        col.addEventListener("dragover",e=>e.preventDefault());
+        col.addEventListener("drop",e=>{
+            e.preventDefault();
+            const shiftData=JSON.parse(e.dataTransfer.getData("text"));
+            // Verplaats naar deze dag
+            scheduleData[day].push({...shiftData});
+            // Verwijder uit origineel
+            const origDay=days.find(d=>scheduleData[d].includes(shiftData));
+            if(origDay) scheduleData[origDay]=scheduleData[origDay].filter(s=>s!==shiftData);
+            renderWeek();
+        });
+        container.appendChild(col);
     });
-    container.appendChild(dayDiv);
     calculateHours();
 }
 
@@ -106,6 +131,7 @@ function editShift(shift){
     document.getElementById("startTime").value=shift.start;
     document.getElementById("endTime").value=shift.end;
     document.getElementById("selectEmployee").value=shift.employee;
+    document.getElementById("shiftType").value=shift.type;
     selectedShift=shift;
 }
 
@@ -113,36 +139,22 @@ function saveShift(){
     const start=document.getElementById("startTime").value;
     const end=document.getElementById("endTime").value;
     const emp=document.getElementById("selectEmployee").value;
-    const type="work";
+    const type=document.getElementById("shiftType").value;
     if(selectedShift){
         selectedShift.start=start;
         selectedShift.end=end;
         selectedShift.employee=emp;
         selectedShift.type=type;
     } else {
-        scheduleData[days[currentDay]].push({start,end,employee:emp,type});
+        // Voeg toe aan eerste dag of huidige dag
+        const day=weekView?days[0]:days[0];
+        scheduleData[day].push({start,end,employee:emp,type});
     }
     closePopup();
-    renderDay();
+    renderWeek();
 }
 
-function closePopup(){
-    document.getElementById("overlay").style.display="none";
-    document.getElementById("popup").style.display="none";
-}
-
-// Swipe
-let startX=0;
-const containerEl=document.getElementById("dayContainer");
-containerEl.addEventListener("touchstart",e=>{startX=e.touches[0].clientX;});
-containerEl.addEventListener("touchend",e=>{
-    const endX=e.changedTouches[0].clientX;
-    if(startX-endX>50) nextDay();
-    if(endX-startX>50) prevDay();
-});
-
-function nextDay(){ currentDay=(currentDay+1)%7; renderDay();}
-function prevDay(){ currentDay=(currentDay+7-1)%7; renderDay();}
+function closePopup(){ document.getElementById("overlay").style.display="none"; document.getElementById("popup").style.display="none"; }
 
 // Personnel
 function openPersonnel(){
@@ -151,8 +163,8 @@ function openPersonnel(){
     const list=document.getElementById("employeeList");
     list.innerHTML="";
     employees.forEach(emp=>{
-        const div=document.createElement("div");
         const worked=sumHours(emp.name);
+        const div=document.createElement("div");
         div.innerHTML=`<b>${emp.name}</b> - Leeftijd: ${emp.age} - Uurloon: €${emp.hourly} - Max uren/week: ${emp.maxHours} - Gewerkt: ${worked} - Plus/Min: ${worked-emp.maxHours}`;
         list.appendChild(div);
     });
@@ -190,8 +202,11 @@ function calculateHours(){
     employees.forEach(emp=>emp.workedHours=sumHours(emp.name));
 }
 
+// Toggle week/day view
+function toggleWeekView(){ weekView=!weekView; renderWeek(); }
+
 // Init
-renderDay();
+renderWeek();
 </script>
 
 </body>
