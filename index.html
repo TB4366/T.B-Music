@@ -3,43 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tamigo-achtig Werkrooster Uitgebreid</title>
+<title>Visueel Tamigo Rooster</title>
 <style>
 body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
-h1 { text-align:center; margin:20px 0; }
+h1 { text-align:center; margin:15px 0; }
 #controls { text-align:center; margin-bottom:10px; }
-#controls button { margin:0 5px; padding:8px 12px; }
-.container { display:flex; flex-direction:column; align-items:center; }
-.week-view { display:flex; justify-content:center; margin-bottom:10px; overflow-x:auto; }
-.day-column { width:150px; background:white; border-radius:10px; padding:10px; margin:5px; box-shadow:0 3px 10px rgba(0,0,0,0.2); flex-shrink:0; }
+#controls button { margin:0 5px; padding:6px 10px; }
+.container { display:flex; justify-content:center; flex-wrap:wrap; }
+.day-column { width:250px; background:white; border-radius:10px; padding:10px; margin:10px; box-shadow:0 3px 10px rgba(0,0,0,0.2); flex-shrink:0; }
 .day-column h3 { text-align:center; margin-bottom:10px; }
-.shift { width:90%; padding:5px; margin:5px 0; border-radius:5px; color:white; cursor:pointer; user-select:none; }
-.shift.work { background:#007bff; }
-.shift.off { background:#28a745; }
-.shift.vacation { background:#dc3545; }
-#popup, #personnelPopup, #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; }
+.shift { display:flex; align-items:center; padding:5px; margin:5px 0; border-radius:5px; cursor:pointer; user-select:none; }
+.role-circle { width:20px; height:20px; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-weight:bold; margin-right:5px; flex-shrink:0; }
+.shift-line { flex:1; height:2px; background:#ccc; margin:0 5px; }
+.shift-time { width:70px; text-align:center; margin-right:5px; font-size:0.9em; flex-shrink:0;}
+.shift-name { flex-shrink:1; font-weight:bold; }
+#popup, #rolePopup, #personnelPopup, #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; }
 #overlay { background: rgba(0,0,0,0.5); z-index:500; }
-#popup, #personnelPopup { background:#fff; padding:20px; border-radius:10px; width:300px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
+#popup, #rolePopup, #personnelPopup { background:#fff; padding:20px; border-radius:10px; width:320px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
 input, select { width:100%; margin-bottom:10px; padding:5px; }
-.shift.dragging { opacity:0.5; }
 </style>
 </head>
 <body>
 
-<h1>Tamigo-achtig Werkrooster</h1>
+<h1>Visueel Tamigo Rooster</h1>
 <div id="controls">
     <button onclick="addShiftPrompt()">Shift Toevoegen</button>
     <button onclick="openPersonnel()">Personeel</button>
-    <button onclick="toggleWeekView()">Weekweergave</button>
+    <button onclick="openRoles()">Rollen Beheren</button>
 </div>
 
-<div class="container" id="container">
-    <div class="week-view" id="weekContainer"></div>
-</div>
+<div class="container" id="weekContainer"></div>
 
 <div id="overlay"></div>
 
-<!-- Shift popup -->
+<!-- Shift Popup -->
 <div id="popup">
     <h3>Shift Toevoegen</h3>
     <label>Begin tijd:</label>
@@ -48,35 +45,38 @@ input, select { width:100%; margin-bottom:10px; padding:5px; }
     <input type="time" id="endTime" value="17:00">
     <label>Medewerker:</label>
     <select id="selectEmployee"></select>
-    <label>Type shift:</label>
-    <select id="shiftType">
-        <option value="work">Werk</option>
-        <option value="off">Vrij</option>
-        <option value="vacation">Verlof</option>
-    </select>
+    <label>Rol:</label>
+    <select id="selectRole"></select>
     <button onclick="saveShift()">Opslaan</button>
     <button onclick="closePopup()">Annuleren</button>
 </div>
 
-<!-- Personeel popup -->
+<!-- Role Popup -->
+<div id="rolePopup">
+    <h3>Rollen Beheren</h3>
+    <div id="roleList"></div>
+    <button onclick="addRolePrompt()">Nieuwe Rol</button>
+    <button onclick="closeRoles()">Sluiten</button>
+</div>
+
+<!-- Personnel Popup -->
 <div id="personnelPopup">
     <h3>Personeel</h3>
     <div id="employeeList"></div>
-    <button onclick="addEmployeePrompt()">Nieuwe medewerker</button>
+    <button onclick="addEmployeePrompt()">Nieuwe Medewerker</button>
     <button onclick="closePersonnel()">Sluiten</button>
 </div>
 
 <script>
+// Data
 const days=["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag","Zondag"];
-let employees=[
-    {name:"Jan",age:25,hourly:15,maxHours:40,workedHours:0},
-    {name:"Lisa",age:30,hourly:20,maxHours:40,workedHours:0}
-];
-let scheduleData={}; // day -> array of shifts
-days.forEach(day=>scheduleData[day]=[]);
-let selectedShift=null;
-let weekView=false;
+let employees=[{name:"Koe",age:25,hourly:15,maxHours:40,workedHours:0,role:"Leidinggevende"}];
+let roles=[{name:"Leidinggevende",color:"red"},{name:"Medewerker",color:"blue"}];
+let scheduleData={}; days.forEach(day=>scheduleData[day]=[]);
 
+let selectedShift=null;
+
+// Render Week
 function renderWeek(){
     const container=document.getElementById("weekContainer");
     container.innerHTML="";
@@ -86,42 +86,45 @@ function renderWeek(){
         col.innerHTML=`<h3>${day}</h3>`;
         scheduleData[day].forEach(shift=>{
             const div=document.createElement("div");
-            div.classList.add("shift",shift.type);
-            div.draggable=true;
-            div.innerText=`${shift.start} - ${shift.end}\n${shift.employee}`;
+            div.classList.add("shift");
+            // Rol kleur
+            const roleObj=roles.find(r=>r.name===shift.role);
+            const circle=document.createElement("div");
+            circle.classList.add("role-circle");
+            circle.style.backgroundColor=roleObj?roleObj.color:"#666";
+            circle.innerText=shift.employee.charAt(0).toUpperCase();
+            // Line
+            const line=document.createElement("div");
+            line.classList.add("shift-line");
+            // Tijd
+            const timeDiv=document.createElement("div");
+            timeDiv.classList.add("shift-time");
+            timeDiv.innerText=`${shift.start}-${shift.end}`;
+            // Naam
+            const nameDiv=document.createElement("div");
+            nameDiv.classList.add("shift-name");
+            nameDiv.innerText=shift.employee;
+            div.appendChild(circle);
+            div.appendChild(line);
+            div.appendChild(timeDiv);
+            div.appendChild(nameDiv);
             div.addEventListener("click",()=>editShift(shift));
-            div.addEventListener("dragstart",e=>{ e.dataTransfer.setData("text", JSON.stringify(shift)); div.classList.add("dragging"); });
-            div.addEventListener("dragend",e=>{ div.classList.remove("dragging"); });
             col.appendChild(div);
-        });
-        col.addEventListener("dragover",e=>e.preventDefault());
-        col.addEventListener("drop",e=>{
-            e.preventDefault();
-            const shiftData=JSON.parse(e.dataTransfer.getData("text"));
-            // Verplaats naar deze dag
-            scheduleData[day].push({...shiftData});
-            // Verwijder uit origineel
-            const origDay=days.find(d=>scheduleData[d].includes(shiftData));
-            if(origDay) scheduleData[origDay]=scheduleData[origDay].filter(s=>s!==shiftData);
-            renderWeek();
         });
         container.appendChild(col);
     });
-    calculateHours();
 }
 
-// Shift popup
+// Shift Popup
 function addShiftPrompt(){
     document.getElementById("overlay").style.display="block";
     document.getElementById("popup").style.display="block";
     const select=document.getElementById("selectEmployee");
     select.innerHTML="";
-    employees.forEach(emp=>{
-        const option=document.createElement("option");
-        option.value=emp.name;
-        option.innerText=emp.name;
-        select.appendChild(option);
-    });
+    employees.forEach(emp=>{const o=document.createElement("option"); o.value=emp.name; o.innerText=emp.name; select.appendChild(o);});
+    const selectRole=document.getElementById("selectRole");
+    selectRole.innerHTML="";
+    roles.forEach(r=>{const o=document.createElement("option"); o.value=r.name; o.innerText=r.name; selectRole.appendChild(o);});
     selectedShift=null;
 }
 
@@ -131,7 +134,7 @@ function editShift(shift){
     document.getElementById("startTime").value=shift.start;
     document.getElementById("endTime").value=shift.end;
     document.getElementById("selectEmployee").value=shift.employee;
-    document.getElementById("shiftType").value=shift.type;
+    document.getElementById("selectRole").value=shift.role;
     selectedShift=shift;
 }
 
@@ -139,33 +142,56 @@ function saveShift(){
     const start=document.getElementById("startTime").value;
     const end=document.getElementById("endTime").value;
     const emp=document.getElementById("selectEmployee").value;
-    const type=document.getElementById("shiftType").value;
-    if(selectedShift){
-        selectedShift.start=start;
-        selectedShift.end=end;
-        selectedShift.employee=emp;
-        selectedShift.type=type;
-    } else {
-        // Voeg toe aan eerste dag of huidige dag
-        const day=weekView?days[0]:days[0];
-        scheduleData[day].push({start,end,employee:emp,type});
+    const role=document.getElementById("selectRole").value;
+    if(selectedShift){ selectedShift.start=start; selectedShift.end=end; selectedShift.employee=emp; selectedShift.role=role; }
+    else{ 
+        const day=prompt("Voor welke dag? (bijv. Maandag)"); 
+        if(!days.includes(day)){ alert("Ongeldige dag"); return; }
+        scheduleData[day].push({start,end,employee:emp,role});
     }
-    closePopup();
-    renderWeek();
+    closePopup(); renderWeek();
 }
 
 function closePopup(){ document.getElementById("overlay").style.display="none"; document.getElementById("popup").style.display="none"; }
+
+// Roles
+function openRoles(){
+    document.getElementById("overlay").style.display="block";
+    document.getElementById("rolePopup").style.display="block";
+    renderRoles();
+}
+
+function renderRoles(){
+    const list=document.getElementById("roleList");
+    list.innerHTML="";
+    roles.forEach((r,i)=>{
+        const div=document.createElement("div");
+        div.innerHTML=`<span style="background:${r.color};color:white;padding:2px 5px;border-radius:3px;">${r.name}</span>`;
+        list.appendChild(div);
+    });
+}
+
+function addRolePrompt(){
+    const name=prompt("Naam van rol:");
+    const color=prompt("Kleur van rol (bijv. red, #ff0000):");
+    if(name && color){ roles.push({name,color}); renderRoles(); }
+}
+
+function closeRoles(){ document.getElementById("overlay").style.display="none"; document.getElementById("rolePopup").style.display="none"; }
 
 // Personnel
 function openPersonnel(){
     document.getElementById("overlay").style.display="block";
     document.getElementById("personnelPopup").style.display="block";
+    renderPersonnel();
+}
+
+function renderPersonnel(){
     const list=document.getElementById("employeeList");
     list.innerHTML="";
     employees.forEach(emp=>{
-        const worked=sumHours(emp.name);
         const div=document.createElement("div");
-        div.innerHTML=`<b>${emp.name}</b> - Leeftijd: ${emp.age} - Uurloon: €${emp.hourly} - Max uren/week: ${emp.maxHours} - Gewerkt: ${worked} - Plus/Min: ${worked-emp.maxHours}`;
+        div.innerText=`${emp.name} - Rol: ${emp.role} - Leeftijd: ${emp.age} - Uurloon: €${emp.hourly}`;
         list.appendChild(div);
     });
 }
@@ -174,36 +200,11 @@ function addEmployeePrompt(){
     const name=prompt("Naam medewerker:");
     const age=parseInt(prompt("Leeftijd:"));
     const hourly=parseFloat(prompt("Uurloon:"));
-    const maxHours=parseInt(prompt("Max uren/week:"));
-    if(name && !isNaN(age) && !isNaN(hourly) && !isNaN(maxHours)){
-        employees.push({name,age,hourly,maxHours,workedHours:0});
-        openPersonnel();
-    }
+    const role=prompt("Rol van medewerker (exacte naam van rol):");
+    if(name && !isNaN(age) && !isNaN(hourly) && role){ employees.push({name,age,hourly,workedHours:0,role}); renderPersonnel(); }
 }
 
 function closePersonnel(){ document.getElementById("overlay").style.display="none"; document.getElementById("personnelPopup").style.display="none"; }
-
-// Bereken gewerkte uren
-function sumHours(name){
-    let total=0;
-    days.forEach(day=>{
-        scheduleData[day].forEach(shift=>{
-            if(shift.employee===name){
-                const [sh,sm]=shift.start.split(":").map(Number);
-                const [eh,em]=shift.end.split(":").map(Number);
-                total+= (eh+em/60)-(sh+sm/60);
-            }
-        });
-    });
-    return total;
-}
-
-function calculateHours(){
-    employees.forEach(emp=>emp.workedHours=sumHours(emp.name));
-}
-
-// Toggle week/day view
-function toggleWeekView(){ weekView=!weekView; renderWeek(); }
 
 // Init
 renderWeek();
