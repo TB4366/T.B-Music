@@ -3,77 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dag Planning</title>
+<title>Tamigo-achtig Werkrooster</title>
 <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
-    .container { width: 300px; height: 500px; background:white; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.3); display:flex; flex-direction:column; overflow:hidden; position:relative; }
-    .day { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; transition: transform 0.3s; text-align:center; padding:20px; }
-    .day h2 { font-size:2em; margin-bottom:10px; }
-    .time { font-size:1.2em; margin-bottom:20px; }
-    .employee { background:#cce5ff; padding:5px 10px; margin:5px 0; border-radius:5px; width:80%; text-align:center; }
-    .arrow { position:absolute; top:50%; transform:translateY(-50%); font-size:2em; cursor:pointer; user-select:none; }
-    .left { left:10px; }
-    .right { right:10px; }
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+h1 { text-align:center; margin:20px 0; }
+#controls { text-align:center; margin-bottom:10px; }
+#controls button { margin:0 5px; padding:8px 12px; }
+#schedule { display:flex; overflow-x:hidden; margin:0 auto; width:90%; max-width:1000px; border:1px solid #ccc; border-radius:10px; background:white; }
+.day-column { min-width:140px; border-right:1px solid #ddd; flex-shrink:0; display:flex; flex-direction:column; align-items:center; padding:10px; transition:0.3s; }
+.day-column:last-child { border-right:none; }
+.day-column h3 { margin:5px 0; }
+.shift { width:100%; margin:5px 0; padding:5px; border-radius:5px; color:white; cursor:pointer; text-align:center; }
+.shift.work { background:#007bff; }
+.shift.off { background:#28a745; }
+.shift.vacation { background:#dc3545; }
+.popup, .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; }
+.overlay { background: rgba(0,0,0,0.5); z-index:500; }
+.popup { background:#fff; padding:20px; border-radius:10px; width:300px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
+.popup input, .popup select { margin-bottom:10px; width:100%; padding:5px; }
+#employees { margin-top:10px; }
+.employee { padding:5px; margin:3px 0; background:#f2f2f2; border-radius:5px; display:flex; justify-content:space-between; align-items:center; width:90%; }
+.employee button { background:red; color:white; border:none; border-radius:3px; cursor:pointer; padding:2px 5px; }
 </style>
 </head>
 <body>
 
-<div class="container" id="container">
-    <div class="arrow left" onclick="prevDay()">&#8592;</div>
-    <div class="arrow right" onclick="nextDay()">&#8594;</div>
+<h1>Tamigo-achtig Werkrooster</h1>
+
+<div id="controls">
+    <button onclick="prevWeek()">&#8592; Vorige Week</button>
+    <span id="weekLabel"></span>
+    <button onclick="nextWeek()">Volgende Week &#8594;</button>
+    <button onclick="addEmployee()">Medewerker Toevoegen</button>
+</div>
+
+<div id="schedule"></div>
+
+<div class="overlay" id="overlay"></div>
+<div class="popup" id="popup">
+    <h3>Shift Instellingen</h3>
+    <select id="shiftType">
+        <option value="work">Werk</option>
+        <option value="off">Vrij</option>
+        <option value="vacation">Verlof</option>
+    </select>
+    <input type="text" id="shiftTime" placeholder="bijv. 09:00-17:00">
+    <button onclick="saveShift()">Opslaan</button>
+    <button onclick="closePopup()">Annuleren</button>
 </div>
 
 <script>
 const days = ["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag","Zondag"];
-const schedule = {
-    "Maandag": ["Jan","Lisa"],
-    "Dinsdag": ["Lisa"],
-    "Woensdag": ["Jan","Sofie"],
-    "Donderdag": ["Lisa","Sofie"],
-    "Vrijdag": ["Jan"],
-    "Zaterdag": ["Sofie"],
-    "Zondag": ["Lisa"]
-};
+let employees = ["Jan","Lisa","Sofie"];
+let currentWeek = 0;
+let scheduleData = {}; // week -> day -> employee -> shift {type,time}
+let selectedShift = null;
 
-let currentDay = 0;
+function getWeekKey(){ return "week"+currentWeek; }
+function initWeek(){ 
+    const key = getWeekKey();
+    if(!scheduleData[key]){
+        scheduleData[key]={};
+        days.forEach(day=>{
+            scheduleData[key][day]={};
+            employees.forEach(emp=>{
+                scheduleData[key][day][emp]={type:"work",time:"09:00-18:00"};
+            });
+        });
+    }
+}
 
-const container = document.getElementById('container');
-
-function renderDay(){
-    container.querySelectorAll('.day').forEach(d => d.remove()); // oude verwijderen
-    const dayDiv = document.createElement('div');
-    dayDiv.classList.add('day');
-    dayDiv.innerHTML = `<h2>${days[currentDay]}</h2>
-                        <div class="time">09:00 - 18:00</div>`;
-    schedule[days[currentDay]].forEach(name => {
-        const empDiv = document.createElement('div');
-        empDiv.classList.add('employee');
-        empDiv.innerText = name;
-        dayDiv.appendChild(empDiv);
+function renderWeek(){
+    initWeek();
+    document.getElementById("weekLabel").innerText = "Week "+(currentWeek+1);
+    const container = document.getElementById("schedule");
+    container.innerHTML="";
+    const key = getWeekKey();
+    days.forEach(day=>{
+        const col = document.createElement("div");
+        col.classList.add("day-column");
+        col.innerHTML=`<h3>${day}</h3>`;
+        employees.forEach(emp=>{
+            const shift = scheduleData[key][day][emp];
+            const div = document.createElement("div");
+            div.classList.add("shift",shift.type);
+            div.innerText = `${shift.time}\n${emp}`;
+            div.addEventListener("click", ()=>openPopup(day,emp));
+            col.appendChild(div);
+        });
+        container.appendChild(col);
     });
-    container.appendChild(dayDiv);
 }
 
-// Swipe functionaliteit
-let startX = 0;
-container.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
-container.addEventListener('touchend', e => {
-    let endX = e.changedTouches[0].clientX;
-    if(startX - endX > 50) nextDay();
-    if(endX - startX > 50) prevDay();
-});
-
-function nextDay(){
-    currentDay = (currentDay + 1) % 7;
-    renderDay();
-}
-function prevDay(){
-    currentDay = (currentDay + 7 -1) %7;
-    renderDay();
+function openPopup(day,emp){
+    selectedShift = {day,emp};
+    const shift = scheduleData[getWeekKey()][day][emp];
+    document.getElementById("shiftType").value = shift.type;
+    document.getElementById("shiftTime").value = shift.time;
+    document.getElementById("overlay").style.display="block";
+    document.getElementById("popup").style.display="block";
 }
 
-// Eerste render
-renderDay();
+function saveShift(){
+    const type = document.getElementById("shiftType").value;
+    const time = document.getElementById("shiftTime").value;
+    const key = getWeekKey();
+    const {day,emp} = selectedShift;
+    scheduleData[key][day][emp] = {type,time};
+    closePopup();
+    renderWeek();
+}
+
+function closePopup(){
+    document.getElementById("overlay").style.display="none";
+    document.getElementById("popup").style.display="none";
+}
+
+// Week navigatie
+function nextWeek(){ currentWeek++; renderWeek(); }
+function prevWeek(){ currentWeek--; renderWeek(); }
+
+// Medewerker toevoegen
+function addEmployee(){
+    const name = prompt("Naam nieuwe medewerker:");
+    if(!name) return;
+    employees.push(name);
+    // Voeg nieuwe medewerker toe aan bestaande weken
+    Object.keys(scheduleData).forEach(week=>{
+        days.forEach(day=>{
+            scheduleData[week][day][name]={type:"work",time:"09:00-18:00"};
+        });
+    });
+    renderWeek();
+}
+
+// Init
+renderWeek();
 </script>
 
 </body>
