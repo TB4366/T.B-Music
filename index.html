@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Werkrooster</title>
+<title>Interactief Werkrooster</title>
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -49,13 +49,57 @@
         font-weight: bold;
         background-color: #f2f2f2;
     }
+
+    /* Popup Styling */
+    .popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        z-index: 1000;
+    }
+
+    .popup input {
+        padding: 5px;
+        width: 120px;
+        margin-right: 10px;
+    }
+
+    .overlay {
+        display: none;
+        position: fixed;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 500;
+    }
+
+    .settings-btn {
+        margin-bottom: 15px;
+        padding: 8px 15px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
 </style>
 </head>
 <body>
 
-<h1>Werkrooster</h1>
+<h1>Interactief Werkrooster</h1>
 
-<table>
+<button class="settings-btn" onclick="openSettings()">Instellingen</button>
+
+<table id="rooster">
     <thead>
         <tr>
             <th>Medewerker</th>
@@ -89,18 +133,55 @@
             <td class="shift">Vrij</td>
             <td class="shift">10:00 - 14:00</td>
         </tr>
-        <tr>
-            <td class="employee-name">Sofie</td>
-            <td class="shift">Vrij</td>
-            <td class="shift">09:00 - 17:00</td>
-            <td class="shift">09:00 - 17:00</td>
-            <td class="shift">09:00 - 17:00</td>
-            <td class="shift">12:00 - 20:00</td>
-            <td class="shift">12:00 - 20:00</td>
-            <td class="shift">Vrij</td>
-        </tr>
     </tbody>
 </table>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="popup" id="popup">
+    <h3>Wijzig werktijd</h3>
+    <input type="text" id="shiftInput" placeholder="bijv. 09:00 - 17:00">
+    <button onclick="saveShift()">Opslaan</button>
+    <button onclick="closePopup()">Annuleren</button>
+</div>
+
+<script>
+let selectedCell = null;
+
+// Klik op een shift cel
+document.querySelectorAll('td.shift').forEach(cell => {
+    cell.addEventListener('click', () => {
+        selectedCell = cell;
+        document.getElementById('shiftInput').value = cell.innerText;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('popup').style.display = 'block';
+    });
+});
+
+// Opslaan van shift
+function saveShift() {
+    if(selectedCell) {
+        const newTime = document.getElementById('shiftInput').value.trim();
+        if(newTime === "") {
+            selectedCell.innerText = "Vrij";
+        } else {
+            selectedCell.innerText = newTime;
+        }
+    }
+    closePopup();
+}
+
+// Sluit popup
+function closePopup() {
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('popup').style.display = 'none';
+}
+
+// Settings knop (voorbeeld, kan later uitgebreid worden)
+function openSettings() {
+    alert("Hier kun je extra instellingen toevoegen, zoals werkuren of kleurcodes.");
+}
+</script>
 
 </body>
 </html>
