@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tamigo-achtig Rooster</title>
+<title>Tamigo Systeem</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+body { font-family: Arial,sans-serif; margin:0; padding:0; background:#f4f4f4; }
 h1 { text-align:center; margin:10px 0; }
 #controls { text-align:center; margin-bottom:10px; }
 #controls button { margin:0 5px; padding:6px 10px; }
@@ -29,7 +29,7 @@ button { cursor:pointer; margin-top:5px; }
 </head>
 <body>
 
-<h1>Tamigo-achtig Rooster</h1>
+<h1>Tamigo Systeem</h1>
 <div id="controls">
     <button onclick="prevWeek()">&#8592; Vorige Week</button>
     <span id="weekLabel">Week 1</span>
@@ -41,40 +41,39 @@ button { cursor:pointer; margin-top:5px; }
 </div>
 
 <div class="week-container" id="weekContainer"></div>
-
 <div id="overlay"></div>
 
 <!-- Shift Popup -->
 <div id="popup">
-    <h3>Shift Toevoegen</h3>
-    <label>Dag:</label>
-    <select id="selectDay"></select>
-    <label>Begin tijd:</label>
-    <input type="time" id="startTime" value="09:00">
-    <label>Eind tijd:</label>
-    <input type="time" id="endTime" value="17:00">
-    <label>Medewerker:</label>
-    <select id="selectEmployee"></select>
-    <label>Rol:</label>
-    <select id="selectRole"></select>
-    <button onclick="saveShift()">Opslaan</button>
-    <button onclick="closePopup()">Annuleren</button>
+<h3>Shift Toevoegen/Bewerken</h3>
+<label>Dag:</label>
+<select id="selectDay"></select>
+<label>Begin tijd:</label>
+<input type="time" id="startTime" value="09:00">
+<label>Eind tijd:</label>
+<input type="time" id="endTime" value="17:00">
+<label>Medewerker:</label>
+<select id="selectEmployee"></select>
+<label>Rol:</label>
+<select id="selectRole"></select>
+<button onclick="saveShift()">Opslaan</button>
+<button onclick="closePopup()">Annuleren</button>
 </div>
 
 <!-- Roles Popup -->
 <div id="rolePopup">
-    <h3>Rollen Beheren</h3>
-    <div id="roleList"></div>
-    <button onclick="addRolePrompt()">Nieuwe Rol</button>
-    <button onclick="closeRoles()">Sluiten</button>
+<h3>Rollen Beheren</h3>
+<div id="roleList"></div>
+<button onclick="addRolePrompt()">Nieuwe Rol</button>
+<button onclick="closeRoles()">Sluiten</button>
 </div>
 
 <!-- Personnel Popup -->
 <div id="personnelPopup">
-    <h3>Personeel</h3>
-    <div id="employeeList"></div>
-    <button onclick="addEmployeePrompt()">Nieuwe Medewerker</button>
-    <button onclick="closePersonnel()">Sluiten</button>
+<h3>Personeel</h3>
+<div id="employeeList"></div>
+<button onclick="addEmployeePrompt()">Nieuwe Medewerker</button>
+<button onclick="closePersonnel()">Sluiten</button>
 </div>
 
 <script>
@@ -85,112 +84,111 @@ let roles=[];
 let scheduleData={};
 let draggingShift=null;
 
-// --- Data ---
+// --- Load & Save ---
 function loadData(){
-    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","age":25,"hourly":15,"role":"Leidinggevende","available":true,"maxHoursPerWeek":40}]');
-    roles=JSON.parse(localStorage.getItem("roles")||'[{"name":"Leidinggevende","color":"red"},{"name":"Medewerker","color":"blue"}]');
-    scheduleData=JSON.parse(localStorage.getItem("scheduleData")||'{}');
-    if(!scheduleData[getWeekKey()]){
-        scheduleData[getWeekKey()]={};
-        days.forEach(d=>scheduleData[getWeekKey()][d]=[]);
-    }
+employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","age":25,"hourly":15,"role":"Leidinggevende","available":true,"maxHoursPerWeek":40}]');
+roles=JSON.parse(localStorage.getItem("roles")||'[{"name":"Leidinggevende","color":"red"},{"name":"Medewerker","color":"blue"}]');
+scheduleData=JSON.parse(localStorage.getItem("scheduleData")||'{}');
+if(!scheduleData[getWeekKey()]){
+    scheduleData[getWeekKey()]={};
+    days.forEach(d=>scheduleData[getWeekKey()][d]=[]);
+}
 }
 function saveData(){ 
-    localStorage.setItem("employees",JSON.stringify(employees)); 
-    localStorage.setItem("roles",JSON.stringify(roles)); 
-    localStorage.setItem("scheduleData",JSON.stringify(scheduleData)); 
+localStorage.setItem("employees",JSON.stringify(employees)); 
+localStorage.setItem("roles",JSON.stringify(roles)); 
+localStorage.setItem("scheduleData",JSON.stringify(scheduleData)); 
 }
 function getWeekKey(){ return "week"+currentWeek; }
 function renderWeekLabel(){ document.getElementById("weekLabel").innerText="Week "+currentWeek; }
 function nextWeek(){ currentWeek++; if(!scheduleData[getWeekKey()]){ scheduleData[getWeekKey()]={}; days.forEach(d=>scheduleData[getWeekKey()][d]=[]);} renderWeek(); }
 function prevWeek(){ if(currentWeek>1){ currentWeek--; if(!scheduleData[getWeekKey()]){ scheduleData[getWeekKey()]={}; days.forEach(d=>scheduleData[getWeekKey()][d]=[]);} renderWeek(); } }
 
-// --- Week Render ---
+// --- Render Week ---
 function renderWeek(){
-    renderWeekLabel();
-    saveData();
-    const container=document.getElementById("weekContainer");
-    container.innerHTML="";
-    const week=scheduleData[getWeekKey()];
-    days.forEach(day=>{
-        const col=document.createElement("div"); col.classList.add("day-column"); col.dataset.day=day;
-        col.innerHTML=`<h3>${day}</h3>`;
-        let dayShifts=week[day];
-        dayShifts.forEach((shift,index)=>{
-            const empObj=employees.find(e=>e.name===shift.employee);
-            const div=document.createElement("div"); div.classList.add("shift");
-            div.draggable=true;
-            div.dataset.day=day;
-            div.dataset.index=index;
-            const roleObj=roles.find(r=>r.name===shift.role);
-            const circle=document.createElement("div"); circle.classList.add("role-circle");
-            circle.style.backgroundColor=(empObj && empObj.available)?(roleObj?roleObj.color:"#666"):"#888";
-            circle.innerText=shift.employee.charAt(0).toUpperCase();
-            const line=document.createElement("div"); line.classList.add("shift-line"); 
-            if(empObj && !empObj.available) line.style.background="#888";
-            const timeDiv=document.createElement("div"); timeDiv.classList.add("shift-time"); timeDiv.innerText=`${shift.start}-${shift.end}`;
-            const nameDiv=document.createElement("div"); nameDiv.classList.add("shift-name");
-            if(empObj && !empObj.available){ 
-                const dot=document.createElement("span"); dot.classList.add("gray-dot"); nameDiv.appendChild(dot);
-            }
-            nameDiv.appendChild(document.createTextNode(shift.employee));
-            div.appendChild(circle); div.appendChild(line); div.appendChild(timeDiv); div.appendChild(nameDiv);
+renderWeekLabel();
+saveData();
+const container=document.getElementById("weekContainer");
+container.innerHTML="";
+const week=scheduleData[getWeekKey()];
+days.forEach(day=>{
+    const col=document.createElement("div"); col.classList.add("day-column"); col.dataset.day=day;
+    col.innerHTML=`<h3>${day}</h3>`;
+    let dayShifts=week[day];
+    dayShifts.forEach((shift,index)=>{
+        const empObj=employees.find(e=>e.name===shift.employee);
+        const div=document.createElement("div"); div.classList.add("shift");
+        div.draggable=true;
+        div.dataset.day=day;
+        div.dataset.index=index;
+        const roleObj=roles.find(r=>r.name===shift.role);
+        const circle=document.createElement("div"); circle.classList.add("role-circle");
+        circle.style.backgroundColor=(empObj && empObj.available)?(roleObj?roleObj.color:"#666"):"#888";
+        circle.innerText=shift.employee.charAt(0).toUpperCase();
+        const line=document.createElement("div"); line.classList.add("shift-line"); 
+        if(empObj && !empObj.available) line.style.background="#888";
+        const timeDiv=document.createElement("div"); timeDiv.classList.add("shift-time"); timeDiv.innerText=`${shift.start}-${shift.end}`;
+        const nameDiv=document.createElement("div"); nameDiv.classList.add("shift-name");
+        if(empObj && !empObj.available){ 
+            const dot=document.createElement("span"); dot.classList.add("gray-dot"); nameDiv.appendChild(dot);
+        }
+        nameDiv.appendChild(document.createTextNode(shift.employee));
+        div.appendChild(circle); div.appendChild(line); div.appendChild(timeDiv); div.appendChild(nameDiv);
 
-            // Click voor verwijderen
-            div.addEventListener("click",()=>{ if(confirm("Shift verwijderen?")){ dayShifts.splice(index,1); if(dayShifts.length===0) delete week[day]; saveData(); renderWeek(); } });
+        // Click voor verwijderen
+        div.addEventListener("click",()=>{ if(confirm("Shift verwijderen?")){ dayShifts.splice(index,1); if(dayShifts.length===0) delete week[day]; saveData(); renderWeek(); } });
 
-            // Drag events
-            div.addEventListener("dragstart",(e)=>{ draggingShift={shift,index,fromDay:day}; e.target.classList.add("dragging"); });
-            div.addEventListener("dragend",(e)=>{ draggingShift=null; e.target.classList.remove("dragging"); });
+        // Drag events
+        div.addEventListener("dragstart",(e)=>{ draggingShift={shift,index,fromDay:day}; e.target.classList.add("dragging"); });
+        div.addEventListener("dragend",(e)=>{ draggingShift=null; e.target.classList.remove("dragging"); });
 
-            col.appendChild(div);
-        });
-
-        // Dragover drop
-        col.addEventListener("dragover",(e)=>{ e.preventDefault(); });
-        col.addEventListener("drop",(e)=>{
-            if(draggingShift){
-                const fromShifts=week[draggingShift.fromDay];
-                fromShifts.splice(draggingShift.index,1);
-                if(!week[day]) week[day]=[];
-                week[day].push(draggingShift.shift);
-                saveData(); renderWeek();
-            }
-        });
-
-        container.appendChild(col);
+        col.appendChild(div);
     });
+
+    col.addEventListener("dragover",(e)=>{ e.preventDefault(); });
+    col.addEventListener("drop",(e)=>{
+        if(draggingShift){
+            const fromShifts=week[draggingShift.fromDay];
+            fromShifts.splice(draggingShift.index,1);
+            if(!week[day]) week[day]=[];
+            week[day].push(draggingShift.shift);
+            saveData(); renderWeek();
+        }
+    });
+
+    container.appendChild(col);
+});
 }
 
 // --- Shift Popup ---
 function addShiftPrompt(){
-    document.getElementById("overlay").style.display="block"; document.getElementById("popup").style.display="block";
-    const select=document.getElementById("selectEmployee"); select.innerHTML=""; employees.forEach(emp=>{ const o=document.createElement("option"); o.value=emp.name; o.innerText=emp.name; select.appendChild(o);});
-    const selectRole=document.getElementById("selectRole"); selectRole.innerHTML=""; roles.forEach(r=>{ const o=document.createElement("option"); o.value=r.name; o.innerText=r.name; selectRole.appendChild(o);});
-    const selectDay=document.getElementById("selectDay"); selectDay.innerHTML=""; days.forEach(d=>{ const o=document.createElement("option"); o.value=d; o.innerText=d; selectDay.appendChild(o);});
+document.getElementById("overlay").style.display="block"; document.getElementById("popup").style.display="block";
+const select=document.getElementById("selectEmployee"); select.innerHTML=""; employees.forEach(emp=>{ const o=document.createElement("option"); o.value=emp.name; o.innerText=emp.name; select.appendChild(o);});
+const selectRole=document.getElementById("selectRole"); selectRole.innerHTML=""; roles.forEach(r=>{ const o=document.createElement("option"); o.value=r.name; o.innerText=r.name; selectRole.appendChild(o);});
+const selectDay=document.getElementById("selectDay"); selectDay.innerHTML=""; days.forEach(d=>{ const o=document.createElement("option"); o.value=d; o.innerText=d; selectDay.appendChild(o);});
 }
 function saveShift(){
-    const start=document.getElementById("startTime").value;
-    const end=document.getElementById("endTime").value;
-    const emp=document.getElementById("selectEmployee").value;
-    const role=document.getElementById("selectRole").value;
-    const day=document.getElementById("selectDay").value;
-    if(!scheduleData[getWeekKey()][day]) scheduleData[getWeekKey()][day]=[];
-    scheduleData[getWeekKey()][day].push({start,end,employee:emp,role});
-    closePopup(); renderWeek(); saveData();
+const start=document.getElementById("startTime").value;
+const end=document.getElementById("endTime").value;
+const emp=document.getElementById("selectEmployee").value;
+const role=document.getElementById("selectRole").value;
+const day=document.getElementById("selectDay").value;
+if(!scheduleData[getWeekKey()][day]) scheduleData[getWeekKey()][day]=[];
+scheduleData[getWeekKey()][day].push({start,end,employee:emp,role});
+closePopup(); renderWeek(); saveData();
 }
 function closePopup(){ document.getElementById("overlay").style.display="none"; document.getElementById("popup").style.display="none"; }
 
 // --- Roles ---
 function openRoles(){ document.getElementById("overlay").style.display="block"; document.getElementById("rolePopup").style.display="block"; renderRoles(); }
 function renderRoles(){ 
-    const list=document.getElementById("roleList"); list.innerHTML="";
-    roles.forEach(r=>{ 
-        const div=document.createElement("div"); 
-        div.innerHTML=`<span style="background:${r.color};color:white;padding:2px 5px;border-radius:3px;">${r.name}</span> 
-        <button onclick="deleteRole('${r.name}')">Verwijderen</button>`; 
-        list.appendChild(div);
-    });
+const list=document.getElementById("roleList"); list.innerHTML="";
+roles.forEach(r=>{ 
+    const div=document.createElement("div"); 
+    div.innerHTML=`<span style="background:${r.color};color:white;padding:2px 5px;border-radius:3px;">${r.name}</span> 
+    <button onclick="deleteRole('${r.name}')">Verwijderen</button>`; 
+    list.appendChild(div);
+});
 }
 function addRolePrompt(){ const name=prompt("Naam rol:"); const color=prompt("Kleur rol (bijv red/#ff0000):"); if(name && color){ roles.push({name,color}); saveData(); renderRoles(); renderWeek(); } }
 function deleteRole(name){ if(confirm(`Weet je zeker dat je rol "${name}" wilt verwijderen?`)){ roles=roles.filter(r=>r.name!==name); employees.forEach(e=>{ if(e.role===name) e.role=""; }); saveData(); renderRoles(); renderWeek(); } }
@@ -199,42 +197,43 @@ function closeRoles(){ document.getElementById("overlay").style.display="none"; 
 // --- Personnel ---
 function openPersonnel(){ document.getElementById("overlay").style.display="block"; document.getElementById("personnelPopup").style.display="block"; renderPersonnel(); }
 function renderPersonnel(){
-    const list=document.getElementById("employeeList"); list.innerHTML="";
-    employees.forEach(emp=>{
-        const roleObj=roles.find(r=>r.name===emp.role);
-        const div=document.createElement("div");
-        div.innerHTML=`<span style="background:${roleObj?roleObj.color:"#666"};color:white;padding:2px 5px;border-radius:3px;">${emp.role || "Geen rol"}</span> ${emp.name} - Leeftijd: ${emp.age || "-"} - Uurloon: €${emp.hourly || "-"} - Max Uren/Wk: ${emp.maxHoursPerWeek || "-"} - Beschikbaar: <input type="checkbox" ${emp.available?"checked":""} onchange="toggleAvailability('${emp.name}',this)">
-        <button onclick="editEmployee('${emp.name}')">Bewerk</button> <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
-        list.appendChild(div);
-    });
+const list=document.getElementById("employeeList"); list.innerHTML="";
+employees.forEach(emp=>{
+    const roleObj=roles.find(r=>r.name===emp.role);
+    const div=document.createElement("div");
+    // Bereken geplande uren
+    let planned=0;
+    for(const w in scheduleData){ for(const d of days){ if(scheduleData[w][d]){ scheduleData[w][d].forEach(s=>{ if(s.employee===emp.name){ let [h1,m1]=s.start.split(":"); let [h2,m2]=s.end.split(":"); planned+= (parseInt(h2)*60+parseInt(m2)-parseInt(h1)*60-parseInt(m1))/60; } }); } } }
+    div.innerHTML=`<span style="background:${roleObj?roleObj.color:"#666"};color:white;padding:2px 5px;border-radius:3px;">${emp.role || "Geen rol"}</span> ${emp.name} - Leeftijd: ${emp.age || "-"} - Uurloon: €${emp.hourly || "-"} - Max/Wk: ${emp.maxHoursPerWeek || "-"} - Gepland: ${planned.toFixed(1)}h - Beschikbaar: <input type="checkbox" ${emp.available?"checked":""} onchange="toggleAvailability('${emp.name}',this)">
+    <button onclick="editEmployee('${emp.name}')">Bewerk</button> <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
+    list.appendChild(div);
+});
 }
 function addEmployeePrompt(){ 
-    const name=prompt("Naam:"); 
-    const age=parseInt(prompt("Leeftijd:")); 
-    const hourly=parseFloat(prompt("Uurloon:")); 
-    const role=prompt("Rol:"); 
-    const maxH=parseFloat(prompt("Max uren per week:"));
-    if(name){ employees.push({name,age:age||0,hourly:hourly||0,role:role||"",maxHoursPerWeek:maxH||40,available:true}); saveData(); renderPersonnel(); renderWeek(); } 
+const name=prompt("Naam:"); 
+const age=parseInt(prompt("Leeftijd:")); 
+const hourly=parseFloat(prompt("Uurloon:")); 
+const role=prompt("Rol:"); 
+const maxH=parseFloat(prompt("Max uren per week:"));
+if(name){ employees.push({name,age:age||0,hourly:hourly||0,role:role||"",maxHoursPerWeek:maxH||40,available:true}); saveData(); renderPersonnel(); renderWeek(); } 
 }
 function editEmployee(name){
-    const emp=employees.find(e=>e.name===name);
-    if(!emp) return;
-    const newName=prompt("Naam:",emp.name);
-    const age=parseInt(prompt("Leeftijd:",emp.age));
-    const hourly=parseFloat(prompt("Uurloon:",emp.hourly));
-    const role=prompt("Rol:",emp.role);
-    const maxH=parseFloat(prompt("Max uren per week:",emp.maxHoursPerWeek));
-    emp.name=newName||emp.name; emp.age=age||emp.age; emp.hourly=hourly||emp.hourly; emp.role=role||emp.role; emp.maxHoursPerWeek=maxH||emp.maxHoursPerWeek;
-    saveData(); renderPersonnel(); renderWeek();
+const emp=employees.find(e=>e.name===name);
+if(!emp) return;
+const newName=prompt("Naam:",emp.name);
+const age=parseInt(prompt("Leeftijd:",emp.age));
+const hourly=parseFloat(prompt("Uurloon:",emp.hourly));
+const role=prompt("Rol:",emp.role);
+const maxH=parseFloat(prompt("Max uren per week:",emp.maxHoursPerWeek));
+emp.name=newName||emp.name; emp.age=age||emp.age; emp.hourly=hourly||emp.hourly; emp.role=role||emp.role; emp.maxHoursPerWeek=maxH||emp.maxHoursPerWeek;
+saveData(); renderPersonnel(); renderWeek();
 }
 function closePersonnel(){ document.getElementById("overlay").style.display="none"; document.getElementById("personnelPopup").style.display="none"; }
-
 function toggleAvailability(name,checkbox){ const emp=employees.find(e=>e.name===name); if(emp){ emp.available=checkbox.checked; saveData(); renderWeek(); } }
 function removeEmployee(name){ if(confirm(`Weet je zeker dat je ${name} wilt verwijderen?`)){ employees=employees.filter(e=>e.name!==name); for(const w in scheduleData){ for(const d of days){ scheduleData[w][d]=scheduleData[w][d].filter(s=>s.employee!==name); } } saveData(); renderWeek(); renderPersonnel(); } }
 
 // --- Init ---
 loadData(); renderWeek();
 </script>
-
 </body>
 </html>
