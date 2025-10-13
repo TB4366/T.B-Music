@@ -182,24 +182,31 @@ function openShiftPopup(){
 }
 
 function saveShiftDetail(){
-    const start=document.getElementById("shiftStart").value;
-    const end=document.getElementById("shiftEnd").value;
-    const pause=parseInt(document.getElementById("shiftPause").value);
-    const status=document.getElementById("shiftStatus").value;
-    const empName=document.getElementById("shiftEmployee").value;
+    const start = document.getElementById("shiftStart").value;
+    const end = document.getElementById("shiftEnd").value;
+    const pause = parseInt(document.getElementById("shiftPause").value);
+    const status = document.getElementById("shiftStatus").value;
+    const empName = document.getElementById("shiftEmployee").value;
+
+    // Controleer dat de week en dag bestaan
+    if(!scheduleData[getWeekKey()]) scheduleData[getWeekKey()] = {};
+    if(!scheduleData[getWeekKey()][editingDay]) scheduleData[getWeekKey()][editingDay] = [];
 
     if(editingShift){
-        editingShift.start=start;
-        editingShift.end=end;
-        editingShift.pause=pause;
-        editingShift.status=status;
-        editingShift.employee=empName;
+        editingShift.start = start;
+        editingShift.end = end;
+        editingShift.pause = pause;
+        editingShift.status = status;
+        editingShift.employee = empName;
     } else {
-        if(!scheduleData[getWeekKey()][editingDay]) scheduleData[getWeekKey()][editingDay]=[];
-        scheduleData[getWeekKey()][editingDay].push({employee:empName,start,end,pause,status});
+        scheduleData[getWeekKey()][editingDay].push({employee: empName, start, end, pause, status});
     }
-    editingShift=null; editingDay=null;
-    closeShiftPopup(); renderWeek(); saveData();
+
+    editingShift = null;
+    editingDay = null;
+    closeShiftPopup();
+    renderWeek();
+    saveData();
 }
 
 function cancelShiftDetail(){ editingShift=null; editingDay=null; closeShiftPopup();}
