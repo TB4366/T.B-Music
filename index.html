@@ -12,7 +12,7 @@ h1 { text-align:center; margin:10px 0; }
 .week-container { display:flex; overflow-x:auto; padding:10px; }
 .day-column { min-width:200px; background:white; border-radius:10px; padding:10px; margin:0 10px; box-shadow:0 3px 10px rgba(0,0,0,0.2); flex-shrink:0; }
 .day-column h3 { text-align:center; margin-bottom:10px; }
-.shift { display:flex; align-items:center; padding:5px; margin:5px 0; border-radius:5px; cursor:grab; user-select:none; flex-direction: column; }
+.shift { display:flex; align-items:center; padding:5px; margin:5px 0; border-radius:5px; cursor:pointer; user-select:none; flex-direction: column; }
 .role-circle { width:25px; height:25px; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-weight:bold; margin-right:5px; font-size:0.8em;}
 .shift-header { display:flex; width:100%; align-items:center; }
 .shift-line { flex:1; height:2px; background:#ccc; margin:0 5px; }
@@ -24,7 +24,6 @@ h1 { text-align:center; margin:10px 0; }
 #popup, #rolePopup, #personnelPopup, #shiftPopup { background:#fff; padding:20px; border-radius:10px; width:400px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
 input, select { width:100%; margin-bottom:10px; padding:5px; }
 button { cursor:pointer; margin-top:5px; }
-.dragging { opacity:0.5; }
 .shift-day-actions { text-align:center; margin-top:5px; }
 .shift-day-actions button { margin:2px; }
 </style>
@@ -47,6 +46,8 @@ button { cursor:pointer; margin-top:5px; }
 <!-- Shift Popup -->
 <div id="shiftPopup">
 <h3>Shift Toevoegen/Bewerken</h3>
+<label>Medewerker:</label>
+<select id="shiftEmployee"></select>
 <label>Begin tijd:</label>
 <input type="time" id="shiftStart" value="09:00">
 <label>Eind tijd:</label>
@@ -92,7 +93,6 @@ let roles=[];
 let scheduleData={};
 let editingShift=null;
 let editingDay=null;
-let editingEmployee=null;
 
 // --- Load / Save ---
 function loadData(){
@@ -113,10 +113,10 @@ function renderWeek(){
     document.getElementById("weekLabel").innerText="Week "+currentWeek;
     saveData();
     const container=document.getElementById("weekContainer"); container.innerHTML="";
+    const week=scheduleData[getWeekKey()];
     days.forEach(day=>{
         const col=document.createElement("div"); col.className="day-column"; col.dataset.day=day;
         col.innerHTML=`<h3>${day}</h3>`;
-        const week=scheduleData[getWeekKey()];
         const dayShifts=week[day]||[];
         dayShifts.forEach((shift,index)=>{
             const empObj=employees.find(e=>e.name===shift.employee);
@@ -135,7 +135,7 @@ function renderWeek(){
             div.appendChild(header);
 
             // Klik om shift te bewerken
-            div.addEventListener("click",()=>{ editingShift=shift; editingDay=day; editingEmployee=empObj; openShiftPopup(); });
+            div.addEventListener("click",()=>{ editingShift=shift; editingDay=day; openShiftPopup(); });
 
             col.appendChild(div);
         });
@@ -143,7 +143,9 @@ function renderWeek(){
         // Voeg Shift Knop
         const addBtn=document.createElement("div"); addBtn.className="shift-day-actions";
         const btn=document.createElement("button"); btn.textContent="Voeg toe";
-        btn.addEventListener("click",()=>{ editingEmployee=null; editingDay=day; openShiftPopup(); });
+        btn.addEventListener("click",()=>{
+            editingShift=null; editingDay=day; openShiftPopup();
+        });
         addBtn.appendChild(btn); col.appendChild(addBtn);
 
         container.appendChild(col);
@@ -154,11 +156,23 @@ function renderWeek(){
 function openShiftPopup(){
     document.getElementById("overlay").style.display="block";
     document.getElementById("shiftPopup").style.display="block";
+
+    // Vul medewerkers dropdown
+    const empSelect=document.getElementById("shiftEmployee");
+    empSelect.innerHTML="";
+    employees.forEach(emp=>{
+        const option=document.createElement("option");
+        option.value=emp.name;
+        option.text=emp.name;
+        empSelect.appendChild(option);
+    });
+
     if(editingShift){
         document.getElementById("shiftStart").value=editingShift.start;
         document.getElementById("shiftEnd").value=editingShift.end;
         document.getElementById("shiftPause").value=editingShift.pause;
         document.getElementById("shiftStatus").value=editingShift.status;
+        empSelect.value = editingShift.employee;
     } else {
         document.getElementById("shiftStart").value="09:00";
         document.getElementById("shiftEnd").value="17:00";
@@ -166,22 +180,29 @@ function openShiftPopup(){
         document.getElementById("shiftStatus").value="beschikbaar";
     }
 }
+
 function saveShiftDetail(){
     const start=document.getElementById("shiftStart").value;
     const end=document.getElementById("shiftEnd").value;
     const pause=parseInt(document.getElementById("shiftPause").value);
     const status=document.getElementById("shiftStatus").value;
+    const empName=document.getElementById("shiftEmployee").value;
+
     if(editingShift){
-        editingShift.start=start; editingShift.end=end; editingShift.pause=pause; editingShift.status=status;
+        editingShift.start=start;
+        editingShift.end=end;
+        editingShift.pause=pause;
+        editingShift.status=status;
+        editingShift.employee=empName;
     } else {
-        const emp=editingEmployee || employees[0]; // eerste medewerker als geen selectie
         if(!scheduleData[getWeekKey()][editingDay]) scheduleData[getWeekKey()][editingDay]=[];
-        scheduleData[getWeekKey()][editingDay].push({employee:emp.name,start,end,pause,status});
+        scheduleData[getWeekKey()][editingDay].push({employee:empName,start,end,pause,status});
     }
-    editingShift=null; editingDay=null; editingEmployee=null;
+    editingShift=null; editingDay=null;
     closeShiftPopup(); renderWeek(); saveData();
 }
-function cancelShiftDetail(){ editingShift=null; editingDay=null; editingEmployee=null; closeShiftPopup();}
+
+function cancelShiftDetail(){ editingShift=null; editingDay=null; closeShiftPopup();}
 function closeShiftPopup(){ document.getElementById("overlay").style.display="none"; document.getElementById("shiftPopup").style.display="none"; }
 
 // --- Personnel ---
@@ -207,7 +228,7 @@ function addEmployeePrompt(){
     employees.push({name,age,hourly,role,available:true,shifts:{}});
     saveData(); renderPersonnel(); renderWeek();
 }
-function editEmployee(name){ alert("Shift bewerken via weekrooster"); } // kan uitgebreid worden
+function editEmployee(name){ alert("Shift bewerken via weekrooster"); }
 function removeEmployee(name){ if(confirm(`Weet je zeker dat je ${name} wilt verwijderen?`)){ employees=employees.filter(e=>e.name!==name); for(const d of days){ scheduleData[getWeekKey()][d]=scheduleData[getWeekKey()][d].filter(s=>s.employee!==name); } saveData(); renderPersonnel(); renderWeek(); }
 }
 function closePersonnel(){ document.getElementById("overlay").style.display="none"; document.getElementById("personnelPopup").style.display="none"; }
