@@ -1,264 +1,281 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tamigo Systeem</title>
-<style>
-body { font-family: Arial,sans-serif; margin:0; padding:0; background:#f4f4f4; }
-h1 { text-align:center; margin:10px 0; }
-#controls { text-align:center; margin-bottom:10px; }
-#controls button { margin:0 5px; padding:6px 10px; }
-.week-container { display:flex; overflow-x:auto; padding:10px; }
-.day-column { min-width:200px; background:white; border-radius:10px; padding:10px; margin:0 10px; box-shadow:0 3px 10px rgba(0,0,0,0.2); flex-shrink:0; }
-.day-column h3 { text-align:center; margin-bottom:10px; }
-.shift { display:flex; align-items:center; padding:5px; margin:5px 0; border-radius:5px; cursor:pointer; user-select:none; flex-direction: column; }
-.role-circle { width:25px; height:25px; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-weight:bold; margin-right:5px; font-size:0.8em;}
-.shift-header { display:flex; width:100%; align-items:center; }
-.shift-time { width:70px; text-align:center; margin-right:5px; font-size:0.9em;}
-.shift-name { flex-shrink:1; font-weight:bold; display:flex; align-items:center; }
-.gray-dot { width:10px; height:10px; border-radius:50%; background:#888; display:inline-block; margin-right:5px; }
-#overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index:500; }
-#shiftPopup, #personnelPopup, #rolePopup { display:none; position:fixed; background:#fff; padding:20px; border-radius:10px; width:400px; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
-input, select { width:100%; margin-bottom:10px; padding:5px; }
-button { cursor:pointer; margin-top:5px; }
-.shift-day-actions { text-align:center; margin-top:5px; }
-.shift-day-actions button { margin:2px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>THT Bewaking — Offline app</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#ffffff;--muted:#6b7280;--accent:#0f62fe}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:var(--bg); color:#111}
+    .container{max-width:980px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(20,20,40,0.06);}
+
+    form{display:grid;grid-template-columns:1fr 200px 120px 120px;gap:10px;align-items:end}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=text], input[type=date], select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef}
+    button{padding:10px 12px;border-radius:8px;border:0;background:var(--accent);color:white;cursor:pointer}
+    .btn-ghost{background:transparent;border:1px solid #e6e9ef;color:var(--muted)}
+
+    .controls{display:flex;gap:8px;align-items:center}
+    .list{margin-top:18px}
+    .item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;border:1px solid #f0f2f6;background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(250,250,252,0.6));}
+    .meta{flex:1;min-width:0}
+    .title{font-weight:600;margin:0}
+    .small{font-size:13px;color:var(--muted)}
+
+    .status{min-width:100px;text-align:center;padding:6px 8px;border-radius:10px;font-weight:600}
+    .expired{background:#ffefef;color:#9b1c1c}
+    .soon{background:#fffbeb;color:#7a4a00}
+    .ok{background:#eefdf3;color:#0b7a3a}
+
+    .right{display:flex;gap:8px;align-items:center}
+    .icon-btn{background:transparent;border:0;padding:6px;border-radius:8px;cursor:pointer}
+
+    .filters{display:flex;gap:8px;margin-bottom:12px}
+    .search{flex:1}
+
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(6,8,20,0.45);display:none;align-items:center;justify-content:center}
+    .modal{background:var(--card);padding:18px;border-radius:12px;max-width:680px;width:95%;max-height:80vh;overflow:auto}
+
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media(max-width:760px){form{grid-template-columns:1fr;}
+      .right{flex-wrap:wrap}
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <header>
+      <h1>THT Bewaking — offline HTML app</h1>
+      <div style="font-size:13px;color:var(--muted)">Opslag: <strong>localStorage</strong></div>
+    </header>
 
-<h1>Tamigo Systeem</h1>
-<div id="controls">
-    <button onclick="prevWeek()">&#8592; Vorige Week</button>
-    <span id="weekLabel">Week 1</span>
-    <button onclick="nextWeek()">Volgende Week &#8594;</button>
-    <br><br>
-    <button onclick="openPersonnel()">Personeel</button>
-    <button onclick="openRoles()">Rollen Beheren</button>
-</div>
+    <section class="card">
+      <form id="addForm">
+        <div>
+          <label for="name">Productnaam</label>
+          <input id="name" type="text" placeholder="Bijv. melk, jam, kipfilet" required>
+        </div>
+        <div>
+          <label for="date">THT-datum</label>
+          <input id="date" type="date" required>
+        </div>
+        <div>
+          <label for="qty">Aantal (optioneel)</label>
+          <input id="qty" type="text" placeholder="bv. 1 of 2" />
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="submit">Voeg toe</button>
+          <button id="clearAll" type="button" class="btn-ghost">Wis alles</button>
+        </div>
+      </form>
 
-<div class="week-container" id="weekContainer"></div>
-<div id="overlay"></div>
+      <div style="margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="filters" style="flex:1">
+          <input id="search" class="search" type="text" placeholder="Zoek op naam...">
+        </div>
+        <div class="controls">
+          <button id="showAll" class="btn-ghost" type="button">Toon alles</button>
+          <button id="showExp" class="btn-ghost" type="button">THT bewaking</button>
+          <button id="exportCsv" class="btn-ghost" type="button">Exporteer CSV</button>
+        </div>
+      </div>
 
-<!-- Shift Popup -->
-<div id="shiftPopup">
-<h3>Shift Toevoegen/Bewerken</h3>
-<label>Medewerker:</label>
-<select id="shiftEmployee"></select>
-<label>Begin tijd:</label>
-<input type="time" id="shiftStart" value="09:00">
-<label>Eind tijd:</label>
-<input type="time" id="shiftEnd" value="17:00">
-<label>Pauze code (1=15,2=30,3=45,4=60 min):</label>
-<input type="number" id="shiftPause" min="1" max="4" value="1">
-<label>Status:</label>
-<select id="shiftStatus">
-  <option value="beschikbaar">Beschikbaar</option>
-  <option value="verlof">Verlof</option>
-  <option value="niet beschikbaar">Niet beschikbaar</option>
-  <option value="stage">Stage</option>
-  <option value="school">School</option>
-  <option value="EHBO">EHBO</option>
-  <option value="BHV">BHV</option>
-</select>
-<button onclick="saveShiftDetail()">Opslaan</button>
-<button onclick="cancelShiftDetail()">Annuleren</button>
-</div>
+      <div class="list" id="list"></div>
+    </section>
 
-<!-- Personnel Popup -->
-<div id="personnelPopup">
-<h3>Personeel</h3>
-<div id="employeeList"></div>
-<button onclick="addEmployeePrompt()">Nieuwe Medewerker</button>
-<button onclick="closePersonnel()">Sluiten</button>
-</div>
+    <footer class="card" style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600">Legenda</div>
+          <div style="font-size:13px;color:var(--muted)">Rood = over datum · Geel = binnen 3 dagen · Groen = ok</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted)">Tip: deze app werkt offline in je browser. Verwijder browserdata verwijdert ook de producten.</div>
+      </div>
+    </footer>
+  </div>
 
-<!-- Roles Popup -->
-<div id="rolePopup">
-<h3>Rollen Beheren</h3>
-<div id="roleList"></div>
-<button onclick="addRolePrompt()">Nieuwe Rol</button>
-<button onclick="closeRoles()">Sluiten</button>
-</div>
+  <!-- modal -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal">
+      <h2 id="modalTitle">THT Bewaking</h2>
+      <p id="modalInfo" class="small">Lijst met producten die over datum of bijna verlopen zijn.</p>
+      <div id="modalList" style="display:grid;gap:10px;margin-top:10px"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button id="modalClose" class="btn-ghost">Sluit</button>
+      </div>
+    </div>
+  </div>
 
-<script>
-// --- Data ---
-const days=["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag","Zondag"];
-let currentWeek=1;
-let employees=[];
-let roles=[];
-let scheduleData={};
-let editingShift=null;
-let editingDay=null;
+  <script>
+    // Simple THT app using localStorage
+    const LS_KEY = 'thtProducts_v1';
 
-// --- Load / Save ---
-function loadData(){
-    employees=JSON.parse(localStorage.getItem("employees")||'[{"name":"Koe","age":25,"hourly":15,"role":"Leidinggevende","available":true}]');
-    roles=JSON.parse(localStorage.getItem("roles")||'[{"name":"Leidinggevende","color":"red"},{"name":"Medewerker","color":"blue"}]');
-    scheduleData=JSON.parse(localStorage.getItem("scheduleData")||'{}');
-    if(!scheduleData[getWeekKey()]){ scheduleData[getWeekKey()]={}; days.forEach(d=>scheduleData[getWeekKey()][d]=[]);}
-}
-function saveData(){ 
-    localStorage.setItem("employees",JSON.stringify(employees));
-    localStorage.setItem("roles",JSON.stringify(roles));
-    localStorage.setItem("scheduleData",JSON.stringify(scheduleData));
-}
-function getWeekKey(){ return "week"+currentWeek; }
+    // DOM
+    const addForm = document.getElementById('addForm');
+    const nameIn = document.getElementById('name');
+    const dateIn = document.getElementById('date');
+    const qtyIn = document.getElementById('qty');
+    const listEl = document.getElementById('list');
+    const search = document.getElementById('search');
+    const showExp = document.getElementById('showExp');
+    const showAll = document.getElementById('showAll');
+    const exportCsv = document.getElementById('exportCsv');
+    const clearAll = document.getElementById('clearAll');
 
-// --- Week Render ---
-function renderWeek(){
-    document.getElementById("weekLabel").innerText="Week "+currentWeek;
-    const container=document.getElementById("weekContainer");
-    container.innerHTML="";
-    if(!scheduleData[getWeekKey()]) scheduleData[getWeekKey()]={};
+    const modal = document.getElementById('modal');
+    const modalList = document.getElementById('modalList');
+    const modalClose = document.getElementById('modalClose');
 
-    days.forEach(day=>{
-        if(!scheduleData[getWeekKey()][day]) scheduleData[getWeekKey()][day]=[];
-        const col=document.createElement("div"); col.className="day-column"; col.dataset.day=day;
-        col.innerHTML=`<h3>${day}</h3>`;
-        const dayShifts=scheduleData[getWeekKey()][day];
-        dayShifts.forEach(shift=>{
-            const empObj=employees.find(e=>e.name===shift.employee);
-            if(!empObj) return;
-            const roleObj=roles.find(r=>r.name===empObj.role) || {color:"gray"};
-            const div=document.createElement("div"); div.className="shift";
-            const header=document.createElement("div"); header.className="shift-header";
-            const circle=document.createElement("div"); circle.className="role-circle"; 
-            circle.style.backgroundColor=roleObj.color;
-            circle.innerText=empObj.name.charAt(0).toUpperCase();
-            const time=document.createElement("div"); time.className="shift-time"; time.innerText=`${shift.start}-${shift.end} (${shift.pause*15}min)`;
-            const nameDiv=document.createElement("div"); nameDiv.className="shift-name"; 
-            const dot=document.createElement("span"); dot.className="gray-dot"; 
-            dot.style.background = (shift.status !== "beschikbaar") ? "#888" : roleObj.color;
-            nameDiv.appendChild(dot); nameDiv.appendChild(document.createTextNode(empObj.name));
-            header.appendChild(circle); header.appendChild(time); header.appendChild(nameDiv);
-            div.appendChild(header);
-            div.addEventListener("click",()=>{ editingShift=shift; editingDay=day; openShiftPopup(); });
-            col.appendChild(div);
-        });
+    // utilities
+    const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+    const parseDate = (s) => { if(!s) return null; const d = new Date(s + 'T00:00:00'); d.setHours(0,0,0,0); return d; };
+    const daysBetween = (a,b) => Math.round((a - b) / (1000*60*60*24)); // a - b
 
-        // Voeg Shift Knop
-        const addBtn=document.createElement("div"); addBtn.className="shift-day-actions";
-        const btn=document.createElement("button"); btn.textContent="Voeg toe";
-        btn.addEventListener("click",()=>{
-            if(employees.length === 0){ alert("Voeg eerst personeel toe voordat je een shift kunt plannen."); return; }
-            editingShift=null; editingDay=day; openShiftPopup();
-        });
-        addBtn.appendChild(btn); col.appendChild(addBtn);
-
-        container.appendChild(col);
-    });
-    saveData();
-}
-
-// --- Shift Popup ---
-function openShiftPopup(){
-    document.getElementById("overlay").style.display="block";
-    document.getElementById("shiftPopup").style.display="block";
-
-    const empSelect=document.getElementById("shiftEmployee");
-    empSelect.innerHTML="";
-    employees.forEach(emp=>{
-        const option=document.createElement("option");
-        option.value=emp.name;
-        option.text=emp.name;
-        empSelect.appendChild(option);
-    });
-
-    if(editingShift){
-        document.getElementById("shiftStart").value=editingShift.start;
-        document.getElementById("shiftEnd").value=editingShift.end;
-        document.getElementById("shiftPause").value=editingShift.pause;
-        document.getElementById("shiftStatus").value=editingShift.status;
-        empSelect.value = editingShift.employee;
-    } else {
-        document.getElementById("shiftStart").value="09:00";
-        document.getElementById("shiftEnd").value="17:00";
-        document.getElementById("shiftPause").value=1;
-        document.getElementById("shiftStatus").value="beschikbaar";
+    // storage
+    function load(){
+      try{ const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : []; }catch(e){return []}
     }
-}
+    function save(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
 
-function saveShiftDetail(){
-    const start = document.getElementById("shiftStart").value;
-    const end = document.getElementById("shiftEnd").value;
-    const pause = parseInt(document.getElementById("shiftPause").value);
-    const status = document.getElementById("shiftStatus").value;
-    const empName = document.getElementById("shiftEmployee").value;
-
-    const empObj = employees.find(e => e.name === empName);
-    if(!empObj){ alert("De geselecteerde medewerker bestaat niet! Voeg eerst een medewerker toe."); return; }
-
-    if(!scheduleData[getWeekKey()]) scheduleData[getWeekKey()] = {};
-    if(!scheduleData[getWeekKey()][editingDay]) scheduleData[getWeekKey()][editingDay] = [];
-
-    if(editingShift){
-        editingShift.start = start;
-        editingShift.end = end;
-        editingShift.pause = pause;
-        editingShift.status = status;
-        editingShift.employee = empName;
-    } else {
-        scheduleData[getWeekKey()][editingDay].push({employee: empName, start, end, pause, status});
+    // seed small demo if empty
+    if(load().length === 0){
+      const sample = [
+        {id:cryptoRandomId(), name:'Volle melk', date: (()=>{const d=new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10);})(), qty:'1'},
+        {id:cryptoRandomId(), name:'Rode paprika', date: (()=>{const d=new Date(); d.setDate(d.getDate()-2); return d.toISOString().slice(0,10);})(), qty:'2'},
+        {id:cryptoRandomId(), name:'Jam', date: (()=>{const d=new Date(); d.setDate(d.getDate()+10); return d.toISOString().slice(0,10);})(), qty:''}
+      ]; save(sample);
     }
 
-    editingShift = null; editingDay = null;
-    closeShiftPopup();
-    renderWeek();
-}
+    function cryptoRandomId(){return Math.random().toString(36).slice(2,9)}
 
-// --- Shift Popup Controls ---
-function cancelShiftDetail(){ editingShift=null; editingDay=null; closeShiftPopup(); }
-function closeShiftPopup(){ document.getElementById("overlay").style.display="none"; document.getElementById("shiftPopup").style.display="none"; }
-
-// --- Personnel ---
-function openPersonnel(){ document.getElementById("overlay").style.display="block"; document.getElementById("personnelPopup").style.display="block"; renderPersonnel(); }
-function renderPersonnel(){
-    const list=document.getElementById("employeeList"); list.innerHTML="";
-    employees.forEach(emp=>{
-        let totalHours=0;
-        for(const d of days){ const dayShifts=scheduleData[getWeekKey()][d]||[]; dayShifts.forEach(s=>{ if(s.employee===emp.name){ let [h1,m1]=s.start.split(":"); let [h2,m2]=s.end.split(":"); totalHours+=parseInt(h2)+parseInt(m2)/60-(parseInt(h1)+parseInt(m1)/60)-(s.pause*0.25); } });}
-        const div=document.createElement("div");
-        div.innerHTML=`<strong>${emp.name}</strong> - Rol: ${emp.role} - Leeftijd: ${emp.age} - Betaald: €${emp.hourly}/u - Uren gepland: ${totalHours.toFixed(1)}h 
-        <button onclick="editEmployee('${emp.name}')">Bewerk</button> 
-        <button onclick="removeEmployee('${emp.name}')">Verwijderen</button>`;
-        list.appendChild(div);
-    });
-}
-function addEmployeePrompt(){
-    const name=prompt("Naam:"); if(!name) return;
-    const age=parseInt(prompt("Leeftijd:"))||0;
-    const hourly=parseFloat(prompt("Betaald per uur:"))||0;
-    const role=prompt("Rol:"); 
-    employees.push({name,age,hourly,role,available:true});
-    saveData(); renderPersonnel(); renderWeek();
-}
-function editEmployee(name){ alert("Shift bewerken via weekrooster"); }
-function removeEmployee(name){ 
-    if(confirm(`Weet je zeker dat je ${name} wilt verwijderen?`)){
-        employees=employees.filter(e=>e.name!==name);
-        for(const d of days){ scheduleData[getWeekKey()][d]=scheduleData[getWeekKey()][d].filter(s=>s.employee!==name); }
-        saveData(); renderPersonnel(); renderWeek();
+    // render
+    function getStatusClass(dStr){
+      const d = parseDate(dStr);
+      if(!d) return 'ok';
+      const td = today();
+      const diff = daysBetween(d, td); // d - today
+      if(diff < 0) return 'expired';
+      if(diff <= 3) return 'soon';
+      return 'ok';
     }
-}
-function closePersonnel(){ document.getElementById("overlay").style.display="none"; document.getElementById("personnelPopup").style.display="none"; }
 
-// --- Roles ---
-function openRoles(){ document.getElementById("overlay").style.display="block"; document.getElementById("rolePopup").style.display="block"; renderRoles(); }
-function renderRoles(){ const list=document.getElementById("roleList"); list.innerHTML=""; roles.forEach(r=>{ const div=document.createElement("div"); div.innerHTML=`<span style="background:${r.color};color:white;padding:2px 5px;border-radius:3px;">${r.name}</span> 
-<button onclick="deleteRole('${r.name}')">Verwijderen</button>`; list.appendChild(div);}); }
-function addRolePrompt(){ const name=prompt("Naam rol:"); const color=prompt("Kleur rol:"); if(name && color){ roles.push({name,color}); saveData(); renderRoles(); renderWeek(); } }
-function deleteRole(name){ if(confirm("Weet je zeker?")){ roles=roles.filter(r=>r.name!==name); employees.forEach(e=>{ if(e.role===name) e.role="";}); saveData(); renderRoles(); renderWeek(); } }
-function closeRoles(){ document.getElementById("overlay").style.display="none"; document.getElementById("rolePopup").style.display="none"; }
+    function render(filterText=''){
+      const arr = load().slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+      listEl.innerHTML = '';
+      const q = filterText.trim().toLowerCase();
+      const frag = document.createDocumentFragment();
+      arr.forEach(item=>{
+        if(q && !item.name.toLowerCase().includes(q)) return;
+        const status = getStatusClass(item.date);
+        const el = document.createElement('div'); el.className='item';
+        el.innerHTML = `
+          <div style="width:8px;height:48px;border-radius:8px;background:linear-gradient(180deg,rgba(0,0,0,0.06),transparent)"></div>
+          <div class="meta">
+            <div class="title">${escapeHtml(item.name)}</div>
+            <div class="small">THT: ${item.date || '—'} ${item.qty ? '· Aantal: '+escapeHtml(item.qty):''}</div>
+          </div>
+          <div class="status ${status}">${status === 'expired' ? 'Over datum' : status === 'soon' ? 'Binnen 3 dagen' : 'Ok'}</div>
+          <div class="right">
+            <button class="icon-btn" data-action="edit" data-id="${item.id}" title="Bewerk">✏️</button>
+            <button class="icon-btn" data-action="remove" data-id="${item.id}" title="Verwijder">🗑️</button>
+            <button class="icon-btn" data-action="used" data-id="${item.id}" title="Markeer gebruikt">✅</button>
+          </div>
+        `;
+        frag.appendChild(el);
+      });
+      listEl.appendChild(frag);
+    }
 
-// --- Week Navigation ---
-function nextWeek(){ currentWeek++; if(!scheduleData[getWeekKey()]){ scheduleData[getWeekKey()]={}; days.forEach(d=>scheduleData[getWeekKey()][d]=[]);} renderWeek(); }
-function prevWeek(){ if(currentWeek>1){ currentWeek--; renderWeek(); }}
+    function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;', '"':'&quot;' }[c])); }
 
-// --- Init ---
-loadData(); renderWeek();
-</script>
+    // form submit
+    addForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const name = nameIn.value.trim();
+      const date = dateIn.value;
+      const qty = qtyIn.value.trim();
+      if(!name || !date){ alert('Vul minimaal naam en THT-datum in.'); return; }
+      const arr = load();
+      arr.push({id:cryptoRandomId(), name, date, qty});
+      save(arr);
+      addForm.reset();
+      render(search.value);
+    });
 
+    // list actions
+    listEl.addEventListener('click', e=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const action = btn.dataset.action; const id = btn.dataset.id;
+      if(action === 'remove'){
+        if(!confirm('Weet je zeker dat je dit product wilt verwijderen?')) return;
+        const arr = load().filter(x=>x.id!==id); save(arr); render(search.value);
+      } else if(action === 'edit'){
+        const arr = load(); const it = arr.find(x=>x.id===id); if(!it) return;
+        nameIn.value = it.name; dateIn.value = it.date; qtyIn.value = it.qty || '';
+        // remove old entry (we will re-add on submit)
+        save(arr.filter(x=>x.id!==id)); render(search.value);
+      } else if(action === 'used'){
+        const arr = load(); const it = arr.find(x=>x.id===id); if(!it) return;
+        if(!confirm('Markeer als gebruikt (verwijdert item)?')) return;
+        save(arr.filter(x=>x.id!==id)); render(search.value);
+      }
+    });
+
+    // search
+    search.addEventListener('input', ()=> render(search.value));
+
+    // show modal with expired/soon
+    showExp.addEventListener('click', ()=>{
+      const arr = load();
+      const td = today();
+      const expired = arr.filter(it=>{
+        const d = parseDate(it.date); if(!d) return false; return daysBetween(d, td) < 0;
+      });
+      const soon = arr.filter(it=>{
+        const d = parseDate(it.date); if(!d) return false; const diff = daysBetween(d, td); return diff >=0 && diff <=3;
+      });
+      modalList.innerHTML = '';
+      if(expired.length === 0 && soon.length === 0){ modalList.innerHTML = '<div class="small">Geen producten over datum of binnen 3 dagen.</div>'; }
+      else{
+        if(expired.length){
+          const h = document.createElement('div'); h.innerHTML = '<strong>Over datum</strong>'; modalList.appendChild(h);
+          expired.forEach(it=>{ const d=document.createElement('div'); d.className='item'; d.innerHTML=`<div class="meta"><div class="title">${escapeHtml(it.name)}</div><div class="small">THT: ${it.date}${it.qty? ' · Aantal: '+escapeHtml(it.qty):''}</div></div><div class="status expired">Over datum</div>`; modalList.appendChild(d); });
+        }
+        if(soon.length){
+          const h2 = document.createElement('div'); h2.innerHTML = '<strong>Binnen 3 dagen</strong>'; modalList.appendChild(h2);
+          soon.forEach(it=>{ const d=document.createElement('div'); d.className='item'; d.innerHTML=`<div class="meta"><div class="title">${escapeHtml(it.name)}</div><div class="small">THT: ${it.date}${it.qty? ' · Aantal: '+escapeHtml(it.qty):''}</div></div><div class="status soon">Binnen 3 dagen</div>`; modalList.appendChild(d); });
+        }
+      }
+      openModal();
+    });
+
+    function openModal(){ modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); }
+    function closeModal(){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }
+    modalClose.addEventListener('click', closeModal);
+    modal.addEventListener('click', e=>{ if(e.target === modal) closeModal(); });
+
+    showAll.addEventListener('click', ()=>{ search.value=''; render(); });
+
+    exportCsv.addEventListener('click', ()=>{
+      const arr = load(); if(arr.length===0){ alert('Geen producten om te exporteren'); return; }
+      const rows = [['naam','tht_datum','aantal']].concat(arr.map(r=>[r.name,r.date||'',r.qty||'']));
+      const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+      const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='tht_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    clearAll.addEventListener('click', ()=>{
+      if(!confirm('Weet je zeker dat je alle producten wilt verwijderen?')) return; localStorage.removeItem(LS_KEY); render();
+    });
+
+    // initial render
+    render();
+  </script>
 </body>
 </html>
