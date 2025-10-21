@@ -1,97 +1,42 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agar.io Custom Skin Upload</title>
-<style>
-  body { text-align: center; font-family: Arial; background: #222; color: #fff; }
-  canvas { background: #333; border: 2px solid #fff; margin-top: 20px; }
-  input, button { margin-top: 10px; }
-</style>
-</head>
-<body>
+// server.js (node >= 14)
+const express = require('express');
+const fetch = require('node-fetch'); // npm i node-fetch@2
+const bodyParser = require('body-parser');
 
-<h1>Agar.io Custom Skin Upload</h1>
+const app = express();
+app.use(bodyParser.json({limit:'10mb'}));
 
-<label>Voer je UID in:</label>
-<input type="text" id="uid" placeholder="UID"><br>
-<button id="loadSkin">Laad je huidige skin</button><br>
+const PORT = process.env.PORT || 3000;
 
-<label>Upload je nieuwe skin (4K ondersteund):</label>
-<input type="file" id="upload" accept="image/*"><br>
-<button id="uploadSkin">Upload Skin (90 DNA)</button><br>
+// --- CONFIGUREER HIER ---
+// De echte Agar.io upload URL / endpoint (onbekend / privé): vul deze in wanneer je die hebt.
+const AGARIO_UPLOAD_URL = process.env.AGARIO_UPLOAD_URL || 'https://example.com/agar-upload-placeholder';
 
-<p id="dnaDisplay">Je DNA: <span id="dna">100</span></p>
+app.post('/upload-skin', async (req, res) => {
+  try {
+    const body = req.body;
+    console.log('Ontvangen payload:', { uid: body.uid, skinName: body.skinName });
 
-<canvas id="gameCanvas" width="800" height="600"></canvas>
+    // Hier kun je validaties doen, opslaan in DB, of doorsturen naar Agar.io
+    // Voorbeeld: doorsturen als multipart/form-data of JSON afhankelijk van wat de API vereist.
 
-<script>
-let userSkin = null;
-let dna = 100; // Simuleer DNA balance
-let uid = '';
+    // ----- VOORBEELD: doorsturen als JSON naar AGARIO_UPLOAD_URL -----
+    const forwardResp = await fetch(AGARIO_UPLOAD_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // mogelijk moet je hier cookies of autorisatieheaders toevoegen
+        // 'Authorization': 'Bearer <TOKEN>'
+      },
+      body: JSON.stringify(body)
+    });
 
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-document.getElementById('loadSkin').addEventListener('click', () => {
-    uid = document.getElementById('uid').value;
-    if (!uid) {
-        alert("Voer een UID in!");
-        return;
-    }
-    // Simuleer skin ophalen via UID
-    alert(`Huidige skin voor UID ${uid} geladen!`);
+    const text = await forwardResp.text();
+    res.status(200).send({ forwardedStatus: forwardResp.status, responseText: text });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: String(err) });
+  }
 });
 
-document.getElementById('uploadSkin').addEventListener('click', () => {
-    const fileInput = document.getElementById('upload');
-    if (!fileInput.files[0]) {
-        alert("Selecteer eerst een afbeelding!");
-        return;
-    }
-    if (dna < 90) {
-        alert("Niet genoeg DNA!");
-        return;
-    }
-
-    const img = new Image();
-    img.onload = () => {
-        userSkin = img;
-        dna -= 90;
-        document.getElementById('dna').innerText = dna;
-        alert("Skin succesvol geüpload!");
-    };
-    img.src = URL.createObjectURL(fileInput.files[0]);
-});
-
-// Tekenen van de cel met skin
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const x = canvas.width / 2;
-    const y = canvas.height / 2;
-    const radius = 100;
-
-    if (userSkin) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI*2);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(userSkin, x - radius, y - radius, radius*2, radius*2);
-        ctx.restore();
-    } else {
-        ctx.fillStyle = 'lime';
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI*2);
-        ctx.fill();
-    }
-
-    requestAnimationFrame(draw);
-}
-
-draw();
-</script>
-
-</body>
-</html>
+app.listen(PORT, ()=> console.log('Server running on port', PORT));
