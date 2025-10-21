@@ -1,344 +1,89 @@
-<!doctype html>
-<html lang="nl">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>THT Bewaking — Nederlandse versie</title>
-  <style>
-    :root{--bg:#f6f7fb;--card:#ffffff;--muted:#525560;--accent:#0f62fe}
-    *{box-sizing:border-box}
-    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:var(--bg); color:#111}
-    .container{max-width:980px;margin:24px auto;padding:18px}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-    h1{font-size:20px;margin:0}
-    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(20,20,40,0.06);}
+// server.js
+const express = require('express');
+const fetch = require('node-fetch');
+const sqlite3 = require('sqlite3').verbose();
+const bodyParser = require('body-parser');
+const path = require('path');
 
-    form{display:grid;grid-template-columns:1fr 220px 120px 140px;gap:10px;align-items:end}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    input[type=text], input[type=date], select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef}
-    button{padding:10px 12px;border-radius:8px;border:0;background:var(--accent);color:white;cursor:pointer}
-    .btn-ghost{background:transparent;border:1px solid #e6e9ef;color:var(--muted);padding:9px 12px}
+const app = express();
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public'))); // serve index.html uit /public
 
-    .controls{display:flex;gap:8px;align-items:center}
-    .list{margin-top:14px;display:grid;gap:12px}
-    .item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;border:1px solid #f0f2f6;background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(250,250,252,0.6));}
-    .meta{flex:1;min-width:0}
-    .title{font-weight:600;margin:0}
-    .small{font-size:13px;color:var(--muted)}
+// DB setup
+const db = new sqlite3.Database('./account_links.db');
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS account_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    google_sub TEXT UNIQUE,
+    google_email TEXT,
+    fb_id TEXT UNIQUE,
+    fb_email TEXT,
+    linked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+});
 
-    .status{min-width:120px;text-align:center;padding:6px 8px;border-radius:10px;font-weight:700}
-    .expired{background:#fff0f0;color:#9b1c1c;border:1px solid #ffd0d0}
-    .soon{background:#fff9e6;color:#7a4a00;border:1px solid #ffe7a6}
-    .ok{background:#f0fff4;color:#05621a;border:1px solid #c8f1d0}
-    .danger{box-shadow:0 0 0 4px rgba(255,120,120,0.06);}
+// Helper: verifieer Google id_token (returns payload or throws)
+async function verifyGoogleIdToken(id_token) {
+  // Gebruik tokeninfo endpoint
+  const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(id_token)}`);
+  if (!res.ok) throw new Error('Google token niet geldig');
+  const payload = await res.json();
+  // payload.sub is de Google unieke user id (UID)
+  return payload;
+}
 
-    .right{display:flex;gap:8px;align-items:center}
-    .icon-btn{background:transparent;border:0;padding:6px;border-radius:8px;cursor:pointer}
+// Helper: verifieer FB access token (returns object with id,email)
+async function verifyFacebookToken(access_token) {
+  const res = await fetch(`https://graph.facebook.com/me?fields=id,email,name&access_token=${encodeURIComponent(access_token)}`);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('Facebook token niet geldig: ' + err);
+  }
+  const payload = await res.json();
+  return payload;
+}
 
-    .filters{display:flex;gap:8px;margin-bottom:12px}
-    .search{flex:1}
+// Endpoint om tokens te ontvangen en koppeling te maken
+app.post('/link', async (req, res) => {
+  try {
+    const { google_id_token, fb_access_token } = req.body;
+    if (!google_id_token || !fb_access_token) return res.status(400).json({ error: 'Ontbrekende tokens' });
 
-    /* categories area */
-    .cats{display:flex;gap:8px;align-items:center;margin-top:10px}
-    .cat-pill{display:inline-flex;gap:8px;align-items:center;padding:6px 8px;border-radius:16px;border:1px solid #eee;background:#fcfcfd}
+    const g = await verifyGoogleIdToken(google_id_token);
+    const f = await verifyFacebookToken(fb_access_token);
 
-    /* modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(6,8,20,0.45);display:none;align-items:center;justify-content:center}
-    .modal{background:var(--card);padding:18px;border-radius:12px;max-width:820px;width:95%;max-height:80vh;overflow:auto}
+    const googleSub = g.sub;
+    const googleEmail = g.email || null;
+    const fbId = f.id;
+    const fbEmail = f.email || null;
 
-    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+    // Hier kun je aanvullende checks doen: bijv. of user eigenaar is, dubbele koppelingen, etc.
 
-    @media(max-width:760px){form{grid-template-columns:1fr;} .right{flex-wrap:wrap}}
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>THT Bewaking — Nederlandse versie</h1>
-      <div style="font-size:13px;color:var(--muted)">Opslag: <strong>localStorage</strong></div>
-    </header>
-
-    <section class="card" aria-labelledby="toevoegen">
-      <h2 id="toevoegen" style="margin-top:0;font-size:16px">Product toevoegen</h2>
-      <form id="productForm" onsubmit="return false;">
-        <div>
-          <label for="name">Productnaam</label>
-          <input id="name" type="text" placeholder="Bijv. melk, kipfilet" required>
-        </div>
-        <div>
-          <label for="date">THT-datum</label>
-          <input id="date" type="date" required>
-        </div>
-        <div>
-          <label for="qty">Aantal (optioneel)</label>
-          <input id="qty" type="text" placeholder="bv. 1 of 2">
-        </div>
-        <div>
-          <label for="category">Categorie</label>
-          <select id="category"></select>
-        </div>
-        <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-          <button id="saveBtn" type="button">Opslaan</button>
-          <button id="resetBtn" type="button" class="btn-ghost">Wis velden</button>
-        </div>
-      </form>
-
-      <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <div class="filters" style="flex:1">
-          <input id="search" class="search" type="text" placeholder="Zoek op naam of categorie...">
-        </div>
-        <div class="controls">
-          <button id="showAll" class="btn-ghost" type="button">Toon alles</button>
-          <button id="showExp" class="btn-ghost" type="button">THT bewaking</button>
-          <button id="exportCsv" class="btn-ghost" type="button">Exporteer CSV</button>
-          <button id="clearAll" class="btn-ghost" type="button">Wis alles</button>
-        </div>
-      </div>
-
-      <div class="list" id="list" aria-live="polite"></div>
-    </section>
-
-    <section class="card" style="margin-top:12px">
-      <h2 style="margin-top:0;font-size:16px">Categorieën beheren</h2>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="newCat" type="text" placeholder="Nieuwe categorie (bijv. Vlees)">
-        <button id="addCat" class="btn-ghost" type="button">Voeg categorie toe</button>
-        <div style="margin-left:auto;color:var(--muted);font-size:13px">Verwijder categorieën met het prullenbak-icoon</div>
-      </div>
-      <div class="cats" id="catList" style="margin-top:12px"></div>
-    </section>
-
-    <footer class="card" style="margin-top:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-weight:600">Legenda</div>
-          <div style="font-size:13px;color:var(--muted)">Rood = over datum · Geel = binnen 3 dagen · Groen = ok · Extra waarschuwing voor gevaarlijke categorieën zoals Vlees/Vis.</div>
-        </div>
-        <div style="font-size:13px;color:var(--muted)">Tip: deze app werkt offline in je browser. Verwijder browserdata verwijdert ook de producten.</div>
-      </div>
-    </footer>
-  </div>
-
-  <!-- modal -->
-  <div id="modal" class="modal-backdrop" role="dialog" aria-hidden="true">
-    <div class="modal">
-      <h2 id="modalTitle">THT Bewaking</h2>
-      <p id="modalInfo" class="small">Lijst met producten die over datum of bijna verlopen zijn.</p>
-      <div id="modalList" style="display:grid;gap:10px;margin-top:10px"></div>
-      <div style="display:flex;justify-content:flex-end;margin-top:12px">
-        <button id="modalClose" class="btn-ghost">Sluit</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Keys
-    const LS_PRODUCTS = 'thtProducts_v2';
-    const LS_CATEGORIES = 'thtCategories_v1';
-
-    // DOM
-    const nameIn = document.getElementById('name');
-    const dateIn = document.getElementById('date');
-    const qtyIn = document.getElementById('qty');
-    const catSelect = document.getElementById('category');
-    const saveBtn = document.getElementById('saveBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const listEl = document.getElementById('list');
-    const search = document.getElementById('search');
-    const showExp = document.getElementById('showExp');
-    const showAll = document.getElementById('showAll');
-    const exportCsv = document.getElementById('exportCsv');
-    const clearAll = document.getElementById('clearAll');
-
-    const newCat = document.getElementById('newCat');
-    const addCat = document.getElementById('addCat');
-    const catList = document.getElementById('catList');
-
-    const modal = document.getElementById('modal');
-    const modalList = document.getElementById('modalList');
-    const modalClose = document.getElementById('modalClose');
-
-    // Utilities
-    const today = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
-    const parseDate = (s) => { if(!s) return null; const d = new Date(s+'T00:00:00'); d.setHours(0,0,0,0); return d; };
-    const daysBetween = (a,b) => Math.round((a - b) / (1000*60*60*24)); // a - b
-    function id(){ return Math.random().toString(36).slice(2,9); }
-
-    // Default categories
-    const DEFAULT_CATEGORIES = ['Vlees','Vis','Kaas','Brood','Groenten','Fruit','Koeken','Anders'];
-    const DANGEROUS = ['Vlees','Vis']; // extra waarschuwing
-
-    // Storage helpers
-    function loadProducts(){ try{ return JSON.parse(localStorage.getItem(LS_PRODUCTS)) || []; }catch(e){return []} }
-    function saveProducts(arr){ localStorage.setItem(LS_PRODUCTS, JSON.stringify(arr)); }
-    function loadCategories(){ try{ const raw = JSON.parse(localStorage.getItem(LS_CATEGORIES)); return raw && raw.length ? raw : DEFAULT_CATEGORIES.slice(); }catch(e){return DEFAULT_CATEGORIES.slice()} }
-    function saveCategories(arr){ localStorage.setItem(LS_CATEGORIES, JSON.stringify(arr)); }
-
-    // Initialize categories if none
-    if(!localStorage.getItem(LS_CATEGORIES)) saveCategories(DEFAULT_CATEGORIES.slice());
-
-    // Render category select & list
-    function renderCategories(){
-      const cats = loadCategories();
-      catSelect.innerHTML = '';
-      cats.forEach(c=>{ const opt = document.createElement('option'); opt.value=c; opt.textContent=c; catSelect.appendChild(opt); });
-
-      catList.innerHTML = '';
-      cats.forEach(c=>{
-        const pill = document.createElement('div'); pill.className='cat-pill';
-        pill.innerHTML = `<span style="font-weight:600">${escapeHtml(c)}</span><button class="icon-btn" data-action="del-cat" data-cat="${escapeHtml(c)}" title="Verwijder categorie">🗑️</button>`;
-        catList.appendChild(pill);
-      });
-    }
-
-    // Escape
-    function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-    // Status
-    function getStatusClass(dStr){
-      const d = parseDate(dStr);
-      if(!d) return 'ok';
-      const td = today();
-      const diff = daysBetween(d, td); // d - today
-      if(diff < 0) return 'expired';
-      if(diff <= 3) return 'soon';
-      return 'ok';
-    }
-
-    // Render products
-    function render(filter=''){
-      const arr = loadProducts().slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
-      listEl.innerHTML = '';
-      const q = filter.trim().toLowerCase();
-      const frag = document.createDocumentFragment();
-      arr.forEach(item=>{
-        if(q){ const matches = item.name.toLowerCase().includes(q) || (item.category && item.category.toLowerCase().includes(q)); if(!matches) return; }
-        const status = getStatusClass(item.date);
-        const isDanger = DANGEROUS.includes(item.category);
-        const el = document.createElement('div'); el.className='item'+(isDanger?' danger':'');
-        el.innerHTML = `
-          <div style="width:8px;height:48px;border-radius:8px;background:linear-gradient(180deg,rgba(0,0,0,0.06),transparent)"></div>
-          <div class="meta">
-            <div class="title">${escapeHtml(item.name)} <span style="font-weight:400;color:var(--muted)">· ${escapeHtml(item.category || 'Onbekend')}</span></div>
-            <div class="small">THT: ${item.date || '—'} ${item.qty ? '· Aantal: '+escapeHtml(item.qty):''}</div>
-          </div>
-          <div class="status ${status}">${status === 'expired' ? 'Over datum' : status === 'soon' ? 'Binnen 3 dagen' : 'Ok'}</div>
-          <div class="right">
-            <button class="icon-btn" data-action="edit" data-id="${item.id}" title="Bewerk">✏️</button>
-            <button class="icon-btn" data-action="remove" data-id="${item.id}" title="Verwijder">🗑️</button>
-            <button class="icon-btn" data-action="used" data-id="${item.id}" title="Markeer gebruikt">✅</button>
-          </div>
-        `;
-        // if dangerous and expired or soon, add extra badge
-        if(isDanger){
-          const badge = document.createElement('div'); badge.style.fontSize='12px'; badge.style.color='#8b0000'; badge.style.marginLeft='8px';
-          const d = parseDate(item.date); const td = today(); const diff = d ? daysBetween(d, td) : null;
-          if(diff !== null){ if(diff < 0) badge.textContent = 'Let op: gevaarlijk over datum!'; else if(diff <=1) badge.textContent = 'Let op: extra voorzichtig — bijna verlopen'; }
-          if(badge.textContent) el.querySelector('.meta').appendChild(badge);
+    // Sla mapping op (insert or update)
+    db.serialize(() => {
+      const stmt = db.prepare(`
+        INSERT INTO account_links (google_sub, google_email, fb_id, fb_email)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(google_sub) DO UPDATE SET fb_id = excluded.fb_id, fb_email = excluded.fb_email
+      `);
+      stmt.run(googleSub, googleEmail, fbId, fbEmail, function(err) {
+        if (err) {
+          // Mogelijke sqlite versie zonder upsert: fallback op update/insert
+          return res.status(500).json({ error: 'DB fout: ' + err.message });
         }
-
-        frag.appendChild(el);
+        res.json({ message: 'Accounts gekoppeld', google_sub: googleSub, fb_id: fbId });
       });
-      listEl.appendChild(frag);
-    }
-
-    // Save product (Opslaan knop)
-    saveBtn.addEventListener('click', ()=>{
-      const name = nameIn.value.trim(); const date = dateIn.value; const qty = qtyIn.value.trim(); const category = catSelect.value || 'Anders';
-      if(!name || !date){ alert('Vul minimaal naam en THT-datum in.'); return; }
-      const arr = loadProducts(); arr.push({id:id(), name, date, qty, category}); saveProducts(arr);
-      // clear form
-      nameIn.value=''; dateIn.value=''; qtyIn.value='';
-      render(search.value);
-      alert('Product is opgeslagen.');
+      stmt.finalize();
     });
 
-    resetBtn.addEventListener('click', ()=>{ nameIn.value=''; dateIn.value=''; qtyIn.value=''; });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+});
 
-    // list actions
-    listEl.addEventListener('click', e=>{
-      const btn = e.target.closest('button'); if(!btn) return; const action = btn.dataset.action; const idd = btn.dataset.id;
-      if(action === 'remove'){
-        if(!confirm('Weet je zeker dat je dit product wilt verwijderen?')) return;
-        saveProducts(loadProducts().filter(x=>x.id!==idd)); render(search.value);
-      } else if(action === 'edit'){
-        const arr = loadProducts(); const it = arr.find(x=>x.id===idd); if(!it) return;
-        nameIn.value = it.name; dateIn.value = it.date; qtyIn.value = it.qty || ''; catSelect.value = it.category || 'Anders';
-        // remove old so saving will replace
-        saveProducts(arr.filter(x=>x.id!==idd)); render(search.value);
-      } else if(action === 'used'){
-        if(!confirm('Markeer als gebruikt (verwijdert item)?')) return;
-        saveProducts(loadProducts().filter(x=>x.id!==idd)); render(search.value);
-      }
-    });
-
-    // search
-    search.addEventListener('input', ()=> render(search.value));
-
-    // show modal with expired/soon
-    showExp.addEventListener('click', ()=>{
-      const arr = loadProducts();
-      const td = today();
-      const expired = arr.filter(it=>{ const d=parseDate(it.date); if(!d) return false; return daysBetween(d, td) < 0; });
-      const soon = arr.filter(it=>{ const d=parseDate(it.date); if(!d) return false; const diff = daysBetween(d, td); return diff >=0 && diff <=3; });
-      modalList.innerHTML = '';
-      if(expired.length === 0 && soon.length === 0){ modalList.innerHTML = '<div class="small">Geen producten over datum of binnen 3 dagen.</div>'; }
-      else{
-        if(expired.length){ const h = document.createElement('div'); h.innerHTML = '<strong>Over datum</strong>'; modalList.appendChild(h);
-          expired.forEach(it=>{ const d=document.createElement('div'); d.className='item'; d.innerHTML=`<div class="meta"><div class="title">${escapeHtml(it.name)} · ${escapeHtml(it.category||'Onbekend')}</div><div class="small">THT: ${it.date}${it.qty? ' · Aantal: '+escapeHtml(it.qty):''}</div></div><div class="status expired">Over datum</div>`; modalList.appendChild(d); }); }
-        if(soon.length){ const h2 = document.createElement('div'); h2.innerHTML = '<strong>Binnen 3 dagen</strong>'; modalList.appendChild(h2);
-          soon.forEach(it=>{ const d=document.createElement('div'); d.className='item'; d.innerHTML=`<div class="meta"><div class="title">${escapeHtml(it.name)} · ${escapeHtml(it.category||'Onbekend')}</div><div class="small">THT: ${it.date}${it.qty? ' · Aantal: '+escapeHtml(it.qty):''}</div></div><div class="status soon">Binnen 3 dagen</div>`; modalList.appendChild(d); }); }
-      }
-      openModal();
-    });
-
-    function openModal(){ modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); }
-    function closeModal(){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }
-    modalClose.addEventListener('click', closeModal);
-    modal.addEventListener('click', e=>{ if(e.target === modal) closeModal(); });
-
-    showAll.addEventListener('click', ()=>{ search.value=''; render(); });
-
-    // CSV export
-    exportCsv.addEventListener('click', ()=>{
-      const arr = loadProducts(); if(arr.length===0){ alert('Geen producten om te exporteren'); return; }
-      const rows = [['naam','tht_datum','aantal','categorie']].concat(arr.map(r=>[r.name,r.date||'',r.qty||'',r.category||'']));
-      const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
-');
-      const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='tht_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    });
-
-    clearAll.addEventListener('click', ()=>{ if(!confirm('Weet je zeker dat je alle producten wilt verwijderen?')) return; localStorage.removeItem(LS_PRODUCTS); render(); });
-
-    // Category add/remove
-    addCat.addEventListener('click', ()=>{
-      const v = newCat.value.trim(); if(!v){ alert('Voer een categorie-naam in.'); return; }
-      const cats = loadCategories(); if(cats.includes(v)){ alert('Categorie bestaat al.'); return; }
-      cats.push(v); saveCategories(cats); newCat.value=''; renderCategories(); render(search.value);
-    });
-
-    catList.addEventListener('click', e=>{
-      const btn = e.target.closest('button'); if(!btn) return; if(btn.dataset.action === 'del-cat'){
-        const cat = btn.dataset.cat; if(!confirm(`Weet je zeker dat je categorie "${cat}" wilt verwijderen? Producten met deze categorie worden verplaatst naar 'Anders'.`)) return;
-        let cats = loadCategories().filter(c=>c!==cat); if(cats.length===0) cats = DEFAULT_CATEGORIES.slice(); saveCategories(cats);
-        // update products
-        const prods = loadProducts().map(p=> p.category === cat ? {...p, category:'Anders'} : p ); saveProducts(prods);
-        renderCategories(); render(search.value);
-      }
-    });
-
-    // initial seed
-    if(loadProducts().length === 0){
-      const sample = [
-        {id:id(), name:'Volle melk', date: (()=>{const d=new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10);})(), qty:'1', category:'Kaas'},
-        {id:id(), name:'Rode paprika', date: (()=>{const d=new Date(); d.setDate(d.getDate()-2); return d.toISOString().slice(0,10);})(), qty:'2', category:'Groenten'},
-        {id:id(), name:'Rundervink', date: (()=>{const d=new Date(); d.setDate(d.getDate()+0); return d.toISOString().slice(0,10);})(), qty:'1', category:'Vlees'}
-      ]; saveProducts(sample);
-    }
-
-    // initial render
-    renderCategories(); render();
-  </script>
-</body>
-</html>
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server draaiend op http://localhost:${PORT}`);
+});
