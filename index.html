@@ -1,89 +1,97 @@
-// server.js
-const express = require('express');
-const fetch = require('node-fetch');
-const sqlite3 = require('sqlite3').verbose();
-const bodyParser = require('body-parser');
-const path = require('path');
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agar.io Custom Skin Upload</title>
+<style>
+  body { text-align: center; font-family: Arial; background: #222; color: #fff; }
+  canvas { background: #333; border: 2px solid #fff; margin-top: 20px; }
+  input, button { margin-top: 10px; }
+</style>
+</head>
+<body>
 
-const app = express();
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public'))); // serve index.html uit /public
+<h1>Agar.io Custom Skin Upload</h1>
 
-// DB setup
-const db = new sqlite3.Database('./account_links.db');
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS account_links (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    google_sub TEXT UNIQUE,
-    google_email TEXT,
-    fb_id TEXT UNIQUE,
-    fb_email TEXT,
-    linked_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+<label>Voer je UID in:</label>
+<input type="text" id="uid" placeholder="UID"><br>
+<button id="loadSkin">Laad je huidige skin</button><br>
+
+<label>Upload je nieuwe skin (4K ondersteund):</label>
+<input type="file" id="upload" accept="image/*"><br>
+<button id="uploadSkin">Upload Skin (90 DNA)</button><br>
+
+<p id="dnaDisplay">Je DNA: <span id="dna">100</span></p>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+let userSkin = null;
+let dna = 100; // Simuleer DNA balance
+let uid = '';
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+document.getElementById('loadSkin').addEventListener('click', () => {
+    uid = document.getElementById('uid').value;
+    if (!uid) {
+        alert("Voer een UID in!");
+        return;
+    }
+    // Simuleer skin ophalen via UID
+    alert(`Huidige skin voor UID ${uid} geladen!`);
 });
 
-// Helper: verifieer Google id_token (returns payload or throws)
-async function verifyGoogleIdToken(id_token) {
-  // Gebruik tokeninfo endpoint
-  const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(id_token)}`);
-  if (!res.ok) throw new Error('Google token niet geldig');
-  const payload = await res.json();
-  // payload.sub is de Google unieke user id (UID)
-  return payload;
+document.getElementById('uploadSkin').addEventListener('click', () => {
+    const fileInput = document.getElementById('upload');
+    if (!fileInput.files[0]) {
+        alert("Selecteer eerst een afbeelding!");
+        return;
+    }
+    if (dna < 90) {
+        alert("Niet genoeg DNA!");
+        return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+        userSkin = img;
+        dna -= 90;
+        document.getElementById('dna').innerText = dna;
+        alert("Skin succesvol geüpload!");
+    };
+    img.src = URL.createObjectURL(fileInput.files[0]);
+});
+
+// Tekenen van de cel met skin
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const x = canvas.width / 2;
+    const y = canvas.height / 2;
+    const radius = 100;
+
+    if (userSkin) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI*2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(userSkin, x - radius, y - radius, radius*2, radius*2);
+        ctx.restore();
+    } else {
+        ctx.fillStyle = 'lime';
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
 }
 
-// Helper: verifieer FB access token (returns object with id,email)
-async function verifyFacebookToken(access_token) {
-  const res = await fetch(`https://graph.facebook.com/me?fields=id,email,name&access_token=${encodeURIComponent(access_token)}`);
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error('Facebook token niet geldig: ' + err);
-  }
-  const payload = await res.json();
-  return payload;
-}
+draw();
+</script>
 
-// Endpoint om tokens te ontvangen en koppeling te maken
-app.post('/link', async (req, res) => {
-  try {
-    const { google_id_token, fb_access_token } = req.body;
-    if (!google_id_token || !fb_access_token) return res.status(400).json({ error: 'Ontbrekende tokens' });
-
-    const g = await verifyGoogleIdToken(google_id_token);
-    const f = await verifyFacebookToken(fb_access_token);
-
-    const googleSub = g.sub;
-    const googleEmail = g.email || null;
-    const fbId = f.id;
-    const fbEmail = f.email || null;
-
-    // Hier kun je aanvullende checks doen: bijv. of user eigenaar is, dubbele koppelingen, etc.
-
-    // Sla mapping op (insert or update)
-    db.serialize(() => {
-      const stmt = db.prepare(`
-        INSERT INTO account_links (google_sub, google_email, fb_id, fb_email)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(google_sub) DO UPDATE SET fb_id = excluded.fb_id, fb_email = excluded.fb_email
-      `);
-      stmt.run(googleSub, googleEmail, fbId, fbEmail, function(err) {
-        if (err) {
-          // Mogelijke sqlite versie zonder upsert: fallback op update/insert
-          return res.status(500).json({ error: 'DB fout: ' + err.message });
-        }
-        res.json({ message: 'Accounts gekoppeld', google_sub: googleSub, fb_id: fbId });
-      });
-      stmt.finalize();
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server draaiend op http://localhost:${PORT}`);
-});
+</body>
+</html>
