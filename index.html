@@ -1,228 +1,26 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Agar.io Custom Skin Uploader — Demo</title>
-  <style>
-    :root{--bg:#f7f9fc;--card:#fff;--accent:#2b9cff;--muted:#6b7280}
-    body{font-family:Inter,system-ui,Arial;margin:0;background:var(--bg);display:flex;align-items:center;justify-content:center;height:100vh}
-    .card{width:920px;max-width:96%;background:var(--card);border-radius:12px;box-shadow:0 8px 30px rgba(10,20,40,0.08);padding:28px}
-    h1{margin:0 0 18px;font-size:20px}
-    .row{display:flex;gap:12px;margin-bottom:12px}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type=text],select,input[type=color],input[type=file]{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;background:#fff}
-    .half{flex:1}
-    button{background:var(--accent);color:#fff;border:none;padding:12px 16px;border-radius:10px;cursor:pointer}
-    button.secondary{background:#69e0ff;color:#022}
-    .preview{width:160px;height:160px;border-radius:12px;border:1px solid #e6e9ef;display:flex;align-items:center;justify-content:center;background:#f3f6fa;overflow:hidden}
-    .hint{font-size:12px;color:var(--muted);margin-top:6px}
-    .footer{margin-top:14px;display:flex;gap:10px}
-    .log{font-family:monospace;background:#f3f3f3;padding:8px;border-radius:8px;font-size:12px;max-height:160px;overflow:auto}
-  </style>
+<meta charset="UTF-8">
+<title>Praat AI Reclame Stem</title>
 </head>
-<body>
-  <div class="card">
-    <h1>Agar.io Custom Skin Uploader — Demo</h1>
+<body style="font-family: Arial; text-align:center; margin-top:50px;">
+  <h2>🎙️ Reclame AI Stem</h2>
+  <textarea id="tekst" rows="4" cols="50" placeholder="Typ hier je reclame tekst..."></textarea><br><br>
+  <label>Snelheid:</label>
+  <input type="range" id="speed" min="0.5" max="2" value="1.3" step="0.1"><br><br>
+  <button onclick="spreek()">▶️ Laat horen</button>
 
-    <!-- UID (gebruikers moet invullen) -->
-    <div class="row">
-      <div style="flex:1">
-        <label for="uid">Vul je Agar.io UID in (verplicht)</label>
-        <input id="uid" type="text" placeholder="Bijv. 1234567890abcdef" />
-        <div class="hint">Zonder correcte UID zal de skin niet worden geüpload naar dat account.</div>
-      </div>
-      <div style="width:200px">
-        <label>Verificatie (zichtbaar)</label>
-        <div id="uidBadge" style="padding:10px;border-radius:8px;background:#111;color:#fff;text-align:center">UID: —</div>
-      </div>
-    </div>
-
-    <!-- Image upload -->
-    <div class="row">
-      <div style="flex:1">
-        <label for="imageFile">Upload Image (jpg/png/webp)</label>
-        <input id="imageFile" type="file" accept="image/*" />
-        <div class="hint">Afbeelding wordt automatisch geschaald naar 512×512 en gecomprimeerd.</div>
-      </div>
-      <div style="width:180px">
-        <label>Preview (512×512)</label>
-        <div class="preview" id="preview">Geen afbeelding</div>
-      </div>
-    </div>
-
-    <!-- Skin name, border color -->
-    <div class="row">
-      <div class="half">
-        <label>Skin Name</label>
-        <input id="skinName" type="text" placeholder="Voer een naam in voor je skin" />
-      </div>
-      <div style="width:160px">
-        <label>Border Color</label>
-        <input id="borderColor" type="color" value="#000000" />
-      </div>
-      <div style="width:160px">
-        <label>Use No Name</label>
-        <select id="useNoName"><option value="false">Nee</option><option value="true">Ja</option></select>
-      </div>
-    </div>
-
-    <!-- Quality + Creation option -->
-    <div class="row">
-      <div class="half">
-        <label>Select Skin Quality</label>
-        <select id="quality">
-          <option>Normal</option>
-          <option>High</option>
-          <option selected>Supreme +4k</option>
-        </select>
-      </div>
-      <div class="half">
-        <label>Select Skin Creation Option</label>
-        <select id="creationOption">
-          <option>90 DNA</option>
-          <option>Coins</option>
-          <option>Token</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Buttons -->
-    <div class="footer">
-      <button id="uploadBtn">Upload Image</button>
-      <button id="uploadAllBtn" class="secondary">Upload All</button>
-      <div style="flex:1"></div>
-      <div style="width:260px"><input id="endpoint" type="text" placeholder="UPLOAD_ENDPOINT (vul je server-URL hier)" /></div>
-    </div>
-
-    <div style="margin-top:12px">
-      <div class="log" id="log">Log: klaar.</div>
-    </div>
-  </div>
-
-<script>
-(function(){
-  const uidInput = document.getElementById('uid');
-  const uidBadge = document.getElementById('uidBadge');
-  const fileInput = document.getElementById('imageFile');
-  const preview = document.getElementById('preview');
-  const logEl = document.getElementById('log');
-
-  const endpointInput = document.getElementById('endpoint');
-
-  function log(s){
-    logEl.textContent += "\\n" + s;
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-
-  uidInput.addEventListener('input', ()=> uidBadge.textContent = 'UID: ' + (uidInput.value||'—'));
-
-  let lastBlob = null;
-
-  fileInput.addEventListener('change', async (e)=>{
-    const f = e.target.files[0];
-    if(!f) return;
-    if(!f.type.startsWith('image/')) { alert('Kies een afbeelding.'); return; }
-    const img = await loadImageFromFile(f);
-    const resized = resizeTo512(img);
-    // convert to blob
-    const blob = await new Promise(res => resized.toBlob(res,'image/png',0.92));
-    lastBlob = blob;
-    const url = URL.createObjectURL(blob);
-    preview.innerHTML = '<img src="'+url+'" style="max-width:100%;max-height:100%">';
-    log('Afbeelding geladen en geschaald naar 512×512.');
-  });
-
-  // helpers
-  function loadImageFromFile(file){
-    return new Promise((resolve, reject)=>{
-      const r = new FileReader();
-      r.onload = ()=> {
-        const img = new Image();
-        img.onload = ()=> resolve(img);
-        img.onerror = reject;
-        img.src = r.result;
-      };
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
-  function resizeTo512(img){
-    const canvas = document.createElement('canvas');
-    canvas.width = 512; canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-    // center image on canvas and maintain aspect ratio
-    const ar = img.width / img.height;
-    let dw, dh, dx, dy;
-    if(ar > 1){ // wide
-      dh = 512; dw = Math.round(512 * ar);
-    } else {
-      dw = 512; dh = Math.round(512 / ar);
+  <script>
+    function spreek() {
+      const tekst = document.getElementById("tekst").value;
+      const speed = document.getElementById("speed").value;
+      const utterance = new SpeechSynthesisUtterance(tekst);
+      utterance.lang = "nl-NL";
+      utterance.pitch = 1.2;
+      utterance.rate = speed;
+      speechSynthesis.speak(utterance);
     }
-    // draw centered
-    dx = Math.round((512 - dw)/2);
-    dy = Math.round((512 - dh)/2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0,0,512,512);
-    ctx.drawImage(img, dx, dy, dw, dh);
-    return canvas;
-  }
-
-  async function preparePayload(){
-    if(!uidInput.value){ alert('Vul je UID in.'); throw new Error('no uid'); }
-    if(!lastBlob){ alert('Selecteer eerst een afbeelding.'); throw new Error('no image'); }
-    const skinName = document.getElementById('skinName').value || '';
-    const borderColor = document.getElementById('borderColor').value || '#000000';
-    const quality = document.getElementById('quality').value;
-    const creation = document.getElementById('creationOption').value;
-    const useNoName = document.getElementById('useNoName').value === 'true';
-
-    // Convert blob to base64 (dataURL)
-    const dataURL = await new Promise((res)=> {
-      const r = new FileReader();
-      r.onload = ()=> res(r.result);
-      r.readAsDataURL(lastBlob);
-    });
-
-    // Example payload — change fields to what your server/API expects
-    const payload = {
-      uid: uidInput.value.trim(),
-      skinName,
-      borderColor,
-      quality,
-      creation,
-      useNoName,
-      imageDataURL: dataURL
-    };
-    return payload;
-  }
-
-  async function doUpload(all=false){
-    try{
-      const endpoint = endpointInput.value.trim();
-      if(!endpoint){ alert('Vul eerst de server endpoint URL in het veld rechts onderaan.'); return; }
-
-      const payload = await preparePayload();
-      if(all) payload.uploadAll = true;
-
-      log('Start POST naar endpoint: ' + endpoint);
-      const resp = await fetch(endpoint, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      const text = await resp.text();
-      log('Server response: ' + resp.status + ' — ' + text);
-      alert('Upload poging voltooid. Bekijk console / log voor resultaat.');
-    }catch(err){
-      log('Fout: ' + (err && err.message || err));
-    }
-  }
-
-  document.getElementById('uploadBtn').addEventListener('click', ()=> doUpload(false));
-  document.getElementById('uploadAllBtn').addEventListener('click', ()=> doUpload(true));
-
-})();
-</script>
+  </script>
 </body>
 </html>
