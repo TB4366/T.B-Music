@@ -1,204 +1,165 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Agar.io Premium Skins — Legaal aankoophulpmiddel</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 20px;
-        }
-        header { text-align:center; margin-bottom:20px; }
-        h1 { margin: 6px 0; }
-        p.lead { color:#666; margin-top:0; }
-        .uidbox {
-            display:flex;
-            justify-content:center;
-            gap:8px;
-            margin-bottom:18px;
-            flex-wrap:wrap;
-        }
-        input[type="text"] {
-            padding:8px 10px;
-            font-size:16px;
-            border-radius:6px;
-            border:1px solid #ccc;
-            width:260px;
-        }
-        button.primary {
-            background:#2b9cff;
-            border:none;
-            color:white;
-            padding:9px 14px;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:600;
-        }
-        button.primary:disabled { opacity:0.6; cursor:not-allowed; }
-        .category { margin-bottom: 40px; }
-        .skins { display:flex; flex-wrap:wrap; justify-content:center; }
-        .skin {
-            background:#fff;
-            border:1px solid #ddd;
-            border-radius:10px;
-            width:150px;
-            margin:10px;
-            text-align:center;
-            padding:10px;
-            box-shadow:0px 2px 5px rgba(0,0,0,0.06);
-        }
-        .skin img { width:100px; height:100px; object-fit:contain; }
-        .coins { color:#ff6600; font-weight:bold; margin:6px 0; }
-        .buy {
-            background:#1a9a4a;
-            color:white;
-            border:none;
-            padding:6px 10px;
-            border-radius:6px;
-            cursor:pointer;
-            font-weight:700;
-        }
-        .note { text-align:center; color:#333; font-size:14px; margin-top:8px; }
-        .small { font-size:13px; color:#666; text-align:center; margin-top:6px; }
-        footer { text-align:center; margin-top:30px; color:#666; font-size:13px; }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Agar.io — Veilige aankoopassistent</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f7f7f8; margin:20px; color:#222 }
+  header { text-align:center; margin-bottom:18px }
+  h1 { margin:6px 0 }
+  .uidbox { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:12px }
+  input[type="text"]{ padding:8px 10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:280px }
+  button { padding:9px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700 }
+  .primary { background:#0b79d0; color:#fff }
+  .secondary { background:#6c757d; color:#fff }
+  .skins { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:12px }
+  .skin { width:150px; background:#fff; border-radius:10px; padding:10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.06) }
+  .skin img{ width:100px; height:100px; object-fit:contain }
+  .coins { color:#ff6600; font-weight:700; margin:8px 0 }
+  .buy { background:#1fa14a; color:#fff; padding:7px 10px; border-radius:6px; cursor:pointer }
+  .note{ text-align:center; color:#444; margin-top:14px }
+  footer{ text-align:center; color:#777; margin-top:20px; font-size:13px }
+</style>
 </head>
 <body>
 
 <header>
-    <h1>Premium Agar.io Skins</h1>
-    <p class="lead">Voer je Agar.io UID in en klik op <strong>Koop</strong>. Dit hulpmiddel leidt je naar de officiële winkel — je coins worden alleen via Agar.io afgeschreven.</p>
-
-    <div class="uidbox" aria-label="UID invoer">
-        <input id="uidInput" type="text" placeholder="Voer je Agar.io UID in (bijv. 123456789)" aria-label="Agar.io UID">
-        <button id="saveUid" class="primary">UID Opslaan</button>
-        <button id="clearUid" class="primary" style="background:#888;">Wis UID</button>
-    </div>
-    <div id="uidStatus" class="small">UID nog niet opgeslagen</div>
+  <h1>Agar.io — Veilige aankoopassistent</h1>
+  <p class="note">Voer je UID in en klik op "Koop". De pagina zal je naar de officiële winkel sturen en alle aankoopgegevens naar je klembord kopiëren — jij bevestigd de betaling zelf in de winkel.</p>
+  <div class="uidbox" aria-label="UID invoer">
+    <input id="uidInput" type="text" placeholder="Voer je Agar.io UID in (bijv. 123456789)" />
+    <button id="saveUid" class="primary">UID Opslaan</button>
+    <button id="clearUid" class="secondary">Wis UID</button>
+  </div>
+  <div id="uidStatus" style="text-align:center; color:#555">UID niet opgeslagen</div>
 </header>
 
 <main>
-    <!-- Voorbeeld categorie — voeg links en meer skins toe zoals in jouw origineel -->
-    <div class="category">
-        <h2>Planeten &amp; Ruimte</h2>
-        <div class="skins" id="skinsContainer">
-            <div class="skin" data-skin-name="Venus" data-coins="250">
-                <img src="images/venus.png" alt="Venus">
-                <p>Venus</p>
-                <p class="coins">250 Coins</p>
-                <button class="buy">Koop</button>
-            </div>
+  <section>
+    <h2 style="text-align:center">Planeten &amp; Ruimte</h2>
+    <div class="skins" id="skins">
+      <!-- Voorbeeld skin -->
+      <div class="skin" data-name="Venus" data-coins="250" data-skinid="venus">
+        <img src="images/venus.png" alt="Venus">
+        <div>Venus</div>
+        <div class="coins">250 Coins</div>
+        <button class="buy">Koop</button>
+      </div>
 
-            <div class="skin" data-skin-name="Mercury" data-coins="270">
-                <img src="images/mercury.png" alt="Mercury">
-                <p>Mercury</p>
-                <p class="coins">270 Coins</p>
-                <button class="buy">Koop</button>
-            </div>
+      <div class="skin" data-name="Jupiter" data-coins="900" data-skinid="jupiter">
+        <img src="images/jupiter.png" alt="Jupiter">
+        <div>Jupiter</div>
+        <div class="coins">900 Coins</div>
+        <button class="buy">Koop</button>
+      </div>
 
-            <div class="skin" data-skin-name="Jupiter" data-coins="900">
-                <img src="images/jupiter.png" alt="Jupiter">
-                <p>Jupiter</p>
-                <p class="coins">900 Coins</p>
-                <button class="buy">Koop</button>
-            </div>
-
-            <!-- ... voeg de overige skins op dezelfde manier toe ... -->
-        </div>
+      <!-- voeg hier je overige skins toe met dezelfde data-* attributen -->
     </div>
+  </section>
 
-    <!-- Je kunt hier andere categorieblokken herhalen (Eten & Snacks, Dieren, etc.) -->
-    <div class="note">
-        <strong>Belangrijk:</strong> Dit hulpmiddel voert geen wijzigingen uit in je account. Het kopieert je UID + skin-gegevens naar het klembord en opent de officiële Agar.io-winkelpagina. Rond de aankoop daar af.
-    </div>
+  <div class="note">
+    <strong>Belangrijk:</strong> deze tool automatiseert enkel voorbereidend werk. De betaling zelf gebeurt altijd in de officiële Agar.io-winkel.
+  </div>
 </main>
 
 <footer>
-    <div>© Je Site — Dit is een legale aankoopassistent die géén coins toevoegt of verwijdert buiten de officiële Agar.io-winkel.</div>
+  © Aankoopassistent — Je blijft zelf verantwoordelijk voor de uiteindelijke bevestiging op Agar.io.
 </footer>
 
 <script>
-(function () {
-    const uidInput = document.getElementById('uidInput');
-    const saveBtn = document.getElementById('saveUid');
-    const clearBtn = document.getElementById('clearUid');
-    const uidStatus = document.getElementById('uidStatus');
-    const skinsContainer = document.getElementById('skinsContainer');
+(function(){
+  const uidInput = document.getElementById('uidInput');
+  const saveBtn = document.getElementById('saveUid');
+  const clearBtn = document.getElementById('clearUid');
+  const uidStatus = document.getElementById('uidStatus');
+  const skins = document.getElementById('skins');
 
-    // Probeer opgeslagen UID te laden uit localStorage
-    function loadUid() {
-        const stored = localStorage.getItem('agario_uid');
-        if (stored) {
-            uidInput.value = stored;
-            uidStatus.textContent = 'Opgeslagen UID: ' + stored;
-        } else {
-            uidStatus.textContent = 'UID nog niet opgeslagen';
-        }
+  function loadUid() {
+    const s = localStorage.getItem('agario_uid');
+    if (s) { uidInput.value = s; uidStatus.textContent = 'Opgeslagen UID: ' + s; }
+    else uidStatus.textContent = 'UID niet opgeslagen';
+  }
+  function validUid(u){ return typeof u==='string' && u.trim().length>=3; }
+
+  saveBtn.addEventListener('click', () => {
+    const u = uidInput.value.trim();
+    if (!validUid(u)){ alert('Voer een geldige UID in (minimaal 3 tekens).'); return; }
+    localStorage.setItem('agario_uid', u);
+    uidStatus.textContent = 'Opgeslagen UID: ' + u;
+    alert('UID opgeslagen.');
+  });
+  clearBtn.addEventListener('click', () => {
+    localStorage.removeItem('agario_uid');
+    uidInput.value=''; uidStatus.textContent='UID niet opgeslagen';
+  });
+
+  skins.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button.buy');
+    if (!btn) return;
+    const skinEl = btn.closest('.skin');
+    const skinName = skinEl.dataset.name || 'Onbekend';
+    const coins = skinEl.dataset.coins || 'Onbekend';
+    const skinId = skinEl.dataset.skinid || '';
+    const uid = localStorage.getItem('agario_uid') || uidInput.value.trim();
+
+    if (!validUid(uid)) { alert('Sla eerst je UID op (klik op "UID Opslaan") voordat je koopt.'); return; }
+
+    // Bouw een tekst om te kopiëren en een veilige querystring voor de winkel-tab
+    const purchaseText = `Agar.io UID: ${uid}\nSkin: ${skinName}\nPrijs: ${coins} Coins\n\nOpen de officiële Agar.io-winkel en voltooi de aankoop.`;
+    try {
+      await navigator.clipboard.writeText(purchaseText);
+    } catch (err) {
+      // fallback copy
+      const ta = document.createElement('textarea'); ta.value = purchaseText;
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) { /* noop */ }
+      document.body.removeChild(ta);
     }
 
-    // Eenvoudige validatie: UID non-empty en alleen cijfers of letters (Agar.io UID kan variëren)
-    function validUid(uid) {
-        return typeof uid === 'string' && uid.trim().length >= 3;
+    // Bouw winkel-URL met veilige query-params die alleen ter informatie dienen (we sturen geen automatische betaling).
+    // We gebruiken de root shop; als Agar.io individuele skin-links heeft kan die hier komen (niet automatisch submitten).
+    const shopUrl = new URL('https://agar.io/store');
+    // Zet leesbare info in de query zodat de gebruiker in de nieuwe tab ziet welke skin en UID bedoeld is.
+    shopUrl.searchParams.set('assist_uid', uid);
+    shopUrl.searchParams.set('assist_skin', skinId || skinName);
+    shopUrl.searchParams.set('assist_price', coins);
+
+    const openConfirm = confirm(`De aankoopgegevens zijn naar je klembord gekopieerd:\n\nSkin: ${skinName}\nPrijs: ${coins}\n\nWil je nu de officiële winkel openen om de aankoop af te ronden? (Je moet zelf bevestigen in de winkel.)`);
+    if (openConfirm) {
+      // Open in nieuwe tab. De winkel ontvangt alleen informatieve queryparams — er wordt geen betaling gestart.
+      window.open(shopUrl.toString(), '_blank', 'noopener');
+      // Optioneel: open een instructie-popup op dezelfde pagina om gebruiker te helpen.
+      showLocalInstructions(uid, skinName, coins);
     }
+  });
 
-    saveBtn.addEventListener('click', () => {
-        const uid = uidInput.value.trim();
-        if (!validUid(uid)) {
-            alert('Voer een geldige UID in (minimaal 3 tekens).');
-            return;
-        }
-        localStorage.setItem('agario_uid', uid);
-        uidStatus.textContent = 'Opgeslagen UID: ' + uid;
-        alert('UID opgeslagen. Wanneer je nu op "Koop" klikt, wordt deze UID gebruikt in het gekopieerde aankoopbericht.');
-    });
+  function showLocalInstructions(uid, skinName, coins) {
+    // Simpele instructie overlay — gebruiker blijft zelf verantwoordelijk om te bevestigen.
+    const overlay = document.createElement('div');
+    overlay.style.position='fixed'; overlay.style.left=0; overlay.style.top=0; overlay.style.right=0; overlay.style.bottom=0;
+    overlay.style.background='rgba(0,0,0,0.45)'; overlay.style.display='flex'; overlay.style.alignItems='center';
+    overlay.style.justifyContent='center'; overlay.style.zIndex=9999;
+    const card = document.createElement('div');
+    card.style.background='#fff'; card.style.padding='18px'; card.style.borderRadius='10px'; card.style.maxWidth='420px';
+    card.innerHTML = `<h3 style="margin-top:0">Actie vereist: bevestig aankoop</h3>
+      <p>Je UID en skingegevens zijn naar je klembord gekopieerd.</p>
+      <ul>
+        <li><strong>UID:</strong> ${uid}</li>
+        <li><strong>Skin:</strong> ${skinName}</li>
+        <li><strong>Prijs:</strong> ${coins}</li>
+      </ul>
+      <p>Klik in de geopende Agar.io-winkel op de juiste skin en plak (Ctrl+V / Cmd+V) indien nodig je UID of de kopieerde info in het opmerkingenveld — voltooi daarna zelf de betaling.</p>
+      <div style="text-align:right; margin-top:10px;">
+        <button id="closeAssist" style="padding:8px 12px; border-radius:8px; border:none; background:#0b79d0; color:#fff;">Sluiten</button>
+      </div>`;
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    document.getElementById('closeAssist').addEventListener('click', ()=> overlay.remove());
+  }
 
-    clearBtn.addEventListener('click', () => {
-        localStorage.removeItem('agario_uid');
-        uidInput.value = '';
-        uidStatus.textContent = 'UID nog niet opgeslagen';
-    });
-
-    // Centrale handler voor koopknoppen
-    skinsContainer.addEventListener('click', async (ev) => {
-        const btn = ev.target.closest('button.buy');
-        if (!btn) return;
-
-        const skinEl = btn.closest('.skin');
-        const skinName = skinEl.dataset.skinName || skinEl.querySelector('p').innerText;
-        const coins = skinEl.dataset.coins || skinEl.querySelector('.coins')?.innerText || 'onbekend';
-        const uid = localStorage.getItem('agario_uid') || uidInput.value.trim();
-
-        if (!validUid(uid)) {
-            alert('Voer eerst je UID in en klik op "UID Opslaan" voordat je een skin koopt.');
-            return;
-        }
-
-        // Maak tekst om naar klembord te kopiëren zodat gebruiker deze kan plakken in officiële winkel of support.
-        const copyText = `Agar.io UID: ${uid}\nSkin: ${skinName}\nPrijs: ${coins} Coins\n\nLet op: open nu de officiële Agar.io-winkel en voltooi de aankoop daar.`;
-        try {
-            await navigator.clipboard.writeText(copyText);
-        } catch (err) {
-            // fallback: create temporary textarea
-            const ta = document.createElement('textarea');
-            ta.value = copyText;
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); } catch (e) { /* noop */ }
-            document.body.removeChild(ta);
-        }
-
-        // Informeer gebruiker en open de officiële winkel in nieuwe tab
-        const openShop = confirm(`UID en skin-gegevens zijn gekopieerd naar je klembord.\n\nSkin: ${skinName}\nPrijs: ${coins}\n\nWil je nu de officiële Agar.io-winkel openen om de aankoop te voltooien?`);
-        if (openShop) {
-            // Officiële winkel URL — open de hoofdshop. Gebruiker plakt eventueel zijn UID in het aankoopformulier.
-            window.open('https://agar.io/store', '_blank', 'noopener');
-        }
-    });
-
-    // initial load
-    loadUid();
+  // initial
+  loadUid();
 })();
 </script>
 
