@@ -2,114 +2,131 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Audio Remix van Video (MP4)</title>
+<title>Online Remix App met YouTube Zoeken</title>
 <style>
-body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-button, input { margin: 5px; padding: 10px; font-size: 16px; }
-h1 { margin-bottom: 20px; }
-.container { background: #fff; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+body { font-family: Arial, sans-serif; background: #111; color: #fff; text-align: center; padding: 20px; }
+input, button { padding: 10px; margin: 5px; font-size: 16px; }
+#results { margin-top: 20px; }
+.video-result { padding: 10px; background: #222; border-radius: 8px; margin: 10px auto; width: 80%; cursor: pointer; }
+button.effect { background: #333; border: none; color: white; padding: 10px; margin: 5px; border-radius: 6px; cursor: pointer; }
+button.effect:hover { background: #555; }
 </style>
 </head>
 <body>
 
-<div class="container">
-<h1>MP4 Audio Remix App</h1>
+<h1>🎧 YouTube Remix App</h1>
 
-<input type="file" id="videoFile" accept="video/mp4"><br><br>
+<input type="text" id="searchQuery" placeholder="Zoek artiest of nummer...">
+<button id="searchBtn">🔍 Zoeken</button>
 
-<button id="playBtn">▶ Play</button>
-<button id="pauseBtn">⏸ Pause/Resume</button>
-<button id="stopBtn">⏹ Stop</button>
-<button id="loopBtn">🔁 Toggle Loop</button><br><br>
+<div id="results"></div>
 
-<button id="echoBtn">Echo</button>
-<button id="lowPassBtn">Low-pass Filter</button>
-<button id="highPassBtn">High-pass Filter</button>
-<button id="speedUpBtn">Speed +</button>
-<button id="slowDownBtn">Speed -</button><br><br>
+<div id="player"></div>
 
-<label>Volume: </label><input type="range" id="volumeSlider" min="0" max="2" step="0.01" value="1"><br><br>
-</div>
+<h2>🎛 Remix Controls</h2>
+<button class="effect" id="echoBtn">Echo</button>
+<button class="effect" id="lowPassBtn">Low-pass</button>
+<button class="effect" id="highPassBtn">High-pass</button>
+<button class="effect" id="speedUpBtn">Speed +</button>
+<button class="effect" id="slowDownBtn">Speed -</button>
 
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-let videoElement = null;
-let trackSource = null;
-let gainNode = audioContext.createGain();
-let echoNode = audioContext.createDelay(0.25);
-let lowPassFilter = audioContext.createBiquadFilter(); lowPassFilter.type="lowpass";
-let highPassFilter = audioContext.createBiquadFilter(); highPassFilter.type="highpass";
+let player;
+let audioContext;
+let sourceNode;
+let gainNode;
+let echoNode;
+let lowPassFilter;
+let highPassFilter;
 
 let echoActive=false, lowPassActive=false, highPassActive=false;
-let isLooping=false;
-let playbackRate=1;
+let playbackRate = 1;
 
-document.getElementById('videoFile').addEventListener('change', function(e){
-    const file = e.target.files[0];
-    if(!file) return;
-
-    // Maak een verborgen video element
-    if(videoElement) { videoElement.pause(); videoElement.remove(); }
-    videoElement = document.createElement('video');
-    videoElement.src = URL.createObjectURL(file);
-    videoElement.crossOrigin = "anonymous";
-    videoElement.loop = false;
-
-    trackSource = audioContext.createMediaElementSource(videoElement);
-    connectNodes();
-
-    alert("Video geladen! Audio kan nu afgespeeld worden.");
-});
-
-function connectNodes(){
-    if(!trackSource) return;
-    trackSource.disconnect();
-
-    let currentNode = trackSource;
-    if(echoActive){ currentNode.connect(echoNode); currentNode = echoNode; }
-    if(lowPassActive){ currentNode.connect(lowPassFilter); currentNode = lowPassFilter; }
-    if(highPassActive){ currentNode.connect(highPassFilter); currentNode = highPassFilter; }
-
-    currentNode.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+// --- YouTube API setup ---
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player', {
+    height: '0',
+    width: '0',
+    playerVars: { 'playsinline': 1 },
+    events: {
+      'onReady': initAudio
+    }
+  });
 }
 
-// Buttons
-document.getElementById('playBtn').onclick = () => {
-    if(!videoElement) { alert("Geen video geladen!"); return; }
-    videoElement.playbackRate = playbackRate;
-    videoElement.loop = isLooping;
-    videoElement.play();
-};
-document.getElementById('pauseBtn').onclick = () => {
-    if(!videoElement) return;
-    if(videoElement.paused) videoElement.play();
-    else videoElement.pause();
-};
-document.getElementById('stopBtn').onclick = () => {
-    if(!videoElement) return;
-    videoElement.pause();
-    videoElement.currentTime = 0;
-};
-document.getElementById('loopBtn').onclick = () => {
-    isLooping = !isLooping;
-    if(videoElement) videoElement.loop = isLooping;
-    alert("Loop: " + (isLooping ? "Aan" : "Uit"));
-};
+// --- Audio setup ---
+function initAudio() {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const audio = player.getIframe();
+  const streamDestination = audioContext.createMediaElementSource(audio);
+  gainNode = audioContext.createGain();
+  echoNode = audioContext.createDelay(0.25);
+  lowPassFilter = audioContext.createBiquadFilter(); lowPassFilter.type = 'lowpass';
+  highPassFilter = audioContext.createBiquadFilter(); highPassFilter.type = 'highpass';
+  sourceNode = streamDestination;
+  connectNodes();
+}
 
-// Effect toggles
+function connectNodes() {
+  if (!sourceNode) return;
+  sourceNode.disconnect();
+  let node = sourceNode;
+  if (echoActive) { node.connect(echoNode); node = echoNode; }
+  if (lowPassActive) { node.connect(lowPassFilter); node = lowPassFilter; }
+  if (highPassActive) { node.connect(highPassFilter); node = highPassFilter; }
+  node.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+}
+
+// --- Search Functionality (requires your own API key) ---
+async function searchYouTube(query) {
+  const apiKey = "YOUR_YOUTUBE_API_KEY"; // <-- vervang met jouw eigen key
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=5&key=${apiKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  displayResults(data.items);
+}
+
+function displayResults(videos) {
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
+  videos.forEach(v => {
+    const div = document.createElement('div');
+    div.className = 'video-result';
+    div.innerHTML = `<strong>${v.snippet.title}</strong><br><img src="${v.snippet.thumbnails.default.url}">`;
+    div.onclick = () => loadVideo(v.id.videoId);
+    resultsDiv.appendChild(div);
+  });
+}
+
+function loadVideo(videoId) {
+  player.loadVideoById(videoId);
+  player.playVideo();
+}
+
+// --- Effect Buttons ---
 document.getElementById('echoBtn').onclick = () => { echoActive = !echoActive; connectNodes(); alert("Echo: " + (echoActive ? "Aan" : "Uit")); };
 document.getElementById('lowPassBtn').onclick = () => { lowPassActive = !lowPassActive; connectNodes(); alert("Low-pass: " + (lowPassActive ? "Aan" : "Uit")); };
 document.getElementById('highPassBtn').onclick = () => { highPassActive = !highPassActive; connectNodes(); alert("High-pass: " + (highPassActive ? "Aan" : "Uit")); };
 
-// Speed control
-document.getElementById('speedUpBtn').onclick = () => { playbackRate += 0.1; if(videoElement) videoElement.playbackRate = playbackRate; alert("Speed: " + playbackRate.toFixed(1)); };
-document.getElementById('slowDownBtn').onclick = () => { playbackRate = Math.max(0.1, playbackRate - 0.1); if(videoElement) videoElement.playbackRate = playbackRate; alert("Speed: " + playbackRate.toFixed(1)); };
+document.getElementById('speedUpBtn').onclick = () => {
+  playbackRate += 0.1;
+  player.setPlaybackRate(playbackRate);
+  alert("Speed: " + playbackRate.toFixed(1));
+};
 
-// Volume
-document.getElementById('volumeSlider').addEventListener('input', function(){
-    gainNode.gain.value = this.value;
-});
+document.getElementById('slowDownBtn').onclick = () => {
+  playbackRate = Math.max(0.25, playbackRate - 0.1);
+  player.setPlaybackRate(playbackRate);
+  alert("Speed: " + playbackRate.toFixed(1));
+};
+
+// --- Search button click ---
+document.getElementById('searchBtn').onclick = () => {
+  const query = document.getElementById('searchQuery').value.trim();
+  if (query) searchYouTube(query);
+};
 </script>
 </body>
 </html>
