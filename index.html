@@ -1,166 +1,194 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Agar.io — Veilige aankoopassistent</title>
+<meta charset="UTF-8">
+<title>Geavanceerde Audio Remix App</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#f7f7f8; margin:20px; color:#222 }
-  header { text-align:center; margin-bottom:18px }
-  h1 { margin:6px 0 }
-  .uidbox { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:12px }
-  input[type="text"]{ padding:8px 10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:280px }
-  button { padding:9px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700 }
-  .primary { background:#0b79d0; color:#fff }
-  .secondary { background:#6c757d; color:#fff }
-  .skins { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:12px }
-  .skin { width:150px; background:#fff; border-radius:10px; padding:10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.06) }
-  .skin img{ width:100px; height:100px; object-fit:contain }
-  .coins { color:#ff6600; font-weight:700; margin:8px 0 }
-  .buy { background:#1fa14a; color:#fff; padding:7px 10px; border-radius:6px; cursor:pointer }
-  .note{ text-align:center; color:#444; margin-top:14px }
-  footer{ text-align:center; color:#777; margin-top:20px; font-size:13px }
+body { font-family: sans-serif; padding: 20px; }
+button, input { margin: 5px; }
+h1 { margin-bottom: 20px; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Agar.io — Veilige aankoopassistent</h1>
-  <p class="note">Voer je UID in en klik op "Koop". De pagina zal je naar de officiële winkel sturen en alle aankoopgegevens naar je klembord kopiëren — jij bevestigd de betaling zelf in de winkel.</p>
-  <div class="uidbox" aria-label="UID invoer">
-    <input id="uidInput" type="text" placeholder="Voer je Agar.io UID in (bijv. 123456789)" />
-    <button id="saveUid" class="primary">UID Opslaan</button>
-    <button id="clearUid" class="secondary">Wis UID</button>
-  </div>
-  <div id="uidStatus" style="text-align:center; color:#555">UID niet opgeslagen</div>
-</header>
+<h1>Geavanceerde Audio Remix App</h1>
 
-<main>
-  <section>
-    <h2 style="text-align:center">Planeten &amp; Ruimte</h2>
-    <div class="skins" id="skins">
-      <!-- Voorbeeld skin -->
-      <div class="skin" data-name="Venus" data-coins="250" data-skinid="venus">
-        <img src="images/venus.png" alt="Venus">
-        <div>Venus</div>
-        <div class="coins">250 Coins</div>
-        <button class="buy">Koop</button>
-      </div>
+<input type="file" id="audioFile" accept="audio/*"><br><br>
 
-      <div class="skin" data-name="Jupiter" data-coins="900" data-skinid="jupiter">
-        <img src="images/jupiter.png" alt="Jupiter">
-        <div>Jupiter</div>
-        <div class="coins">900 Coins</div>
-        <button class="buy">Koop</button>
-      </div>
+<button id="playBtn">Play</button>
+<button id="pauseBtn">Pause</button>
+<button id="stopBtn">Stop</button>
+<button id="loopBtn">Toggle Loop</button><br><br>
 
-      <!-- voeg hier je overige skins toe met dezelfde data-* attributen -->
-    </div>
-  </section>
+<button id="echoBtn">Echo</button>
+<button id="reverbBtn">Reverb</button>
+<button id="lowPassBtn">Low-pass Filter</button>
+<button id="highPassBtn">High-pass Filter</button>
+<button id="speedUpBtn">Speed +</button>
+<button id="slowDownBtn">Speed -</button><br><br>
 
-  <div class="note">
-    <strong>Belangrijk:</strong> deze tool automatiseert enkel voorbereidend werk. De betaling zelf gebeurt altijd in de officiële Agar.io-winkel.
-  </div>
-</main>
+<label>Volume: </label><input type="range" id="volumeSlider" min="0" max="2" step="0.01" value="1"><br><br>
 
-<footer>
-  © Aankoopassistent — Je blijft zelf verantwoordelijk voor de uiteindelijke bevestiging op Agar.io.
-</footer>
+<button id="downloadBtn">Download Remix</button>
 
 <script>
-(function(){
-  const uidInput = document.getElementById('uidInput');
-  const saveBtn = document.getElementById('saveUid');
-  const clearBtn = document.getElementById('clearUid');
-  const uidStatus = document.getElementById('uidStatus');
-  const skins = document.getElementById('skins');
+let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let source, buffer;
+let gainNode = audioContext.createGain();
+let echoNode = audioContext.createDelay();
+echoNode.delayTime.value = 0.25;
+let lowPassFilter = audioContext.createBiquadFilter();
+lowPassFilter.type = "lowpass";
+let highPassFilter = audioContext.createBiquadFilter();
+highPassFilter.type = "highpass";
+let convolver = audioContext.createConvolver(); // Reverb
+let isLooping = false;
+let playbackRate = 1;
 
-  function loadUid() {
-    const s = localStorage.getItem('agario_uid');
-    if (s) { uidInput.value = s; uidStatus.textContent = 'Opgeslagen UID: ' + s; }
-    else uidStatus.textContent = 'UID niet opgeslagen';
-  }
-  function validUid(u){ return typeof u==='string' && u.trim().length>=3; }
+document.getElementById('audioFile').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(ev){
+        audioContext.decodeAudioData(ev.target.result, function(buf){
+            buffer = buf;
+            alert("Audio geladen!");
+        });
+    };
+    reader.readAsArrayBuffer(file);
+});
 
-  saveBtn.addEventListener('click', () => {
-    const u = uidInput.value.trim();
-    if (!validUid(u)){ alert('Voer een geldige UID in (minimaal 3 tekens).'); return; }
-    localStorage.setItem('agario_uid', u);
-    uidStatus.textContent = 'Opgeslagen UID: ' + u;
-    alert('UID opgeslagen.');
-  });
-  clearBtn.addEventListener('click', () => {
-    localStorage.removeItem('agario_uid');
-    uidInput.value=''; uidStatus.textContent='UID niet opgeslagen';
-  });
+function connectNodes(){
+    if(!source) return;
+    source.disconnect();
+    let currentNode = source;
 
-  skins.addEventListener('click', async (e) => {
-    const btn = e.target.closest('button.buy');
-    if (!btn) return;
-    const skinEl = btn.closest('.skin');
-    const skinName = skinEl.dataset.name || 'Onbekend';
-    const coins = skinEl.dataset.coins || 'Onbekend';
-    const skinId = skinEl.dataset.skinid || '';
-    const uid = localStorage.getItem('agario_uid') || uidInput.value.trim();
+    // Check active effects
+    if(echoActive) { currentNode.connect(echoNode); currentNode = echoNode; }
+    if(reverbActive) { currentNode.connect(convolver); currentNode = convolver; }
+    if(lowPassActive) { currentNode.connect(lowPassFilter); currentNode = lowPassFilter; }
+    if(highPassActive) { currentNode.connect(highPassFilter); currentNode = highPassFilter; }
 
-    if (!validUid(uid)) { alert('Sla eerst je UID op (klik op "UID Opslaan") voordat je koopt.'); return; }
+    currentNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+}
 
-    // Bouw een tekst om te kopiëren en een veilige querystring voor de winkel-tab
-    const purchaseText = `Agar.io UID: ${uid}\nSkin: ${skinName}\nPrijs: ${coins} Coins\n\nOpen de officiële Agar.io-winkel en voltooi de aankoop.`;
-    try {
-      await navigator.clipboard.writeText(purchaseText);
-    } catch (err) {
-      // fallback copy
-      const ta = document.createElement('textarea'); ta.value = purchaseText;
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); } catch (e) { /* noop */ }
-      document.body.removeChild(ta);
+function playAudio(){
+    if(!buffer) return;
+    source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.loop = isLooping;
+    source.playbackRate.value = playbackRate;
+    connectNodes();
+    source.start(0);
+}
+
+function stopAudio(){
+    if(source){
+        source.stop();
+        source = null;
+    }
+}
+
+function pauseAudio(){
+    if(audioContext.state === 'running'){
+        audioContext.suspend();
+    } else {
+        audioContext.resume();
+    }
+}
+
+document.getElementById('playBtn').onclick = playAudio;
+document.getElementById('stopBtn').onclick = stopAudio;
+document.getElementById('pauseBtn').onclick = pauseAudio;
+document.getElementById('loopBtn').onclick = function(){ isLooping = !isLooping; alert("Looping: " + isLooping); };
+
+// Effect toggles
+let echoActive=false, reverbActive=false, lowPassActive=false, highPassActive=false;
+
+document.getElementById('echoBtn').onclick = function(){ echoActive=!echoActive; alert("Echo: " + echoActive); };
+document.getElementById('reverbBtn').onclick = function(){ reverbActive=!reverbActive; alert("Reverb: " + reverbActive); };
+document.getElementById('lowPassBtn').onclick = function(){ lowPassActive=!lowPassActive; alert("Low-pass: " + lowPassActive); };
+document.getElementById('highPassBtn').onclick = function(){ highPassActive=!highPassActive; alert("High-pass: " + highPassActive); };
+
+// Speed control
+document.getElementById('speedUpBtn').onclick = function(){ playbackRate += 0.1; alert("Speed: " + playbackRate.toFixed(1)); };
+document.getElementById('slowDownBtn').onclick = function(){ playbackRate -= 0.1; if(playbackRate<0.1) playbackRate=0.1; alert("Speed: " + playbackRate.toFixed(1)); };
+
+// Volume
+document.getElementById('volumeSlider').addEventListener('input', function(){
+    gainNode.gain.value = this.value;
+});
+
+// Download functie (WAV)
+document.getElementById('downloadBtn').onclick = function(){
+    if(!buffer) return;
+    let offlineContext = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+    let offlineSource = offlineContext.createBufferSource();
+    offlineSource.buffer = buffer;
+
+    // Connect effects for export
+    let currentNode = offlineSource;
+    if(echoActive){ 
+        let delay = offlineContext.createDelay();
+        delay.delayTime.value = 0.25; 
+        currentNode.connect(delay); 
+        currentNode = delay;
+    }
+    if(lowPassActive){ 
+        let lp = offlineContext.createBiquadFilter(); lp.type="lowpass"; 
+        currentNode.connect(lp); currentNode = lp;
+    }
+    if(highPassActive){ 
+        let hp = offlineContext.createBiquadFilter(); hp.type="highpass"; 
+        currentNode.connect(hp); currentNode = hp;
     }
 
-    // Bouw winkel-URL met veilige query-params die alleen ter informatie dienen (we sturen geen automatische betaling).
-    // We gebruiken de root shop; als Agar.io individuele skin-links heeft kan die hier komen (niet automatisch submitten).
-    const shopUrl = new URL('https://agar.io/store');
-    // Zet leesbare info in de query zodat de gebruiker in de nieuwe tab ziet welke skin en UID bedoeld is.
-    shopUrl.searchParams.set('assist_uid', uid);
-    shopUrl.searchParams.set('assist_skin', skinId || skinName);
-    shopUrl.searchParams.set('assist_price', coins);
+    currentNode.connect(offlineContext.destination);
+    offlineSource.start();
 
-    const openConfirm = confirm(`De aankoopgegevens zijn naar je klembord gekopieerd:\n\nSkin: ${skinName}\nPrijs: ${coins}\n\nWil je nu de officiële winkel openen om de aankoop af te ronden? (Je moet zelf bevestigen in de winkel.)`);
-    if (openConfirm) {
-      // Open in nieuwe tab. De winkel ontvangt alleen informatieve queryparams — er wordt geen betaling gestart.
-      window.open(shopUrl.toString(), '_blank', 'noopener');
-      // Optioneel: open een instructie-popup op dezelfde pagina om gebruiker te helpen.
-      showLocalInstructions(uid, skinName, coins);
+    offlineContext.startRendering().then(renderedBuffer => {
+        let wavBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
+        let url = URL.createObjectURL(wavBlob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = "remix.wav";
+        a.click();
+    });
+};
+
+// WAV converter
+function bufferToWave(abuffer, len) {
+    let numOfChan = abuffer.numberOfChannels,
+        length = len * numOfChan * 2 + 44,
+        buffer = new ArrayBuffer(length),
+        view = new DataView(buffer),
+        channels = [], i, sample,
+        offset = 0,
+        pos = 0;
+
+    setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+    setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+    setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan);
+    setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164);
+    setUint32(length - pos - 4);
+
+    for(i=0;i<numOfChan;i++) channels.push(abuffer.getChannelData(i));
+
+    while(pos<length){
+        for(i=0;i<numOfChan;i++){
+            sample=Math.max(-1,Math.min(1,channels[i][offset]));
+            sample=(0.5+sample*0.5)*65535;
+            view.setUint16(pos,sample,true);
+            pos+=2;
+        }
+        offset++;
     }
-  });
 
-  function showLocalInstructions(uid, skinName, coins) {
-    // Simpele instructie overlay — gebruiker blijft zelf verantwoordelijk om te bevestigen.
-    const overlay = document.createElement('div');
-    overlay.style.position='fixed'; overlay.style.left=0; overlay.style.top=0; overlay.style.right=0; overlay.style.bottom=0;
-    overlay.style.background='rgba(0,0,0,0.45)'; overlay.style.display='flex'; overlay.style.alignItems='center';
-    overlay.style.justifyContent='center'; overlay.style.zIndex=9999;
-    const card = document.createElement('div');
-    card.style.background='#fff'; card.style.padding='18px'; card.style.borderRadius='10px'; card.style.maxWidth='420px';
-    card.innerHTML = `<h3 style="margin-top:0">Actie vereist: bevestig aankoop</h3>
-      <p>Je UID en skingegevens zijn naar je klembord gekopieerd.</p>
-      <ul>
-        <li><strong>UID:</strong> ${uid}</li>
-        <li><strong>Skin:</strong> ${skinName}</li>
-        <li><strong>Prijs:</strong> ${coins}</li>
-      </ul>
-      <p>Klik in de geopende Agar.io-winkel op de juiste skin en plak (Ctrl+V / Cmd+V) indien nodig je UID of de kopieerde info in het opmerkingenveld — voltooi daarna zelf de betaling.</p>
-      <div style="text-align:right; margin-top:10px;">
-        <button id="closeAssist" style="padding:8px 12px; border-radius:8px; border:none; background:#0b79d0; color:#fff;">Sluiten</button>
-      </div>`;
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-    document.getElementById('closeAssist').addEventListener('click', ()=> overlay.remove());
-  }
+    return new Blob([buffer], {type:"audio/wav"});
 
-  // initial
-  loadUid();
-})();
+    function setUint16(data){ view.setUint16(pos,data,true); pos+=2; }
+    function setUint32(data){ view.setUint32(pos,data,true); pos+=4; }
+}
 </script>
 
 </body>
