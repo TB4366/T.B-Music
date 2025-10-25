@@ -3,378 +3,850 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mini DJ / Remix App</title>
+<title>Modern Remix DJ Studio — Neon</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0f1724;--panel:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--card:#0b1420}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#071021);color:#e6eef6}
-  .app{max-width:1200px;margin:20px auto;padding:18px;}
-  header{display:flex;align-items:center;justify-content:space-between}
-  h1{font-size:20px;margin:0}
-  .controls{display:flex;gap:12px;align-items:center}
-  .panel{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(2,6,23,.6);}
-  .decks{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-  .deck{padding:12px;background:var(--card);border-radius:10px}
-  .deck h2{margin:0 0 8px 0;font-size:16px}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .btn{background:#0e1b2b;border:1px solid rgba(255,255,255,.04);color:#dff7fb;padding:8px 10px;border-radius:8px;cursor:pointer}
-  .btn.primary{background:linear-gradient(90deg,var(--accent),#22c1c3);color:#011219}
-  .slider{width:120px}
+  :root{
+    --bg:#071225;
+    --panel:#091726;
+    --card:rgba(255,255,255,0.03);
+    --accent:#7ee7ff;
+    --accent2:#9b7eff;
+    --muted:rgba(255,255,255,0.45);
+    --glow: 0 6px 30px rgba(125,200,255,0.07);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background: linear-gradient(180deg,#031320 0%,var(--bg) 60%);
+    color:#e7f7ff;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:1200px;margin:18px auto;padding:18px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  h1{font-size:18px;margin:0}
+  .top-controls{display:flex;gap:10px;align-items:center}
+  button, input[type="range"]{font-family:inherit}
+  .btn{
+    background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));
+    color:var(--accent);
+    border:1px solid rgba(255,255,255,0.04);
+    padding:8px 12px;border-radius:8px;cursor:pointer;
+    box-shadow:var(--glow);
+  }
+  .btn.ghost{color:var(--muted);background:transparent;border:1px dashed rgba(255,255,255,0.03)}
+  .layout{display:grid;grid-template-columns: 320px 1fr 320px;gap:12px;}
+  .panel{background:var(--panel);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 30px rgba(0,0,0,0.6)}
+  .deck{
+    display:flex;gap:12px;align-items:center;
+  }
+  .deck-column{display:flex;flex-direction:column;gap:12px;align-items:center;width:100%}
+  .big-disc{
+    width:240px;height:240px;border-radius:50%;
+    background:conic-gradient(from 0deg,var(--accent)20%, transparent 60%), radial-gradient(circle at 30% 30%, rgba(255,255,255,0.02), transparent 30%), rgba(255,255,255,0.01);
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6), 0 4px 18px rgba(125,200,255,0.04);
+    border: 1px solid rgba(255,255,255,0.02);
+    transform: translateZ(0);
+    animation: spin 6s linear infinite;
+    animation-play-state: paused;
+  }
+  .disc-inner{width:70%;height:70%;border-radius:50%;background:linear-gradient(180deg,rgba(0,0,0,0.35),rgba(255,255,255,0.02));display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--muted)}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .deck-meta{text-align:center}
+  .deck-buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+  .controls-column{display:flex;flex-direction:column;gap:10px}
+  .effect-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   label{font-size:13px;color:var(--muted)}
-  .big{font-size:18px;padding:12px 16px}
-  .crossfader{margin:12px 0}
-  .master{margin-top:12px;padding:10px;background:rgba(255,255,255,0.02);border-radius:8px}
-  .search{margin-top:12px}
-  .search input{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);width:320px}
-  .results{max-height:260px;overflow:auto;margin-top:8px}
-  .result{padding:8px;border-radius:6px;background:rgba(255,255,255,0.02);margin-bottom:6px;cursor:pointer}
-  footer{margin-top:20px;color:var(--muted);font-size:13px}
-  .padbank{display:flex;gap:8px;margin-top:10px}
-  .pad{padding:14px 18px;border-radius:8px;background:#08131e;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+  input[type=file]{color:var(--muted)}
+  .sidebar-btn{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
+  .footer{margin-top:14px;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:8px;align-items:center}
+  .big{padding:12px 18px;border-radius:10px}
+  .fader{writing-mode:bt-lr; -webkit-appearance: none;height:120px;width:14px;background:transparent}
+  .fader::-webkit-slider-thumb{ -webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);border:1px solid rgba(255,255,255,0.15)}
+  .wave-placeholder{height:56px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:8px;margin-top:8px}
+  .lights{display:flex;gap:6px;justify-content:center;margin-top:8px}
+  .light{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.03)}
+  .light.on{box-shadow:0 0 8px rgba(126,231,255,0.5);background:var(--accent)}
+  .side-vertical{display:flex;flex-direction:column;gap:8px}
+  .small{padding:8px 10px;border-radius:8px}
+  .kbd{font-size:12px;color:var(--muted);margin-left:6px}
+  .center-controls{display:flex;flex-direction:column;align-items:center;gap:10px}
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <h1>Mini DJ / Remix App — maak en remix je platen 🎛️</h1>
-    <div class="controls">
-      <button id="recordBtn" class="btn">⏺️ Start opname</button>
-      <button id="downloadRecording" class="btn">⬇️ Download opname</button>
-    </div>
-  </header>
-
-  <section class="panel">
-    <div class="row">
-      <div style="flex:1">
-        <label>Upload lokale track (mp3/wav/mp4...)</label><br>
-        <input type="file" id="fileDeckA" accept="audio/*,video/*" />
-        <input type="file" id="fileDeckB" accept="audio/*,video/*" style="margin-left:8px" />
+  <div class="app">
+    <header>
+      <h1>Modern Remix DJ Studio — Neon</h1>
+      <div class="top-controls">
+        <button id="recordBtn" class="btn">⏺ Start opname</button>
+        <button id="downloadRecording" class="btn ghost">⬇️ Download opname</button>
       </div>
-      <div style="min-width:260px">
-        <label>Of zoek op YouTube (optioneel - API key nodig)</label>
-        <div class="search">
-          <input id="ytApiKey" placeholder="(optioneel) YouTube API key" />
-          <input id="searchQuery" placeholder="zoek artiest of nummer" />
-          <button id="searchBtn" class="btn">🔍 Zoeken</button>
-          <div id="results" class="results"></div>
+    </header>
+
+    <div class="layout">
+      <!-- LEFT SIDEBAR: effects + sample pads -->
+      <aside class="panel side-vertical">
+        <div>
+          <label>Samples / Pads</label>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn small" data-sample="kick">Kick</button>
+            <button class="btn small" data-sample="snare">Snare</button>
+            <button class="btn small" data-sample="hat">Hi-hat</button>
+            <button class="btn small" id="fxOneShot">One-shot</button>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <div class="decks">
-    <!-- Deck A -->
-    <div class="deck panel" id="deckA">
-      <h2>Deck A</h2>
-      <div class="row">
-        <button class="btn big" id="playA">▶</button>
-        <button class="btn big" id="pauseA">⏸</button>
-        <button class="btn big" id="stopA">⏹</button>
-        <button class="btn" id="loadYTintoA">Load selected → A</button>
-      </div>
-      <div style="margin-top:8px" class="row">
-        <label>Gain</label><input type="range" id="gainA" class="slider" min="0" max="2" step="0.01" value="1">
-        <label>Pitch</label><input type="range" id="pitchA" class="slider" min="0.5" max="2" step="0.01" value="1">
-      </div>
-      <div style="margin-top:8px" class="row">
-        <button class="btn" id="echoA">Echo</button>
-        <button class="btn" id="lowA">Low-pass</button>
-        <button class="btn" id="highA">High-pass</button>
-        <button class="btn" id="loopA">Loop</button>
-      </div>
-    </div>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:8px 0">
 
-    <!-- Deck B -->
-    <div class="deck panel" id="deckB">
-      <h2>Deck B</h2>
-      <div class="row">
-        <button class="btn big" id="playB">▶</button>
-        <button class="btn big" id="pauseB">⏸</button>
-        <button class="btn big" id="stopB">⏹</button>
-        <button class="btn" id="loadYTintoB">Load selected → B</button>
-      </div>
-      <div style="margin-top:8px" class="row">
-        <label>Gain</label><input type="range" id="gainB" class="slider" min="0" max="2" step="0.01" value="1">
-        <label>Pitch</label><input type="range" id="pitchB" class="slider" min="0.5" max="2" step="0.01" value="1">
-      </div>
-      <div style="margin-top:8px" class="row">
-        <button class="btn" id="echoB">Echo</button>
-        <button class="btn" id="lowB">Low-pass</button>
-        <button class="btn" id="highB">High-pass</button>
-        <button class="btn" id="loopB">Loop</button>
-      </div>
+        <div>
+          <label>Global Effects</label>
+          <div style="margin-top:8px" class="effect-grid">
+            <button id="masterReverb" class="btn small">Reverb</button>
+            <button id="masterDelay" class="btn small">Delay</button>
+            <button id="masterFlanger" class="btn small">Flanger</button>
+            <button id="masterFilterSweep" class="btn small">Filter Sweep</button>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:8px 0">
+
+        <div>
+          <label>EQ (master)</label>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <input id="masterLow" type="range" min="0" max="2" step="0.01" value="1" class="fader">
+            <input id="masterMid" type="range" min="0" max="2" step="0.01" value="1" class="fader">
+            <input id="masterHigh" type="range" min="0" max="2" step="0.01" value="1" class="fader">
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER: decks -->
+      <main>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <!-- Deck A -->
+          <div class="panel deck-column">
+            <div class="deck">
+              <div class="big-disc" id="discA"><div class="disc-inner">A</div></div>
+              <div style="flex:1">
+                <div class="deck-meta">
+                  <div style="display:flex;gap:8px;align-items:center;justify-content:center">
+                    <label>Deck A</label>
+                    <input type="file" id="fileA" accept="audio/*,video/*" />
+                    <button id="cueA" class="btn small">Cue</button>
+                    <button id="syncAB" class="btn small">Sync → B</button>
+                  </div>
+                </div>
+
+                <div class="deck-buttons">
+                  <button id="playA" class="btn big">▶</button>
+                  <button id="pauseA" class="btn big">⏸</button>
+                  <button id="stopA" class="btn big">⏹</button>
+                  <button id="loopA" class="btn small">Loop</button>
+                  <button id="reverseA" class="btn small">Reverse</button>
+                  <button id="scratchA" class="btn small">Scratch</button>
+                </div>
+
+                <div style="margin-top:10px" class="row">
+                  <label>Pitch</label>
+                  <input id="pitchA" type="range" min="0.5" max="2" step="0.01" value="1" style="width:200px">
+                  <label>Gain</label>
+                  <input id="gainA" type="range" min="0" max="2" step="0.01" value="1" style="width:120px">
+                </div>
+
+                <div class="wave-placeholder" id="waveA"></div>
+                <div class="lights" id="lightsA"><div class="light"></div><div class="light"></div><div class="light"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CENTER MIXER -->
+          <div class="panel center-controls">
+            <div style="display:flex;gap:8px;align-items:center">
+              <label>Crossfader</label>
+              <input id="crossfader" type="range" min="0" max="1" step="0.01" value="0.5" style="width:300px">
+              <label>Master</label>
+              <input id="masterVol" type="range" min="0" max="2" step="0.01" value="1" style="width:160px">
+            </div>
+
+            <div style="display:flex;gap:12px;align-items:center">
+              <button id="syncBtn" class="btn">Sync A↔B</button>
+              <button id="autoMix" class="btn">Auto-mix</button>
+              <button id="stopAll" class="btn">Stop All</button>
+            </div>
+
+            <div style="width:100%;margin-top:8px">
+              <label>Master visual</label>
+              <div class="wave-placeholder" id="masterWave"></div>
+            </div>
+          </div>
+
+          <!-- Deck B -->
+          <div class="panel deck-column">
+            <div class="deck">
+              <div class="big-disc" id="discB"><div class="disc-inner">B</div></div>
+              <div style="flex:1">
+                <div class="deck-meta">
+                  <div style="display:flex;gap:8px;align-items:center;justify-content:center">
+                    <label>Deck B</label>
+                    <input type="file" id="fileB" accept="audio/*,video/*" />
+                    <button id="cueB" class="btn small">Cue</button>
+                    <button id="syncBA" class="btn small">Sync → A</button>
+                  </div>
+                </div>
+
+                <div class="deck-buttons">
+                  <button id="playB" class="btn big">▶</button>
+                  <button id="pauseB" class="btn big">⏸</button>
+                  <button id="stopB" class="btn big">⏹</button>
+                  <button id="loopB" class="btn small">Loop</button>
+                  <button id="reverseB" class="btn small">Reverse</button>
+                  <button id="scratchB" class="btn small">Scratch</button>
+                </div>
+
+                <div style="margin-top:10px" class="row">
+                  <label>Pitch</label>
+                  <input id="pitchB" type="range" min="0.5" max="2" step="0.01" value="1" style="width:200px">
+                  <label>Gain</label>
+                  <input id="gainB" type="range" min="0" max="2" step="0.01" value="1" style="width:120px">
+                </div>
+
+                <div class="wave-placeholder" id="waveB"></div>
+                <div class="lights" id="lightsB"><div class="light"></div><div class="light"></div><div class="light"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">Tip: upload mp3/wav of mp4 (audio gebruikt). Gebruik de pads en effecten om je remix te maken. Klik record om je mix op te nemen en download de opname.</div>
+      </main>
+
+      <!-- RIGHT SIDEBAR: per-deck effects -->
+      <aside class="panel side-vertical">
+        <div>
+          <label>Deck Effects (A)</label>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+            <button id="reverbA" class="btn small">Reverb A</button>
+            <button id="delayA" class="btn small">Delay A</button>
+            <button id="flangerA" class="btn small">Flanger A</button>
+            <button id="filterSweepA" class="btn small">Filter Sweep A</button>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:8px 0">
+
+        <div>
+          <label>Deck Effects (B)</label>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+            <button id="reverbB" class="btn small">Reverb B</button>
+            <button id="delayB" class="btn small">Delay B</button>
+            <button id="flangerB" class="btn small">Flanger B</button>
+            <button id="filterSweepB" class="btn small">Filter Sweep B</button>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
-
-  <div class="panel master">
-    <h3>Master mix</h3>
-    <div class="row">
-      <label>Crossfader</label>
-      <input type="range" id="crossfader" min="0" max="1" step="0.01" value="0.5" style="width:300px">
-      <label>Master Volume</label>
-      <input type="range" id="masterGain" min="0" max="2" step="0.01" value="1" style="width:200px">
-    </div>
-    <div style="margin-top:10px">
-      <strong>Maak je eigen beats</strong>
-      <div class="padbank">
-        <button class="pad" data-sample="kick">Kick</button>
-        <button class="pad" data-sample="snare">Snare</button>
-        <button class="pad" data-sample="hat">Hi-hat</button>
-        <button class="pad" id="synthToggle">Toggle Synth</button>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    Tip: je kunt lokale mp3/wav/videobestanden uploaden of YouTube-resultaten laden (via API). Opname wordt lokaal gemaakt en kan gedownload worden.
-  </footer>
-</div>
 
 <script>
-// --- Setup Audio Context and nodes ---
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const ctx = new AudioContext();
+/* ===== Modern Remix DJ Studio — JavaScript =====
+   - Two decks: deckA, deckB
+   - Each deck: file upload, media element, createMediaElementSource
+   - Effects per deck and global effects
+   - Crossfader, master gain
+   - Recording via MediaStreamDestination
+   - Rotating disc animation controlled by playback state and rate
+*/
+
+const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+const ctx = new AudioContextCtor();
 
 // Master chain
 const masterGain = ctx.createGain(); masterGain.gain.value = 1;
-const masterAnalyser = ctx.createAnalyser();
-masterGain.connect(masterAnalyser);
+const masterFilter = ctx.createBiquadFilter(); masterFilter.type = 'peaking'; masterFilter.gain.value = 0;
+const masterAnalyser = ctx.createAnalyser(); masterAnalyser.fftSize = 2048;
+
+masterGain.connect(masterFilter);
+masterFilter.connect(masterAnalyser);
 masterAnalyser.connect(ctx.destination);
 
-// We'll also create a MediaStreamDestination so we can record the live mix
+// Also connect to MediaStreamDestination for recording
 const dest = ctx.createMediaStreamDestination();
-masterGain.connect(dest); // master also goes to recording destination
+masterGain.connect(dest);
 
-let mediaRecorder; let recordedChunks = [];
+let mediaRecorder = null;
+let recordedChunks = [];
 
-// Deck structure factory
-function createDeck(id){
+// helper to resume context on first user action
+async function ensureContext(){
+  if(ctx.state === 'suspended') await ctx.resume();
+}
+
+// Deck object factory
+function Deck(name){
   return {
-    id,
-    element: null,
-    mediaEl: null, // HTMLMediaElement (audio or video)
-    sourceNode: null,
-    gainNode: ctx.createGain(),
-    filterLow: ctx.createBiquadFilter(),
-    filterHigh: ctx.createBiquadFilter(),
+    name,
+    file: null,
+    mediaEl: null,        // HTMLAudioElement or HTMLVideoElement (hidden)
+    sourceNode: null,     // MediaElementAudioSourceNode
+    bufferForReverse: null, // AudioBuffer for reverse playback
+    bufferSource: null,   // BufferSource when playing reversed or buffer mode
+    gain: ctx.createGain(),
+    filter: ctx.createBiquadFilter(),
     delay: ctx.createDelay(),
+    convolver: ctx.createConvolver(),
+    flangerDelay: ctx.createDelay(),
+    flangerLFO: null,
+    analyzer: ctx.createAnalyser(),
     pitch: 1,
-    loop:false,
-    echo:false,
-    low:false,
-    high:false
+    loop: false,
+    isPlaying: false,
+    isReversed: false,
+    lightsEl: null,
+    discEl: null,
   }
 }
 
-const deckA = createDeck('A');
-const deckB = createDeck('B');
+const deckA = Deck('A');
+const deckB = Deck('B');
 
-// Configure filters and gains defaults
+// default params
 [deckA, deckB].forEach(d => {
-  d.gainNode.gain.value = 1;
-  d.filterLow.type = 'lowpass'; d.filterLow.frequency.value = 8000;
-  d.filterHigh.type = 'highpass'; d.filterHigh.frequency.value = 20;
+  d.gain.gain.value = 1.0;
+  d.filter.type = 'lowpass'; d.filter.frequency.value = 20000;
   d.delay.delayTime.value = 0.25;
+  d.flangerDelay.delayTime.value = 0.005;
+  d.analyzer.fftSize = 1024;
+  // connect to master via their gain
+  d.gain.connect(masterGain);
 });
 
-// Connect deck to master with crossfade applied later
-function connectDeckToMaster(deck){
-  if(!deck.sourceNode) return;
-  // disconnect first safely
-  try{ deck.sourceNode.disconnect(); }catch(e){}
-
-  let node = deck.sourceNode;
-  // apply effects chain in order: delay -> low -> high -> gain -> master
-  if(deck.echo) { node.connect(deck.delay); node = deck.delay; }
-  if(deck.low) { node.connect(deck.filterLow); node = deck.filterLow; }
-  if(deck.high) { node.connect(deck.filterHigh); node = deck.filterHigh; }
-  node.connect(deck.gainNode);
-  deck.gainNode.connect(masterGain);
-}
-
-// Create or attach media element from file
-function attachFileToDeck(file, deck){
-  // remove old element
+// Utility: load audio file into hidden media element and also decode buffer
+async function attachFileToDeck(file, deck){
+  await ensureContext();
+  // remove existing
   if(deck.mediaEl){
-    deck.mediaEl.pause(); deck.mediaEl.remove(); deck.mediaEl = null;
+    try{ deck.mediaEl.pause(); deck.mediaEl.remove(); }catch(e){}
+    deck.mediaEl = null;
     try{ deck.sourceNode.disconnect(); }catch(e){}
   }
-
-  // if video/mp4 or audio
-  const url = URL.createObjectURL(file);
-  const tag = file.type && file.type.startsWith('video') ? 'video' : 'audio';
+  deck.file = file;
+  const isVideo = file.type && file.type.startsWith('video');
+  const tag = isVideo ? 'video' : 'audio';
   const media = document.createElement(tag);
-  media.src = url; media.crossOrigin = 'anonymous'; media.controls = false;
+  media.controls = false;
+  media.crossOrigin = 'anonymous';
   media.preload = 'auto';
-  document.body.appendChild(media); media.style.display='none';
-
+  media.style.display = 'none';
+  media.src = URL.createObjectURL(file);
+  document.body.appendChild(media);
   deck.mediaEl = media;
+
+  // create source node
   deck.sourceNode = ctx.createMediaElementSource(media);
-  deck.sourceNode.connect(deck.gainNode); // direct connect first
-  deck.gainNode.connect(masterGain);
+  // initial chain: source -> (effects disabled) -> deck.gain -> master
+  deck.sourceNode.connect(deck.gain);
+
+  // connect analyzer for visual lights
+  deck.sourceNode.connect(deck.analyzer);
+
+  // decode audio buffer in background for reverse functionality
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const decoded = await ctx.decodeAudioData(arrayBuffer.slice(0)); // copy
+    deck.bufferForReverse = decoded;
+  }catch(err){
+    console.warn('Decode failed for reverse buffer:', err);
+    deck.bufferForReverse = null;
+  }
 }
 
-// Load YouTube by embedding iframe and hooking via createMediaElementSource is NOT allowed cross-domain.
-// Instead we'll use the IFrame API approach only if acceptable; for simplicity we treat YouTube loading via iframe
-// and createMediaElementSource on the iframe is not always available. So we provide search but recommend load via URL
-
-// UI bindings
-const $ = id => document.getElementById(id);
-
-// File inputs
-$('fileDeckA').addEventListener('change', e => {
-  const f = e.target.files[0]; if(!f) return; attachFileToDeck(f, deckA); alert('Track geladen in Deck A');
-});
-$('fileDeckB').addEventListener('change', e => {
-  const f = e.target.files[0]; if(!f) return; attachFileToDeck(f, deckB); alert('Track geladen in Deck B');
-});
-
-// Play / Pause / Stop functions
-function playDeck(deck){
-  if(!deck.mediaEl){ alert('Geen track geladen op deck ' + deck.id); return; }
-  // resume audio context when user interacts
-  if(ctx.state === 'suspended') ctx.resume();
+// Play / Pause / Stop for a deck (handles normal media element playback)
+async function playDeck(deck){
+  await ensureContext();
+  // if currently playing a bufferSource (reverse mode) stop it
+  if(deck.bufferSource){
+    try{ deck.bufferSource.stop(); }catch(e){} deck.bufferSource = null;
+  }
+  if(!deck.mediaEl){
+    alert('Geen track geladen in Deck ' + deck.name);
+    return;
+  }
   deck.mediaEl.playbackRate = deck.pitch;
   deck.mediaEl.loop = deck.loop;
-  deck.mediaEl.play();
+  await deck.mediaEl.play();
+  deck.isPlaying = true;
+  updateDisc(deck);
+  startLights(deck);
 }
-function pauseDeck(deck){ if(deck.mediaEl) deck.mediaEl.pause(); }
-function stopDeck(deck){ if(deck.mediaEl){ deck.mediaEl.pause(); deck.mediaEl.currentTime = 0; } }
 
-// Hook UI buttons for deck A
-$('playA').onclick = () => { connectDeckToMaster(deckA); playDeck(deckA); }
-$('pauseA').onclick = () => pauseDeck(deckA);
-$('stopA').onclick = () => stopDeck(deckA);
-$('gainA').addEventListener('input', e => deckA.gainNode.gain.value = parseFloat(e.target.value));
-$('pitchA').addEventListener('input', e => { deckA.pitch = parseFloat(e.target.value); if(deckA.mediaEl) deckA.mediaEl.playbackRate = deckA.pitch; });
-$('echoA').onclick = () => { deckA.echo = !deckA.echo; connectDeckToMaster(deckA); alert('Echo A: ' + (deckA.echo? 'Aan':'Uit')); }
-$('lowA').onclick = () => { deckA.low = !deckA.low; connectDeckToMaster(deckA); alert('Low-pass A: ' + (deckA.low? 'Aan':'Uit')); }
-$('highA').onclick = () => { deckA.high = !deckA.high; connectDeckToMaster(deckA); alert('High-pass A: ' + (deckA.high? 'Aan':'Uit')); }
-$('loopA').onclick = () => { deckA.loop = !deckA.loop; if(deckA.mediaEl) deckA.mediaEl.loop = deckA.loop; alert('Loop A: ' + (deckA.loop? 'Aan':'Uit')); }
+function pauseDeck(deck){
+  if(deck.mediaEl){ deck.mediaEl.pause(); deck.isPlaying = false; updateDisc(deck); stopLights(deck); }
+  if(deck.bufferSource){ try{ deck.bufferSource.stop(); }catch(e){} deck.bufferSource=null; deck.isPlaying=false; updateDisc(deck); stopLights(deck); }
+}
 
-// Deck B bindings
-$('playB').onclick = () => { connectDeckToMaster(deckB); playDeck(deckB); }
-$('pauseB').onclick = () => pauseDeck(deckB);
-$('stopB').onclick = () => stopDeck(deckB);
-$('gainB').addEventListener('input', e => deckB.gainNode.gain.value = parseFloat(e.target.value));
-$('pitchB').addEventListener('input', e => { deckB.pitch = parseFloat(e.target.value); if(deckB.mediaEl) deckB.mediaEl.playbackRate = deckB.pitch; });
-$('echoB').onclick = () => { deckB.echo = !deckB.echo; connectDeckToMaster(deckB); alert('Echo B: ' + (deckB.echo? 'Aan':'Uit')); }
-$('lowB').onclick = () => { deckB.low = !deckB.low; connectDeckToMaster(deckB); alert('Low-pass B: ' + (deckB.low? 'Aan':'Uit')); }
-$('highB').onclick = () => { deckB.high = !deckB.high; connectDeckToMaster(deckB); alert('High-pass B: ' + (deckB.high? 'Aan':'Uit')); }
-$('loopB').onclick = () => { deckB.loop = !deckB.loop; if(deckB.mediaEl) deckB.mediaEl.loop = deckB.loop; alert('Loop B: ' + (deckB.loop? 'Aan':'Uit')); }
+function stopDeck(deck){
+  if(deck.mediaEl){ deck.mediaEl.pause(); deck.mediaEl.currentTime = 0; deck.isPlaying=false; updateDisc(deck); stopLights(deck); }
+  if(deck.bufferSource){ try{ deck.bufferSource.stop(); }catch(e){} deck.bufferSource=null; deck.isPlaying=false; updateDisc(deck); stopLights(deck); }
+}
 
-// Crossfader
-$('crossfader').addEventListener('input', e => {
-  const v = parseFloat(e.target.value); // 0 => full A, 1 => full B
-  deckA.gainNode.gain.value = 1 - v;
-  deckB.gainNode.gain.value = v;
+// Reverse playback: create an AudioBufferSource with reversed data
+async function playReverse(deck){
+  if(!deck.bufferForReverse){
+    alert('Reverse niet beschikbaar (kan audio niet decoderen) voor deck ' + deck.name);
+    return;
+  }
+  // stop normal mediaEl
+  if(deck.mediaEl){ deck.mediaEl.pause(); deck.mediaEl.currentTime = 0; }
+  const orig = deck.bufferForReverse;
+  const channels = orig.numberOfChannels;
+  const len = orig.length;
+  const rev = ctx.createBuffer(channels, len, orig.sampleRate);
+  for(let c=0;c<channels;c++){
+    const origCh = orig.getChannelData(c);
+    const revCh = rev.getChannelData(c);
+    for(let i=0;i<len;i++){
+      revCh[i] = origCh[len - 1 - i];
+    }
+  }
+  const bs = ctx.createBufferSource();
+  bs.buffer = rev;
+  bs.playbackRate.value = deck.pitch;
+  bs.loop = deck.loop;
+  // connect via deck's effects chain
+  // disconnect any existing
+  try{ bs.disconnect(); }catch(e){}
+  // connect chain: bs -> optional effects -> gain -> master
+  let node = bs;
+  // if delay enabled:
+  if(deck.delayEnabled) { node.connect(deck.delay); node = deck.delay; }
+  if(deck.filterEnabled) { node.connect(deck.filter); node = deck.filter; }
+  if(deck.flangerEnabled) { node.connect(deck.flangerDelay); node = deck.flangerDelay; }
+  node.connect(deck.gain);
+  bs.start();
+  deck.bufferSource = bs;
+  deck.isPlaying = true;
+  updateDisc(deck);
+  startLights(deck);
+}
+
+// Effects toggle flags (we'll attach these to deck objects on demand)
+function ensureDeckFlags(deck){
+  deck.delayEnabled = deck.delayEnabled || false;
+  deck.filterEnabled = deck.filterEnabled || false;
+  deck.reverbEnabled = deck.reverbEnabled || false;
+  deck.flangerEnabled = deck.flangerEnabled || false;
+}
+
+// Wire UI elements
+const $ = id => document.getElementById(id);
+
+// file inputs
+$('fileA').addEventListener('change', async e => {
+  if(e.target.files[0]){ await attachFileToDeck(e.target.files[0], deckA); flash('Deck A geladen'); }
+});
+$('fileB').addEventListener('change', async e => {
+  if(e.target.files[0]){ await attachFileToDeck(e.target.files[0], deckB); flash('Deck B geladen'); }
 });
 
-// Master gain
-$('masterGain').addEventListener('input', e => { masterGain.gain.value = parseFloat(e.target.value); });
+// play/pause/stop
+$('playA').addEventListener('click', ()=> playDeck(deckA));
+$('pauseA').addEventListener('click', ()=> { if(deckA.isPlaying) pauseDeck(deckA); else playDeck(deckA); });
+$('stopA').addEventListener('click', ()=> stopDeck(deckA));
+$('playB').addEventListener('click', ()=> playDeck(deckB));
+$('pauseB').addEventListener('click', ()=> { if(deckB.isPlaying) pauseDeck(deckB); else playDeck(deckB); });
+$('stopB').addEventListener('click', ()=> stopDeck(deckB));
 
-// Simple pad samples (synth/drum)
-let sampleBuffers = {};
-async function loadSamples(){
-  // small built-in samples generated or base64 could be used; for speed we create simple beeps for demo
-  // Kick (sine + decay)
+// loop toggles
+$('loopA').addEventListener('click', ()=> { deckA.loop = !deckA.loop; if(deckA.mediaEl) deckA.mediaEl.loop = deckA.loop; flash('Loop A: ' + (deckA.loop?'Aan':'Uit'))});
+$('loopB').addEventListener('click', ()=> { deckB.loop = !deckB.loop; if(deckB.mediaEl) deckB.mediaEl.loop = deckB.loop; flash('Loop B: ' + (deckB.loop?'Aan':'Uit'))});
+
+// pitch and gain sliders
+$('pitchA').addEventListener('input', e => { deckA.pitch = parseFloat(e.target.value); if(deckA.mediaEl) deckA.mediaEl.playbackRate = deckA.pitch; updateDisc(deckA); });
+$('pitchB').addEventListener('input', e => { deckB.pitch = parseFloat(e.target.value); if(deckB.mediaEl) deckB.mediaEl.playbackRate = deckB.pitch; updateDisc(deckB); });
+$('gainA').addEventListener('input', e => { deckA.gain.gain.value = parseFloat(e.target.value); });
+$('gainB').addEventListener('input', e => { deckB.gain.gain.value = parseFloat(e.target.value); });
+
+// crossfader
+$('crossfader').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  deckA.gain.gain.value = (1 - v) * parseFloat($('gainA').value);
+  deckB.gain.gain.value = (v) * parseFloat($('gainB').value);
+});
+
+// master volume
+$('masterVol').addEventListener('input', e => { masterGain.gain.value = parseFloat(e.target.value); });
+
+// cue buttons: set and jump to cue
+let cueA = 0, cueB = 0;
+$('cueA').addEventListener('click', ()=>{
+  if(deckA.mediaEl) { cueA = deckA.mediaEl.currentTime; flash('Cue A gezet'); }
+});
+$('cueB').addEventListener('click', ()=>{
+  if(deckB.mediaEl) { cueB = deckB.mediaEl.currentTime; flash('Cue B gezet'); }
+});
+$('syncAB').addEventListener('click', ()=>{
+  // set deck B time to deck A
+  if(deckA.mediaEl && deckB.mediaEl){ deckB.mediaEl.currentTime = deckA.mediaEl.currentTime; flash('B gesynced naar A'); }
+});
+$('syncBA').addEventListener && $('syncBA').addEventListener('click', ()=>{
+  if(deckA.mediaEl && deckB.mediaEl){ deckA.mediaEl.currentTime = deckB.mediaEl.currentTime; flash('A gesynced naar B'); }
+});
+
+// reverse buttons
+$('reverseA').addEventListener('click', async ()=>{
+  await ensureContext();
+  if(!deckA.isReversed){
+    // start reversed playback
+    pauseDeck(deckA);
+    await playReverse(deckA);
+    deckA.isReversed = true;
+    flash('Reverse A gestart');
+  } else {
+    // stop reverse and resume normal
+    if(deckA.bufferSource){ try{ deckA.bufferSource.stop(); }catch(e){} deckA.bufferSource=null; }
+    deckA.isReversed = false;
+    flash('Reverse A uit');
+  }
+});
+$('reverseB').addEventListener('click', async ()=>{
+  await ensureContext();
+  if(!deckB.isReversed){
+    pauseDeck(deckB);
+    await playReverse(deckB);
+    deckB.isReversed = true;
+    flash('Reverse B gestart');
+  } else {
+    if(deckB.bufferSource){ try{ deckB.bufferSource.stop(); }catch(e){} deckB.bufferSource=null; }
+    deckB.isReversed = false;
+    flash('Reverse B uit');
+  }
+});
+
+// scratch: quick manual jog (rudimentary)
+function scratchEffect(deck){
+  if(!deck.mediaEl){ flash('Geen track'); return; }
+  const origRate = deck.mediaEl.playbackRate;
+  const steps = [0.1,-0.1,0.15,-0.15,0.08,-0.08,0];
+  let i=0;
+  const iv = setInterval(()=> {
+    if(!deck.mediaEl) { clearInterval(iv); return; }
+    deck.mediaEl.playbackRate = origRate + steps[i%steps.length];
+    i++;
+    if(i>12){ clearInterval(iv); deck.mediaEl.playbackRate = origRate; }
+  }, 80);
+}
+$('scratchA').addEventListener('click', ()=> scratchEffect(deckA));
+$('scratchB').addEventListener('click', ()=> scratchEffect(deckB));
+
+// Flanger implementation per deck
+function toggleFlanger(deck, enabled){
+  ensureDeckFlags(deck);
+  deck.flangerEnabled = enabled;
+  if(enabled){
+    // create LFO
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.25;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.003; // small delay modulation
+    lfo.connect(lfoGain);
+    lfoGain.connect(deck.flangerDelay.delayTime);
+    lfo.start();
+    deck.flangerLFO = lfo;
+    flash('Flanger ' + deck.name + ' aan');
+  } else {
+    try{ if(deck.flangerLFO) deck.flangerLFO.stop(); }catch(e){}
+    deck.flangerLFO = null;
+    flash('Flanger ' + deck.name + ' uit');
+  }
+  rewireDeckEffects(deck);
+}
+$('flangerA').addEventListener('click', ()=> toggleFlanger(deckA, !deckA.flangerEnabled));
+$('flangerB').addEventListener('click', ()=> toggleFlanger(deckB, !deckB.flangerEnabled));
+
+// Delay toggles
+function toggleDelay(deck){
+  ensureDeckFlags(deck);
+  deck.delayEnabled = !deck.delayEnabled;
+  rewireDeckEffects(deck);
+  flash('Delay ' + deck.name + ': ' + (deck.delayEnabled?'Aan':'Uit'));
+}
+$('delayA').addEventListener('click', ()=> toggleDelay(deckA));
+$('delayB').addEventListener('click', ()=> toggleDelay(deckB));
+
+// Reverb: create short impulse response for convolver
+function makeImpulse(duration = 2, decay=2){
+  const sr = ctx.sampleRate;
+  const len = sr * duration;
+  const impulse = ctx.createBuffer(2, len, sr);
+  for(let ch=0; ch<2; ch++){
+    const arr = impulse.getChannelData(ch);
+    for(let i=0;i<len;i++){
+      arr[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/len, decay);
+    }
+  }
+  return impulse;
+}
+function toggleReverb(deck){
+  ensureDeckFlags(deck);
+  deck.reverbEnabled = !deck.reverbEnabled;
+  if(deck.reverbEnabled){
+    deck.convolver.buffer = makeImpulse(1.2, 2.5);
+  } else {
+    deck.convolver.buffer = null;
+  }
+  rewireDeckEffects(deck);
+  flash('Reverb ' + deck.name + ': ' + (deck.reverbEnabled?'Aan':'Uit'));
+}
+$('reverbA').addEventListener('click', ()=> toggleReverb(deckA));
+$('reverbB').addEventListener('click', ()=> toggleReverb(deckB));
+
+// Filter sweep: automates filter freq briefly
+function filterSweep(deck){
+  ensureDeckFlags(deck);
+  const f = deck.filter;
+  const now = ctx.currentTime;
+  f.frequency.cancelScheduledValues(now);
+  f.frequency.setValueAtTime(200, now);
+  f.frequency.linearRampToValueAtTime(12000, now + 0.6);
+  f.frequency.linearRampToValueAtTime(200, now + 1.4);
+  flash('Filter sweep op ' + deck.name);
+}
+$('filterSweepA').addEventListener('click', ()=> filterSweep(deckA));
+$('filterSweepB').addEventListener('click', ()=> filterSweep(deckB));
+
+// Rewire deck effects chain based on flags
+function rewireDeckEffects(deck){
+  // disconnect existing sourceNode
+  try{ if(deck.sourceNode) deck.sourceNode.disconnect(); }catch(e){}
+  // base node
+  let node = deck.sourceNode || null;
+  if(!node && deck.bufferSource) node = deck.bufferSource;
+  if(!node){ return; } // nothing to wire
+  // We'll connect in order: source -> flangerDelay (if flanger) -> delay -> filter -> convolver -> gain -> master
+  try{ node.disconnect(); }catch(e){}
+  let current = node;
+  if(deck.flangerEnabled){ current.connect(deck.flangerDelay); current = deck.flangerDelay; }
+  if(deck.delayEnabled){ current.connect(deck.delay); current = deck.delay; }
+  if(deck.filterEnabled){ current.connect(deck.filter); current = deck.filter; }
+  if(deck.reverbEnabled){ current.connect(deck.convolver); current = deck.convolver; }
+  current.connect(deck.gain);
+}
+
+// Wire reverb/delay/flanger toggles on sidebars too
+$('reverbA').addEventListener('click', ()=> toggleReverb(deckA));
+$('reverbB').addEventListener('click', ()=> toggleReverb(deckB));
+$('delayA').addEventListener('click', ()=> toggleDelay(deckA));
+$('delayB').addEventListener('click', ()=> toggleDelay(deckB));
+$('flangerA').addEventListener('click', ()=> toggleFlanger(deckA, !deckA.flangerEnabled));
+$('flangerB').addEventListener('click', ()=> toggleFlanger(deckB, !deckB.flangerEnabled));
+$('filterSweepA').addEventListener('click', ()=> filterSweep(deckA));
+$('filterSweepB').addEventListener('click', ()=> filterSweep(deckB));
+
+// Global master effects buttons
+$('masterReverb').addEventListener('click', async ()=>{
+  // apply a mild reverb by connecting a convolver in parallel
+  const conv = ctx.createConvolver(); conv.buffer = makeImpulse(1.4, 3);
+  const wet = ctx.createGain(); wet.gain.value = 0.2;
+  masterGain.connect(conv);
+  conv.connect(wet);
+  wet.connect(masterFilter);
+  flash('Master reverb toegevoegd (kort)');
+  setTimeout(()=>{ try{ masterGain.disconnect(conv); conv.disconnect(); wet.disconnect(); }catch(e){} }, 9000);
+});
+$('masterDelay').addEventListener('click', ()=>{
+  const d = ctx.createDelay(); d.delayTime.value = 0.33;
+  const g = ctx.createGain(); g.gain.value = 0.18;
+  masterGain.connect(d); d.connect(g); g.connect(masterFilter);
+  flash('Master delay één shot');
+  setTimeout(()=>{ try{ masterGain.disconnect(d); d.disconnect(); g.disconnect(); }catch(e){} }, 4000);
+});
+$('masterFlanger').addEventListener('click', ()=>{
+  const d = ctx.createDelay(); d.delayTime.value = 0.005;
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 0.3;
+  const lg = ctx.createGain(); lg.gain.value = 0.003;
+  lfo.connect(lg); lg.connect(d.delayTime); lfo.start();
+  const g = ctx.createGain(); g.gain.value = 0.15;
+  masterGain.connect(d); d.connect(g); g.connect(masterFilter);
+  setTimeout(()=>{ try{ lfo.stop(); masterGain.disconnect(d); d.disconnect(); g.disconnect(); }catch(e){} }, 7000);
+  flash('Master flanger één shot');
+});
+$('masterFilterSweep').addEventListener('click', ()=>{
+  const f = ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=200;
+  masterGain.connect(f); f.connect(masterFilter);
+  const now = ctx.currentTime;
+  f.frequency.linearRampToValueAtTime(12000, now+0.8);
+  f.frequency.linearRampToValueAtTime(200, now+1.6);
+  setTimeout(()=>{ try{ masterGain.disconnect(f); f.disconnect(); }catch(e){} }, 2000);
+  flash('Master filter sweep');
+});
+
+// Pads
+const sampleBuffers = {};
+async function initSamples(){
   sampleBuffers.kick = makeKickBuffer();
   sampleBuffers.snare = makeSnareBuffer();
   sampleBuffers.hat = makeHatBuffer();
 }
-function playSample(buf){
-  const s = ctx.createBufferSource(); s.buffer = buf; s.connect(masterGain); s.start();
+function playSample(name){
+  const buf = sampleBuffers[name];
+  if(!buf) return;
+  const s = ctx.createBufferSource(); s.buffer = buf; const g = ctx.createGain(); g.gain.value = 0.8;
+  s.connect(g); g.connect(masterGain); s.start();
 }
+document.querySelectorAll('[data-sample]').forEach(btn=>{
+  btn.addEventListener('click', ()=> {
+    const s = btn.dataset.sample;
+    playSample(s);
+  });
+});
+$('fxOneShot').addEventListener('click', ()=> {
+  // quick sweep + noise
+  const noise = ctx.createBufferSource(); const b = ctx.createBuffer(1, ctx.sampleRate*0.2, ctx.sampleRate); const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.exp(-6*i/d.length);
+  noise.buffer = b; const g = ctx.createGain(); g.gain.value=0.4; noise.connect(g); g.connect(masterGain); noise.start();
+});
+
+// Simple sample generators
 function makeKickBuffer(){
-  const len = ctx.sampleRate * 0.5; const b = ctx.createBuffer(1,len,ctx.sampleRate); const d = b.getChannelData(0);
-  for(let i=0;i<len;i++){ const t=i/ctx.sampleRate; d[i] = Math.sin(2*Math.PI*60*t) * Math.exp(-8*t); }
+  const sr = ctx.sampleRate; const len = sr*0.5; const b = ctx.createBuffer(1,len,sr); const d=b.getChannelData(0);
+  for(let i=0;i<len;i++){ const t = i/sr; d[i] = Math.sin(2*Math.PI*60*t) * Math.exp(-8*t); }
   return b;
 }
 function makeSnareBuffer(){
-  const len = ctx.sampleRate*0.3; const b = ctx.createBuffer(1,len,ctx.sampleRate); const d = b.getChannelData(0);
-  for(let i=0;i<len;i++){ d[i] = (Math.random()*2-1) * Math.exp(-10*(i/ctx.sampleRate)); }
+  const sr=ctx.sampleRate; const len=sr*0.3; const b=ctx.createBuffer(1,len,sr); const d=b.getChannelData(0);
+  for(let i=0;i<len;i++){ d[i]= (Math.random()*2-1) * Math.exp(-12*(i/len)); }
   return b;
 }
 function makeHatBuffer(){
-  const len = ctx.sampleRate*0.15; const b = ctx.createBuffer(1,len,ctx.sampleRate); const d = b.getChannelData(0);
-  for(let i=0;i<len;i++){ d[i] = (Math.random()*2-1) * Math.exp(-30*(i/ctx.sampleRate)); }
+  const sr=ctx.sampleRate; const len=sr*0.12; const b=ctx.createBuffer(1,len,sr); const d=b.getChannelData(0);
+  for(let i=0;i<len;i++){ d[i]=(Math.random()*2-1) * Math.exp(-25*(i/len)); }
   return b;
 }
+initSamples();
 
-// Pad click handlers
-document.querySelectorAll('.pad').forEach(p => {
-  p.addEventListener('click', e => {
-    const s = e.currentTarget.dataset.sample;
-    if(s === 'kick' || s === 'snare' || s === 'hat') playSample(sampleBuffers[s]);
-    if(e.currentTarget.id === 'synthToggle') toggleSynth();
-  });
-});
-
-// Simple synth
-let synthOn=false; let synthOsc=null; function toggleSynth(){
-  if(!synthOn){ synthOsc = ctx.createOscillator(); synthOsc.type='sawtooth'; const g=ctx.createGain(); g.gain.value=0.001; synthOsc.connect(g); g.connect(masterGain); synthOsc.start(); g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime+0.05); synthOn=true; setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.6); synthOsc.stop(ctx.currentTime+0.6); synthOn=false; },600); }
+// Lights: simple analyzer-driven lights
+function startLights(deck){
+  const el = deck.lightsEl;
+  if(!el) return;
+  const analyser = deck.analyzer;
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  deck._lightsIv = setInterval(()=> {
+    analyser.getByteFrequencyData(data);
+    const sum = data.reduce((a,b)=>a+b,0);
+    const norm = Math.min(1, sum / (data.length * 150));
+    const lights = el.querySelectorAll('.light');
+    lights.forEach((l,i)=>{
+      if(norm > (i*0.3)) l.classList.add('on'); else l.classList.remove('on');
+    });
+  }, 120);
+}
+function stopLights(deck){
+  if(deck._lightsIv){ clearInterval(deck._lightsIv); deck._lightsIv = null; deck.lightsEl && deck.lightsEl.querySelectorAll('.light').forEach(l=>l.classList.remove('on')); }
 }
 
-// Recording: use MediaRecorder on dest.stream
-$('recordBtn').onclick = async () => {
-  if(!mediaRecorder || mediaRecorder.state === 'inactive'){
-    // start recording
-    if(ctx.state === 'suspended') await ctx.resume();
-    recordedChunks = [];
-    mediaRecorder = new MediaRecorder(dest.stream);
-    mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
-    mediaRecorder.onstop = () => { alert('Opname gestopt — klik download om het bestand te krijgen'); }
-    mediaRecorder.start();
-    $('recordBtn').textContent = '⏺️ Stop opname';
-  } else if(mediaRecorder.state === 'recording'){
-    mediaRecorder.stop();
-    $('recordBtn').textContent = '⏺️ Start opname';
-    // create blob and enable download
-    const blob = new Blob(recordedChunks, {type:'audio/webm'});
-    const url = URL.createObjectURL(blob);
-    $('downloadRecording').onclick = () => { const a = document.createElement('a'); a.href=url; a.download='remix_recording.webm'; a.click(); };
+// Disc animation control
+function updateDisc(deck){
+  const disc = deck.discEl;
+  if(!disc) return;
+  if(deck.isPlaying){
+    disc.style.animationPlayState = 'running';
+    // speed up rotation when pitch high
+    const rate = deck.pitch || 1;
+    const sec = 6 / rate; // base 6s
+    disc.style.animationDuration = sec + 's';
+  } else {
+    disc.style.animationPlayState = 'paused';
   }
 }
 
-// Search YouTube (optional) - requires API key; we'll show results and let user pick and load into deck via YouTube IFrame API
-$('searchBtn').onclick = async () => {
-  const q = document.getElementById('searchQuery').value.trim();
-  const key = document.getElementById('ytApiKey').value.trim();
-  if(!q || !key){ alert('Voer zoekterm en API key in om YouTube-search te gebruiken (API key optioneel; je kunt ook lokale files gebruiken)'); return; }
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=8&q=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}`;
-  try{
-    const r = await fetch(url); const j = await r.json(); displayResults(j.items || []);
-  }catch(err){ alert('Fout bij zoeken: '+err.message); }
-}
-function displayResults(items){
-  const r = $('results'); r.innerHTML='';
-  items.forEach(it => {
-    const div = document.createElement('div'); div.className='result';
-    div.innerHTML = `<strong>${it.snippet.title}</strong><br><small>${it.snippet.channelTitle}</small>`;
-    div.addEventListener('click', ()=> selectResult(it));
-    r.appendChild(div);
-  });
-}
-let selectedYT = null;
-function selectResult(item){ selectedYT = item; alert('Geselecteerd: '+item.snippet.title + ' — klik Load selected → A of → B'); }
-// Load selected into deck as iframe-based player (audio via iframe cannot be captured via createMediaElementSource reliably due to cross-origin)
-$('loadYTintoA').onclick = ()=> loadYTIntoDeck(selectedYT, deckA);
-$('loadYTintoB').onclick = ()=> loadYTIntoDeck(selectedYT, deckB);
-function loadYTIntoDeck(item, deck){ if(!item) { alert('Geen YouTube resultaat geselecteerd'); return; }
-  const vid = item.id.videoId;
-  // create iframe player using YouTube iframe API — audio will play but note cross-origin prevents createMediaElementSource for capture in some browsers
-  if(deck.mediaEl){ deck.mediaEl.pause(); deck.mediaEl.remove(); deck.mediaEl=null; }
-  const iframe = document.createElement('iframe');
-  iframe.width=0; iframe.height=0; iframe.style.display='none';
-  iframe.src = `https://www.youtube.com/embed/${vid}?enablejsapi=1&origin=${location.origin}`;
-  document.body.appendChild(iframe);
-  // We will attempt to create media element source from the iframe's internal video — this is unreliable cross-origin. Instead, we attach an Audio element that streams youtube via oEmbed is not allowed. So we will rely on the iframe playing and the browser's audio output will mix to master (cannot apply WebAudio effects reliably).
-  alert('YouTube geladen in iframe — vanwege browser-beperkingen werken effecten op YouTube audio mogelijk beperkt. Voor volledige remix-functionaliteit: upload lokale MP3/WAV of gebruik ffmpeg conversion.');
+// Hook disc and lights elements
+deckA.discEl = $('discA'); deckA.lightsEl = $('lightsA');
+deckB.discEl = $('discB'); deckB.lightsEl = $('lightsB');
+
+// Recording functionality
+$('recordBtn').addEventListener('click', async ()=>{
+  await ensureContext();
+  if(!mediaRecorder || mediaRecorder.state === 'inactive'){
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(dest.stream);
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = ()=> { flash('Opname klaar — klik download'); };
+    mediaRecorder.start();
+    $('recordBtn').textContent = '⏺ Stop opname';
+    flash('Opname gestart');
+  } else if(mediaRecorder.state === 'recording'){
+    mediaRecorder.stop();
+    $('recordBtn').textContent = '⏺ Start opname';
+    const blob = new Blob(recordedChunks, {type:'audio/webm'});
+    const url = URL.createObjectURL(blob);
+    $('downloadRecording').onclick = ()=> { const a=document.createElement('a'); a.href=url; a.download='remix_recording.webm'; a.click(); };
+  }
+});
+
+// Stop all
+$('stopAll').addEventListener('click', ()=>{
+  stopDeck(deckA); stopDeck(deckB);
+});
+
+// Auto-mix (simple: fade A out, B in)
+$('autoMix').addEventListener('click', async ()=>{
+  await ensureContext();
+  const t = ctx.currentTime;
+  const fadeLen = 3.0;
+  deckA.gain.gain.cancelScheduledValues(t);
+  deckB.gain.gain.cancelScheduledValues(t);
+  deckA.gain.gain.setValueAtTime(deckA.gain.gain.value, t);
+  deckB.gain.gain.setValueAtTime(deckB.gain.gain.value, t);
+  deckA.gain.gain.linearRampToValueAtTime(0.05, t + fadeLen);
+  deckB.gain.gain.linearRampToValueAtTime(1.0, t + fadeLen);
+  flash('Auto-mix gestart');
+});
+
+// sync button toggles playback rate to match durations (basic)
+$('syncBtn').addEventListener('click', ()=>{
+  if(deckA.mediaEl && deckB.mediaEl){
+    // naive: adjust pitch of B to match A's BPM approx by matching durations proportionally
+    // present approach: set B.rate = A.rate * (A.duration / B.duration) to roughly match speed
+    const aDur = deckA.mediaEl.duration || 1; const bDur = deckB.mediaEl.duration || 1;
+    const ratio = aDur / bDur;
+    deckB.pitch = deckB.pitch * ratio;
+    if(deckB.mediaEl) deckB.mediaEl.playbackRate = deckB.pitch;
+    $('pitchB').value = deckB.pitch;
+    flash('B gepitched om A te benaderen (niet perfect)');
+  }
+});
+
+// small UX helper
+function flash(msg){
+  console.log('[DJ]', msg);
+  // small visual toast could be added; for now, use alert-free console
 }
 
-// Initialize samples
-loadSamples();
+// wire element references where needed
+deckA.analyzer = deckA.analyzer || deckA.analyzer;
+deckB.analyzer = deckB.analyzer || deckB.analyzer;
+deckA.lightsEl = deckA.lightsEl || $('lightsA');
+deckB.lightsEl = deckB.lightsEl || $('lightsB');
 
-// Resume context on first gesture (for Chrome autoplay rules)
+// Simple waveform placeholders: animate background on play
+setInterval(()=> {
+  const t = Date.now()/300;
+  const wA = $('waveA'); const wB = $('waveB'); const mW = $('masterWave');
+  if(deckA.isPlaying) wA.style.background = `linear-gradient(90deg, rgba(126,231,255,0.06) ${Math.abs(Math.sin(t))*100}%, rgba(255,255,255,0.01) 100%)`; else wA.style.background='';
+  if(deckB.isPlaying) wB.style.background = `linear-gradient(90deg, rgba(155,126,255,0.06) ${Math.abs(Math.cos(t))*100}%, rgba(255,255,255,0.01) 100%)`; else wB.style.background='';
+  const masterAct = deckA.isPlaying || deckB.isPlaying;
+  if(masterAct) mW.style.background = `linear-gradient(90deg, rgba(126,231,255,0.05), rgba(155,126,255,0.03))`; else mW.style.background='';
+}, 120);
+
+// small keyboard shortcuts (space toggles play on both)
+document.addEventListener('keydown', (e)=>{
+  if(e.code === 'Space'){ e.preventDefault(); if(deckA.isPlaying || deckB.isPlaying) { pauseDeck(deckA); pauseDeck(deckB); } else { playDeck(deckA); playDeck(deckB);} }
+});
+
+// Ensure context resume on first click anywhere
 document.addEventListener('click', ()=>{ if(ctx.state === 'suspended') ctx.resume(); }, {once:true});
 
 </script>
