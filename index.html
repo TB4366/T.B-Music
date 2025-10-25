@@ -1,132 +1,382 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<title>Online Remix App met YouTube Zoeken</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mini DJ / Remix App</title>
 <style>
-body { font-family: Arial, sans-serif; background: #111; color: #fff; text-align: center; padding: 20px; }
-input, button { padding: 10px; margin: 5px; font-size: 16px; }
-#results { margin-top: 20px; }
-.video-result { padding: 10px; background: #222; border-radius: 8px; margin: 10px auto; width: 80%; cursor: pointer; }
-button.effect { background: #333; border: none; color: white; padding: 10px; margin: 5px; border-radius: 6px; cursor: pointer; }
-button.effect:hover { background: #555; }
+  :root{--bg:#0f1724;--panel:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--card:#0b1420}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#071021);color:#e6eef6}
+  .app{max-width:1200px;margin:20px auto;padding:18px;}
+  header{display:flex;align-items:center;justify-content:space-between}
+  h1{font-size:20px;margin:0}
+  .controls{display:flex;gap:12px;align-items:center}
+  .panel{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(2,6,23,.6);}
+  .decks{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .deck{padding:12px;background:var(--card);border-radius:10px}
+  .deck h2{margin:0 0 8px 0;font-size:16px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{background:#0e1b2b;border:1px solid rgba(255,255,255,.04);color:#dff7fb;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,var(--accent),#22c1c3);color:#011219}
+  .slider{width:120px}
+  label{font-size:13px;color:var(--muted)}
+  .big{font-size:18px;padding:12px 16px}
+  .crossfader{margin:12px 0}
+  .master{margin-top:12px;padding:10px;background:rgba(255,255,255,0.02);border-radius:8px}
+  .search{margin-top:12px}
+  .search input{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);width:320px}
+  .results{max-height:260px;overflow:auto;margin-top:8px}
+  .result{padding:8px;border-radius:6px;background:rgba(255,255,255,0.02);margin-bottom:6px;cursor:pointer}
+  footer{margin-top:20px;color:var(--muted);font-size:13px}
+  .padbank{display:flex;gap:8px;margin-top:10px}
+  .pad{padding:14px 18px;border-radius:8px;background:#08131e;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
 </style>
 </head>
 <body>
+<div class="app">
+  <header>
+    <h1>Mini DJ / Remix App — maak en remix je platen 🎛️</h1>
+    <div class="controls">
+      <button id="recordBtn" class="btn">⏺️ Start opname</button>
+      <button id="downloadRecording" class="btn">⬇️ Download opname</button>
+    </div>
+  </header>
 
-<h1>🎧 YouTube Remix App</h1>
+  <section class="panel">
+    <div class="row">
+      <div style="flex:1">
+        <label>Upload lokale track (mp3/wav/mp4...)</label><br>
+        <input type="file" id="fileDeckA" accept="audio/*,video/*" />
+        <input type="file" id="fileDeckB" accept="audio/*,video/*" style="margin-left:8px" />
+      </div>
+      <div style="min-width:260px">
+        <label>Of zoek op YouTube (optioneel - API key nodig)</label>
+        <div class="search">
+          <input id="ytApiKey" placeholder="(optioneel) YouTube API key" />
+          <input id="searchQuery" placeholder="zoek artiest of nummer" />
+          <button id="searchBtn" class="btn">🔍 Zoeken</button>
+          <div id="results" class="results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<input type="text" id="searchQuery" placeholder="Zoek artiest of nummer...">
-<button id="searchBtn">🔍 Zoeken</button>
+  <div class="decks">
+    <!-- Deck A -->
+    <div class="deck panel" id="deckA">
+      <h2>Deck A</h2>
+      <div class="row">
+        <button class="btn big" id="playA">▶</button>
+        <button class="btn big" id="pauseA">⏸</button>
+        <button class="btn big" id="stopA">⏹</button>
+        <button class="btn" id="loadYTintoA">Load selected → A</button>
+      </div>
+      <div style="margin-top:8px" class="row">
+        <label>Gain</label><input type="range" id="gainA" class="slider" min="0" max="2" step="0.01" value="1">
+        <label>Pitch</label><input type="range" id="pitchA" class="slider" min="0.5" max="2" step="0.01" value="1">
+      </div>
+      <div style="margin-top:8px" class="row">
+        <button class="btn" id="echoA">Echo</button>
+        <button class="btn" id="lowA">Low-pass</button>
+        <button class="btn" id="highA">High-pass</button>
+        <button class="btn" id="loopA">Loop</button>
+      </div>
+    </div>
 
-<div id="results"></div>
+    <!-- Deck B -->
+    <div class="deck panel" id="deckB">
+      <h2>Deck B</h2>
+      <div class="row">
+        <button class="btn big" id="playB">▶</button>
+        <button class="btn big" id="pauseB">⏸</button>
+        <button class="btn big" id="stopB">⏹</button>
+        <button class="btn" id="loadYTintoB">Load selected → B</button>
+      </div>
+      <div style="margin-top:8px" class="row">
+        <label>Gain</label><input type="range" id="gainB" class="slider" min="0" max="2" step="0.01" value="1">
+        <label>Pitch</label><input type="range" id="pitchB" class="slider" min="0.5" max="2" step="0.01" value="1">
+      </div>
+      <div style="margin-top:8px" class="row">
+        <button class="btn" id="echoB">Echo</button>
+        <button class="btn" id="lowB">Low-pass</button>
+        <button class="btn" id="highB">High-pass</button>
+        <button class="btn" id="loopB">Loop</button>
+      </div>
+    </div>
+  </div>
 
-<div id="player"></div>
+  <div class="panel master">
+    <h3>Master mix</h3>
+    <div class="row">
+      <label>Crossfader</label>
+      <input type="range" id="crossfader" min="0" max="1" step="0.01" value="0.5" style="width:300px">
+      <label>Master Volume</label>
+      <input type="range" id="masterGain" min="0" max="2" step="0.01" value="1" style="width:200px">
+    </div>
+    <div style="margin-top:10px">
+      <strong>Maak je eigen beats</strong>
+      <div class="padbank">
+        <button class="pad" data-sample="kick">Kick</button>
+        <button class="pad" data-sample="snare">Snare</button>
+        <button class="pad" data-sample="hat">Hi-hat</button>
+        <button class="pad" id="synthToggle">Toggle Synth</button>
+      </div>
+    </div>
+  </div>
 
-<h2>🎛 Remix Controls</h2>
-<button class="effect" id="echoBtn">Echo</button>
-<button class="effect" id="lowPassBtn">Low-pass</button>
-<button class="effect" id="highPassBtn">High-pass</button>
-<button class="effect" id="speedUpBtn">Speed +</button>
-<button class="effect" id="slowDownBtn">Speed -</button>
+  <footer>
+    Tip: je kunt lokale mp3/wav/videobestanden uploaden of YouTube-resultaten laden (via API). Opname wordt lokaal gemaakt en kan gedownload worden.
+  </footer>
+</div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-let player;
-let audioContext;
-let sourceNode;
-let gainNode;
-let echoNode;
-let lowPassFilter;
-let highPassFilter;
+// --- Setup Audio Context and nodes ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const ctx = new AudioContext();
 
-let echoActive=false, lowPassActive=false, highPassActive=false;
-let playbackRate = 1;
+// Master chain
+const masterGain = ctx.createGain(); masterGain.gain.value = 1;
+const masterAnalyser = ctx.createAnalyser();
+masterGain.connect(masterAnalyser);
+masterAnalyser.connect(ctx.destination);
 
-// --- YouTube API setup ---
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player('player', {
-    height: '0',
-    width: '0',
-    playerVars: { 'playsinline': 1 },
-    events: {
-      'onReady': initAudio
-    }
+// We'll also create a MediaStreamDestination so we can record the live mix
+const dest = ctx.createMediaStreamDestination();
+masterGain.connect(dest); // master also goes to recording destination
+
+let mediaRecorder; let recordedChunks = [];
+
+// Deck structure factory
+function createDeck(id){
+  return {
+    id,
+    element: null,
+    mediaEl: null, // HTMLMediaElement (audio or video)
+    sourceNode: null,
+    gainNode: ctx.createGain(),
+    filterLow: ctx.createBiquadFilter(),
+    filterHigh: ctx.createBiquadFilter(),
+    delay: ctx.createDelay(),
+    pitch: 1,
+    loop:false,
+    echo:false,
+    low:false,
+    high:false
+  }
+}
+
+const deckA = createDeck('A');
+const deckB = createDeck('B');
+
+// Configure filters and gains defaults
+[deckA, deckB].forEach(d => {
+  d.gainNode.gain.value = 1;
+  d.filterLow.type = 'lowpass'; d.filterLow.frequency.value = 8000;
+  d.filterHigh.type = 'highpass'; d.filterHigh.frequency.value = 20;
+  d.delay.delayTime.value = 0.25;
+});
+
+// Connect deck to master with crossfade applied later
+function connectDeckToMaster(deck){
+  if(!deck.sourceNode) return;
+  // disconnect first safely
+  try{ deck.sourceNode.disconnect(); }catch(e){}
+
+  let node = deck.sourceNode;
+  // apply effects chain in order: delay -> low -> high -> gain -> master
+  if(deck.echo) { node.connect(deck.delay); node = deck.delay; }
+  if(deck.low) { node.connect(deck.filterLow); node = deck.filterLow; }
+  if(deck.high) { node.connect(deck.filterHigh); node = deck.filterHigh; }
+  node.connect(deck.gainNode);
+  deck.gainNode.connect(masterGain);
+}
+
+// Create or attach media element from file
+function attachFileToDeck(file, deck){
+  // remove old element
+  if(deck.mediaEl){
+    deck.mediaEl.pause(); deck.mediaEl.remove(); deck.mediaEl = null;
+    try{ deck.sourceNode.disconnect(); }catch(e){}
+  }
+
+  // if video/mp4 or audio
+  const url = URL.createObjectURL(file);
+  const tag = file.type && file.type.startsWith('video') ? 'video' : 'audio';
+  const media = document.createElement(tag);
+  media.src = url; media.crossOrigin = 'anonymous'; media.controls = false;
+  media.preload = 'auto';
+  document.body.appendChild(media); media.style.display='none';
+
+  deck.mediaEl = media;
+  deck.sourceNode = ctx.createMediaElementSource(media);
+  deck.sourceNode.connect(deck.gainNode); // direct connect first
+  deck.gainNode.connect(masterGain);
+}
+
+// Load YouTube by embedding iframe and hooking via createMediaElementSource is NOT allowed cross-domain.
+// Instead we'll use the IFrame API approach only if acceptable; for simplicity we treat YouTube loading via iframe
+// and createMediaElementSource on the iframe is not always available. So we provide search but recommend load via URL
+
+// UI bindings
+const $ = id => document.getElementById(id);
+
+// File inputs
+$('fileDeckA').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return; attachFileToDeck(f, deckA); alert('Track geladen in Deck A');
+});
+$('fileDeckB').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return; attachFileToDeck(f, deckB); alert('Track geladen in Deck B');
+});
+
+// Play / Pause / Stop functions
+function playDeck(deck){
+  if(!deck.mediaEl){ alert('Geen track geladen op deck ' + deck.id); return; }
+  // resume audio context when user interacts
+  if(ctx.state === 'suspended') ctx.resume();
+  deck.mediaEl.playbackRate = deck.pitch;
+  deck.mediaEl.loop = deck.loop;
+  deck.mediaEl.play();
+}
+function pauseDeck(deck){ if(deck.mediaEl) deck.mediaEl.pause(); }
+function stopDeck(deck){ if(deck.mediaEl){ deck.mediaEl.pause(); deck.mediaEl.currentTime = 0; } }
+
+// Hook UI buttons for deck A
+$('playA').onclick = () => { connectDeckToMaster(deckA); playDeck(deckA); }
+$('pauseA').onclick = () => pauseDeck(deckA);
+$('stopA').onclick = () => stopDeck(deckA);
+$('gainA').addEventListener('input', e => deckA.gainNode.gain.value = parseFloat(e.target.value));
+$('pitchA').addEventListener('input', e => { deckA.pitch = parseFloat(e.target.value); if(deckA.mediaEl) deckA.mediaEl.playbackRate = deckA.pitch; });
+$('echoA').onclick = () => { deckA.echo = !deckA.echo; connectDeckToMaster(deckA); alert('Echo A: ' + (deckA.echo? 'Aan':'Uit')); }
+$('lowA').onclick = () => { deckA.low = !deckA.low; connectDeckToMaster(deckA); alert('Low-pass A: ' + (deckA.low? 'Aan':'Uit')); }
+$('highA').onclick = () => { deckA.high = !deckA.high; connectDeckToMaster(deckA); alert('High-pass A: ' + (deckA.high? 'Aan':'Uit')); }
+$('loopA').onclick = () => { deckA.loop = !deckA.loop; if(deckA.mediaEl) deckA.mediaEl.loop = deckA.loop; alert('Loop A: ' + (deckA.loop? 'Aan':'Uit')); }
+
+// Deck B bindings
+$('playB').onclick = () => { connectDeckToMaster(deckB); playDeck(deckB); }
+$('pauseB').onclick = () => pauseDeck(deckB);
+$('stopB').onclick = () => stopDeck(deckB);
+$('gainB').addEventListener('input', e => deckB.gainNode.gain.value = parseFloat(e.target.value));
+$('pitchB').addEventListener('input', e => { deckB.pitch = parseFloat(e.target.value); if(deckB.mediaEl) deckB.mediaEl.playbackRate = deckB.pitch; });
+$('echoB').onclick = () => { deckB.echo = !deckB.echo; connectDeckToMaster(deckB); alert('Echo B: ' + (deckB.echo? 'Aan':'Uit')); }
+$('lowB').onclick = () => { deckB.low = !deckB.low; connectDeckToMaster(deckB); alert('Low-pass B: ' + (deckB.low? 'Aan':'Uit')); }
+$('highB').onclick = () => { deckB.high = !deckB.high; connectDeckToMaster(deckB); alert('High-pass B: ' + (deckB.high? 'Aan':'Uit')); }
+$('loopB').onclick = () => { deckB.loop = !deckB.loop; if(deckB.mediaEl) deckB.mediaEl.loop = deckB.loop; alert('Loop B: ' + (deckB.loop? 'Aan':'Uit')); }
+
+// Crossfader
+$('crossfader').addEventListener('input', e => {
+  const v = parseFloat(e.target.value); // 0 => full A, 1 => full B
+  deckA.gainNode.gain.value = 1 - v;
+  deckB.gainNode.gain.value = v;
+});
+
+// Master gain
+$('masterGain').addEventListener('input', e => { masterGain.gain.value = parseFloat(e.target.value); });
+
+// Simple pad samples (synth/drum)
+let sampleBuffers = {};
+async function loadSamples(){
+  // small built-in samples generated or base64 could be used; for speed we create simple beeps for demo
+  // Kick (sine + decay)
+  sampleBuffers.kick = makeKickBuffer();
+  sampleBuffers.snare = makeSnareBuffer();
+  sampleBuffers.hat = makeHatBuffer();
+}
+function playSample(buf){
+  const s = ctx.createBufferSource(); s.buffer = buf; s.connect(masterGain); s.start();
+}
+function makeKickBuffer(){
+  const len = ctx.sampleRate * 0.5; const b = ctx.createBuffer(1,len,ctx.sampleRate); const d = b.getChannelData(0);
+  for(let i=0;i<len;i++){ const t=i/ctx.sampleRate; d[i] = Math.sin(2*Math.PI*60*t) * Math.exp(-8*t); }
+  return b;
+}
+function makeSnareBuffer(){
+  const len = ctx.sampleRate*0.3; const b = ctx.createBuffer(1,len,ctx.sampleRate); const d = b.getChannelData(0);
+  for(let i=0;i<len;i++){ d[i] = (Math.random()*2-1) * Math.exp(-10*(i/ctx.sampleRate)); }
+  return b;
+}
+function makeHatBuffer(){
+  const len = ctx.sampleRate*0.15; const b = ctx.createBuffer(1,len,ctx.sampleRate); const d = b.getChannelData(0);
+  for(let i=0;i<len;i++){ d[i] = (Math.random()*2-1) * Math.exp(-30*(i/ctx.sampleRate)); }
+  return b;
+}
+
+// Pad click handlers
+document.querySelectorAll('.pad').forEach(p => {
+  p.addEventListener('click', e => {
+    const s = e.currentTarget.dataset.sample;
+    if(s === 'kick' || s === 'snare' || s === 'hat') playSample(sampleBuffers[s]);
+    if(e.currentTarget.id === 'synthToggle') toggleSynth();
+  });
+});
+
+// Simple synth
+let synthOn=false; let synthOsc=null; function toggleSynth(){
+  if(!synthOn){ synthOsc = ctx.createOscillator(); synthOsc.type='sawtooth'; const g=ctx.createGain(); g.gain.value=0.001; synthOsc.connect(g); g.connect(masterGain); synthOsc.start(); g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime+0.05); synthOn=true; setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.6); synthOsc.stop(ctx.currentTime+0.6); synthOn=false; },600); }
+}
+
+// Recording: use MediaRecorder on dest.stream
+$('recordBtn').onclick = async () => {
+  if(!mediaRecorder || mediaRecorder.state === 'inactive'){
+    // start recording
+    if(ctx.state === 'suspended') await ctx.resume();
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(dest.stream);
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => { alert('Opname gestopt — klik download om het bestand te krijgen'); }
+    mediaRecorder.start();
+    $('recordBtn').textContent = '⏺️ Stop opname';
+  } else if(mediaRecorder.state === 'recording'){
+    mediaRecorder.stop();
+    $('recordBtn').textContent = '⏺️ Start opname';
+    // create blob and enable download
+    const blob = new Blob(recordedChunks, {type:'audio/webm'});
+    const url = URL.createObjectURL(blob);
+    $('downloadRecording').onclick = () => { const a = document.createElement('a'); a.href=url; a.download='remix_recording.webm'; a.click(); };
+  }
+}
+
+// Search YouTube (optional) - requires API key; we'll show results and let user pick and load into deck via YouTube IFrame API
+$('searchBtn').onclick = async () => {
+  const q = document.getElementById('searchQuery').value.trim();
+  const key = document.getElementById('ytApiKey').value.trim();
+  if(!q || !key){ alert('Voer zoekterm en API key in om YouTube-search te gebruiken (API key optioneel; je kunt ook lokale files gebruiken)'); return; }
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=8&q=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}`;
+  try{
+    const r = await fetch(url); const j = await r.json(); displayResults(j.items || []);
+  }catch(err){ alert('Fout bij zoeken: '+err.message); }
+}
+function displayResults(items){
+  const r = $('results'); r.innerHTML='';
+  items.forEach(it => {
+    const div = document.createElement('div'); div.className='result';
+    div.innerHTML = `<strong>${it.snippet.title}</strong><br><small>${it.snippet.channelTitle}</small>`;
+    div.addEventListener('click', ()=> selectResult(it));
+    r.appendChild(div);
   });
 }
-
-// --- Audio setup ---
-function initAudio() {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  const audio = player.getIframe();
-  const streamDestination = audioContext.createMediaElementSource(audio);
-  gainNode = audioContext.createGain();
-  echoNode = audioContext.createDelay(0.25);
-  lowPassFilter = audioContext.createBiquadFilter(); lowPassFilter.type = 'lowpass';
-  highPassFilter = audioContext.createBiquadFilter(); highPassFilter.type = 'highpass';
-  sourceNode = streamDestination;
-  connectNodes();
+let selectedYT = null;
+function selectResult(item){ selectedYT = item; alert('Geselecteerd: '+item.snippet.title + ' — klik Load selected → A of → B'); }
+// Load selected into deck as iframe-based player (audio via iframe cannot be captured via createMediaElementSource reliably due to cross-origin)
+$('loadYTintoA').onclick = ()=> loadYTIntoDeck(selectedYT, deckA);
+$('loadYTintoB').onclick = ()=> loadYTIntoDeck(selectedYT, deckB);
+function loadYTIntoDeck(item, deck){ if(!item) { alert('Geen YouTube resultaat geselecteerd'); return; }
+  const vid = item.id.videoId;
+  // create iframe player using YouTube iframe API — audio will play but note cross-origin prevents createMediaElementSource for capture in some browsers
+  if(deck.mediaEl){ deck.mediaEl.pause(); deck.mediaEl.remove(); deck.mediaEl=null; }
+  const iframe = document.createElement('iframe');
+  iframe.width=0; iframe.height=0; iframe.style.display='none';
+  iframe.src = `https://www.youtube.com/embed/${vid}?enablejsapi=1&origin=${location.origin}`;
+  document.body.appendChild(iframe);
+  // We will attempt to create media element source from the iframe's internal video — this is unreliable cross-origin. Instead, we attach an Audio element that streams youtube via oEmbed is not allowed. So we will rely on the iframe playing and the browser's audio output will mix to master (cannot apply WebAudio effects reliably).
+  alert('YouTube geladen in iframe — vanwege browser-beperkingen werken effecten op YouTube audio mogelijk beperkt. Voor volledige remix-functionaliteit: upload lokale MP3/WAV of gebruik ffmpeg conversion.');
 }
 
-function connectNodes() {
-  if (!sourceNode) return;
-  sourceNode.disconnect();
-  let node = sourceNode;
-  if (echoActive) { node.connect(echoNode); node = echoNode; }
-  if (lowPassActive) { node.connect(lowPassFilter); node = lowPassFilter; }
-  if (highPassActive) { node.connect(highPassFilter); node = highPassFilter; }
-  node.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-}
+// Initialize samples
+loadSamples();
 
-// --- Search Functionality (requires your own API key) ---
-async function searchYouTube(query) {
-  const apiKey = "YOUR_YOUTUBE_API_KEY"; // <-- vervang met jouw eigen key
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=5&key=${apiKey}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  displayResults(data.items);
-}
+// Resume context on first gesture (for Chrome autoplay rules)
+document.addEventListener('click', ()=>{ if(ctx.state === 'suspended') ctx.resume(); }, {once:true});
 
-function displayResults(videos) {
-  const resultsDiv = document.getElementById('results');
-  resultsDiv.innerHTML = '';
-  videos.forEach(v => {
-    const div = document.createElement('div');
-    div.className = 'video-result';
-    div.innerHTML = `<strong>${v.snippet.title}</strong><br><img src="${v.snippet.thumbnails.default.url}">`;
-    div.onclick = () => loadVideo(v.id.videoId);
-    resultsDiv.appendChild(div);
-  });
-}
-
-function loadVideo(videoId) {
-  player.loadVideoById(videoId);
-  player.playVideo();
-}
-
-// --- Effect Buttons ---
-document.getElementById('echoBtn').onclick = () => { echoActive = !echoActive; connectNodes(); alert("Echo: " + (echoActive ? "Aan" : "Uit")); };
-document.getElementById('lowPassBtn').onclick = () => { lowPassActive = !lowPassActive; connectNodes(); alert("Low-pass: " + (lowPassActive ? "Aan" : "Uit")); };
-document.getElementById('highPassBtn').onclick = () => { highPassActive = !highPassActive; connectNodes(); alert("High-pass: " + (highPassActive ? "Aan" : "Uit")); };
-
-document.getElementById('speedUpBtn').onclick = () => {
-  playbackRate += 0.1;
-  player.setPlaybackRate(playbackRate);
-  alert("Speed: " + playbackRate.toFixed(1));
-};
-
-document.getElementById('slowDownBtn').onclick = () => {
-  playbackRate = Math.max(0.25, playbackRate - 0.1);
-  player.setPlaybackRate(playbackRate);
-  alert("Speed: " + playbackRate.toFixed(1));
-};
-
-// --- Search button click ---
-document.getElementById('searchBtn').onclick = () => {
-  const query = document.getElementById('searchQuery').value.trim();
-  if (query) searchYouTube(query);
-};
 </script>
 </body>
 </html>
