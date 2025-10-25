@@ -2,26 +2,27 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Geavanceerde Audio Remix App</title>
+<title>Audio Remix App</title>
 <style>
-body { font-family: sans-serif; padding: 20px; }
-button, input { margin: 5px; }
+body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+button, input { margin: 5px; padding: 10px; font-size: 16px; }
 h1 { margin-bottom: 20px; }
+.container { background: #fff; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
 </style>
 </head>
 <body>
 
-<h1>Geavanceerde Audio Remix App</h1>
+<div class="container">
+<h1>Audio Remix App</h1>
 
 <input type="file" id="audioFile" accept="audio/*"><br><br>
 
-<button id="playBtn">Play</button>
-<button id="pauseBtn">Pause</button>
-<button id="stopBtn">Stop</button>
-<button id="loopBtn">Toggle Loop</button><br><br>
+<button id="playBtn">▶ Play</button>
+<button id="pauseBtn">⏸ Pause/Resume</button>
+<button id="stopBtn">⏹ Stop</button>
+<button id="loopBtn">🔁 Toggle Loop</button><br><br>
 
 <button id="echoBtn">Echo</button>
-<button id="reverbBtn">Reverb</button>
 <button id="lowPassBtn">Low-pass Filter</button>
 <button id="highPassBtn">High-pass Filter</button>
 <button id="speedUpBtn">Speed +</button>
@@ -29,119 +30,117 @@ h1 { margin-bottom: 20px; }
 
 <label>Volume: </label><input type="range" id="volumeSlider" min="0" max="2" step="0.01" value="1"><br><br>
 
-<button id="downloadBtn">Download Remix</button>
+<button id="downloadBtn">💾 Download Remix</button>
+</div>
 
 <script>
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-let source, buffer;
+let buffer, source = null, startTime = 0, pauseTime = 0;
 let gainNode = audioContext.createGain();
-let echoNode = audioContext.createDelay();
-echoNode.delayTime.value = 0.25;
+let echoNode = audioContext.createDelay(0.25);
 let lowPassFilter = audioContext.createBiquadFilter();
 lowPassFilter.type = "lowpass";
 let highPassFilter = audioContext.createBiquadFilter();
 highPassFilter.type = "highpass";
-let convolver = audioContext.createConvolver(); // Reverb
+
+let echoActive = false, lowPassActive = false, highPassActive = false;
 let isLooping = false;
 let playbackRate = 1;
 
 document.getElementById('audioFile').addEventListener('change', function(e){
     const file = e.target.files[0];
+    if(!file) return;
     const reader = new FileReader();
     reader.onload = function(ev){
         audioContext.decodeAudioData(ev.target.result, function(buf){
             buffer = buf;
             alert("Audio geladen!");
-        });
+        }, function(){ alert("Fout bij laden van audio."); });
     };
     reader.readAsArrayBuffer(file);
 });
 
+// Audio connect chain
 function connectNodes(){
-    if(!source) return;
-    source.disconnect();
     let currentNode = source;
+    currentNode.disconnect();
 
-    // Check active effects
-    if(echoActive) { currentNode.connect(echoNode); currentNode = echoNode; }
-    if(reverbActive) { currentNode.connect(convolver); currentNode = convolver; }
-    if(lowPassActive) { currentNode.connect(lowPassFilter); currentNode = lowPassFilter; }
-    if(highPassActive) { currentNode.connect(highPassFilter); currentNode = highPassFilter; }
+    if(echoActive){ currentNode.connect(echoNode); currentNode = echoNode; }
+    if(lowPassActive){ currentNode.connect(lowPassFilter); currentNode = lowPassFilter; }
+    if(highPassActive){ currentNode.connect(highPassFilter); currentNode = highPassFilter; }
 
     currentNode.connect(gainNode);
     gainNode.connect(audioContext.destination);
 }
 
+// Play functie
 function playAudio(){
-    if(!buffer) return;
+    if(!buffer) { alert("Geen audio geladen!"); return; }
+
     source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.loop = isLooping;
     source.playbackRate.value = playbackRate;
+
     connectNodes();
-    source.start(0);
+
+    startTime = audioContext.currentTime - pauseTime;
+    source.start(0, pauseTime);
+    source.onended = () => { source = null; pauseTime = 0; };
 }
 
+// Stop functie
 function stopAudio(){
     if(source){
         source.stop();
         source = null;
+        pauseTime = 0;
     }
 }
 
+// Pause/Resume
 function pauseAudio(){
-    if(audioContext.state === 'running'){
-        audioContext.suspend();
-    } else {
-        audioContext.resume();
-    }
+    if(!source) return;
+    pauseTime = audioContext.currentTime - startTime;
+    source.stop();
+    source = null;
 }
-
-document.getElementById('playBtn').onclick = playAudio;
-document.getElementById('stopBtn').onclick = stopAudio;
-document.getElementById('pauseBtn').onclick = pauseAudio;
-document.getElementById('loopBtn').onclick = function(){ isLooping = !isLooping; alert("Looping: " + isLooping); };
 
 // Effect toggles
-let echoActive=false, reverbActive=false, lowPassActive=false, highPassActive=false;
+document.getElementById('echoBtn').onclick = () => { echoActive = !echoActive; alert("Echo: " + (echoActive ? "Aan" : "Uit")); };
+document.getElementById('lowPassBtn').onclick = () => { lowPassActive = !lowPassActive; alert("Low-pass: " + (lowPassActive ? "Aan" : "Uit")); };
+document.getElementById('highPassBtn').onclick = () => { highPassActive = !highPassActive; alert("High-pass: " + (highPassActive ? "Aan" : "Uit")); };
 
-document.getElementById('echoBtn').onclick = function(){ echoActive=!echoActive; alert("Echo: " + echoActive); };
-document.getElementById('reverbBtn').onclick = function(){ reverbActive=!reverbActive; alert("Reverb: " + reverbActive); };
-document.getElementById('lowPassBtn').onclick = function(){ lowPassActive=!lowPassActive; alert("Low-pass: " + lowPassActive); };
-document.getElementById('highPassBtn').onclick = function(){ highPassActive=!highPassActive; alert("High-pass: " + highPassActive); };
+// Loop toggle
+document.getElementById('loopBtn').onclick = () => { isLooping = !isLooping; alert("Loop: " + (isLooping ? "Aan" : "Uit")); };
 
 // Speed control
-document.getElementById('speedUpBtn').onclick = function(){ playbackRate += 0.1; alert("Speed: " + playbackRate.toFixed(1)); };
-document.getElementById('slowDownBtn').onclick = function(){ playbackRate -= 0.1; if(playbackRate<0.1) playbackRate=0.1; alert("Speed: " + playbackRate.toFixed(1)); };
+document.getElementById('speedUpBtn').onclick = () => { playbackRate += 0.1; alert("Speed: " + playbackRate.toFixed(1)); };
+document.getElementById('slowDownBtn').onclick = () => { playbackRate = Math.max(0.1, playbackRate - 0.1); alert("Speed: " + playbackRate.toFixed(1)); };
 
-// Volume
+// Volume control
 document.getElementById('volumeSlider').addEventListener('input', function(){
     gainNode.gain.value = this.value;
 });
 
-// Download functie (WAV)
+// Buttons connect
+document.getElementById('playBtn').onclick = playAudio;
+document.getElementById('stopBtn').onclick = stopAudio;
+document.getElementById('pauseBtn').onclick = pauseAudio;
+
+// Download remix
 document.getElementById('downloadBtn').onclick = function(){
-    if(!buffer) return;
+    if(!buffer){ alert("Geen audio om te downloaden!"); return; }
+
     let offlineContext = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
     let offlineSource = offlineContext.createBufferSource();
     offlineSource.buffer = buffer;
 
-    // Connect effects for export
+    // Connect effecten
     let currentNode = offlineSource;
-    if(echoActive){ 
-        let delay = offlineContext.createDelay();
-        delay.delayTime.value = 0.25; 
-        currentNode.connect(delay); 
-        currentNode = delay;
-    }
-    if(lowPassActive){ 
-        let lp = offlineContext.createBiquadFilter(); lp.type="lowpass"; 
-        currentNode.connect(lp); currentNode = lp;
-    }
-    if(highPassActive){ 
-        let hp = offlineContext.createBiquadFilter(); hp.type="highpass"; 
-        currentNode.connect(hp); currentNode = hp;
-    }
+    if(echoActive){ let d = offlineContext.createDelay(); d.delayTime.value=0.25; currentNode.connect(d); currentNode=d; }
+    if(lowPassActive){ let lp = offlineContext.createBiquadFilter(); lp.type="lowpass"; currentNode.connect(lp); currentNode=lp; }
+    if(highPassActive){ let hp = offlineContext.createBiquadFilter(); hp.type="highpass"; currentNode.connect(hp); currentNode=hp; }
 
     currentNode.connect(offlineContext.destination);
     offlineSource.start();
@@ -156,8 +155,8 @@ document.getElementById('downloadBtn').onclick = function(){
     });
 };
 
-// WAV converter
-function bufferToWave(abuffer, len) {
+// Helper: AudioBuffer -> WAV
+function bufferToWave(abuffer, len){
     let numOfChan = abuffer.numberOfChannels,
         length = len * numOfChan * 2 + 44,
         buffer = new ArrayBuffer(length),
@@ -166,11 +165,10 @@ function bufferToWave(abuffer, len) {
         offset = 0,
         pos = 0;
 
-    setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+    setUint32(0x46464952); setUint32(length-8); setUint32(0x45564157);
     setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
     setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan);
-    setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164);
-    setUint32(length - pos - 4);
+    setUint16(numOfChan*2); setUint16(16); setUint32(0x61746164); setUint32(length-pos-4);
 
     for(i=0;i<numOfChan;i++) channels.push(abuffer.getChannelData(i));
 
@@ -178,8 +176,7 @@ function bufferToWave(abuffer, len) {
         for(i=0;i<numOfChan;i++){
             sample=Math.max(-1,Math.min(1,channels[i][offset]));
             sample=(0.5+sample*0.5)*65535;
-            view.setUint16(pos,sample,true);
-            pos+=2;
+            view.setUint16(pos,sample,true); pos+=2;
         }
         offset++;
     }
@@ -190,6 +187,5 @@ function bufferToWave(abuffer, len) {
     function setUint32(data){ view.setUint32(pos,data,true); pos+=4; }
 }
 </script>
-
 </body>
 </html>
