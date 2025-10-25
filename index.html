@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Audio Remix App</title>
+<title>Audio Remix van Video (MP4)</title>
 <style>
 body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
 button, input { margin: 5px; padding: 10px; font-size: 16px; }
@@ -13,9 +13,9 @@ h1 { margin-bottom: 20px; }
 <body>
 
 <div class="container">
-<h1>Audio Remix App</h1>
+<h1>MP4 Audio Remix App</h1>
 
-<input type="file" id="audioFile" accept="audio/*"><br><br>
+<input type="file" id="videoFile" accept="video/mp4"><br><br>
 
 <button id="playBtn">▶ Play</button>
 <button id="pauseBtn">⏸ Pause/Resume</button>
@@ -29,42 +29,43 @@ h1 { margin-bottom: 20px; }
 <button id="slowDownBtn">Speed -</button><br><br>
 
 <label>Volume: </label><input type="range" id="volumeSlider" min="0" max="2" step="0.01" value="1"><br><br>
-
-<button id="downloadBtn">💾 Download Remix</button>
 </div>
 
 <script>
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-let buffer, source = null, startTime = 0, pauseTime = 0;
+let videoElement = null;
+let trackSource = null;
 let gainNode = audioContext.createGain();
 let echoNode = audioContext.createDelay(0.25);
-let lowPassFilter = audioContext.createBiquadFilter();
-lowPassFilter.type = "lowpass";
-let highPassFilter = audioContext.createBiquadFilter();
-highPassFilter.type = "highpass";
+let lowPassFilter = audioContext.createBiquadFilter(); lowPassFilter.type="lowpass";
+let highPassFilter = audioContext.createBiquadFilter(); highPassFilter.type="highpass";
 
-let echoActive = false, lowPassActive = false, highPassActive = false;
-let isLooping = false;
-let playbackRate = 1;
+let echoActive=false, lowPassActive=false, highPassActive=false;
+let isLooping=false;
+let playbackRate=1;
 
-document.getElementById('audioFile').addEventListener('change', function(e){
+document.getElementById('videoFile').addEventListener('change', function(e){
     const file = e.target.files[0];
     if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-        audioContext.decodeAudioData(ev.target.result, function(buf){
-            buffer = buf;
-            alert("Audio geladen!");
-        }, function(){ alert("Fout bij laden van audio."); });
-    };
-    reader.readAsArrayBuffer(file);
+
+    // Maak een verborgen video element
+    if(videoElement) { videoElement.pause(); videoElement.remove(); }
+    videoElement = document.createElement('video');
+    videoElement.src = URL.createObjectURL(file);
+    videoElement.crossOrigin = "anonymous";
+    videoElement.loop = false;
+
+    trackSource = audioContext.createMediaElementSource(videoElement);
+    connectNodes();
+
+    alert("Video geladen! Audio kan nu afgespeeld worden.");
 });
 
-// Audio connect chain
 function connectNodes(){
-    let currentNode = source;
-    currentNode.disconnect();
+    if(!trackSource) return;
+    trackSource.disconnect();
 
+    let currentNode = trackSource;
     if(echoActive){ currentNode.connect(echoNode); currentNode = echoNode; }
     if(lowPassActive){ currentNode.connect(lowPassFilter); currentNode = lowPassFilter; }
     if(highPassActive){ currentNode.connect(highPassFilter); currentNode = highPassFilter; }
@@ -73,119 +74,42 @@ function connectNodes(){
     gainNode.connect(audioContext.destination);
 }
 
-// Play functie
-function playAudio(){
-    if(!buffer) { alert("Geen audio geladen!"); return; }
-
-    source = audioContext.createBufferSource();
-    source.buffer = buffer;
-    source.loop = isLooping;
-    source.playbackRate.value = playbackRate;
-
-    connectNodes();
-
-    startTime = audioContext.currentTime - pauseTime;
-    source.start(0, pauseTime);
-    source.onended = () => { source = null; pauseTime = 0; };
-}
-
-// Stop functie
-function stopAudio(){
-    if(source){
-        source.stop();
-        source = null;
-        pauseTime = 0;
-    }
-}
-
-// Pause/Resume
-function pauseAudio(){
-    if(!source) return;
-    pauseTime = audioContext.currentTime - startTime;
-    source.stop();
-    source = null;
-}
+// Buttons
+document.getElementById('playBtn').onclick = () => {
+    if(!videoElement) { alert("Geen video geladen!"); return; }
+    videoElement.playbackRate = playbackRate;
+    videoElement.loop = isLooping;
+    videoElement.play();
+};
+document.getElementById('pauseBtn').onclick = () => {
+    if(!videoElement) return;
+    if(videoElement.paused) videoElement.play();
+    else videoElement.pause();
+};
+document.getElementById('stopBtn').onclick = () => {
+    if(!videoElement) return;
+    videoElement.pause();
+    videoElement.currentTime = 0;
+};
+document.getElementById('loopBtn').onclick = () => {
+    isLooping = !isLooping;
+    if(videoElement) videoElement.loop = isLooping;
+    alert("Loop: " + (isLooping ? "Aan" : "Uit"));
+};
 
 // Effect toggles
-document.getElementById('echoBtn').onclick = () => { echoActive = !echoActive; alert("Echo: " + (echoActive ? "Aan" : "Uit")); };
-document.getElementById('lowPassBtn').onclick = () => { lowPassActive = !lowPassActive; alert("Low-pass: " + (lowPassActive ? "Aan" : "Uit")); };
-document.getElementById('highPassBtn').onclick = () => { highPassActive = !highPassActive; alert("High-pass: " + (highPassActive ? "Aan" : "Uit")); };
-
-// Loop toggle
-document.getElementById('loopBtn').onclick = () => { isLooping = !isLooping; alert("Loop: " + (isLooping ? "Aan" : "Uit")); };
+document.getElementById('echoBtn').onclick = () => { echoActive = !echoActive; connectNodes(); alert("Echo: " + (echoActive ? "Aan" : "Uit")); };
+document.getElementById('lowPassBtn').onclick = () => { lowPassActive = !lowPassActive; connectNodes(); alert("Low-pass: " + (lowPassActive ? "Aan" : "Uit")); };
+document.getElementById('highPassBtn').onclick = () => { highPassActive = !highPassActive; connectNodes(); alert("High-pass: " + (highPassActive ? "Aan" : "Uit")); };
 
 // Speed control
-document.getElementById('speedUpBtn').onclick = () => { playbackRate += 0.1; alert("Speed: " + playbackRate.toFixed(1)); };
-document.getElementById('slowDownBtn').onclick = () => { playbackRate = Math.max(0.1, playbackRate - 0.1); alert("Speed: " + playbackRate.toFixed(1)); };
+document.getElementById('speedUpBtn').onclick = () => { playbackRate += 0.1; if(videoElement) videoElement.playbackRate = playbackRate; alert("Speed: " + playbackRate.toFixed(1)); };
+document.getElementById('slowDownBtn').onclick = () => { playbackRate = Math.max(0.1, playbackRate - 0.1); if(videoElement) videoElement.playbackRate = playbackRate; alert("Speed: " + playbackRate.toFixed(1)); };
 
-// Volume control
+// Volume
 document.getElementById('volumeSlider').addEventListener('input', function(){
     gainNode.gain.value = this.value;
 });
-
-// Buttons connect
-document.getElementById('playBtn').onclick = playAudio;
-document.getElementById('stopBtn').onclick = stopAudio;
-document.getElementById('pauseBtn').onclick = pauseAudio;
-
-// Download remix
-document.getElementById('downloadBtn').onclick = function(){
-    if(!buffer){ alert("Geen audio om te downloaden!"); return; }
-
-    let offlineContext = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
-    let offlineSource = offlineContext.createBufferSource();
-    offlineSource.buffer = buffer;
-
-    // Connect effecten
-    let currentNode = offlineSource;
-    if(echoActive){ let d = offlineContext.createDelay(); d.delayTime.value=0.25; currentNode.connect(d); currentNode=d; }
-    if(lowPassActive){ let lp = offlineContext.createBiquadFilter(); lp.type="lowpass"; currentNode.connect(lp); currentNode=lp; }
-    if(highPassActive){ let hp = offlineContext.createBiquadFilter(); hp.type="highpass"; currentNode.connect(hp); currentNode=hp; }
-
-    currentNode.connect(offlineContext.destination);
-    offlineSource.start();
-
-    offlineContext.startRendering().then(renderedBuffer => {
-        let wavBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
-        let url = URL.createObjectURL(wavBlob);
-        let a = document.createElement('a');
-        a.href = url;
-        a.download = "remix.wav";
-        a.click();
-    });
-};
-
-// Helper: AudioBuffer -> WAV
-function bufferToWave(abuffer, len){
-    let numOfChan = abuffer.numberOfChannels,
-        length = len * numOfChan * 2 + 44,
-        buffer = new ArrayBuffer(length),
-        view = new DataView(buffer),
-        channels = [], i, sample,
-        offset = 0,
-        pos = 0;
-
-    setUint32(0x46464952); setUint32(length-8); setUint32(0x45564157);
-    setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
-    setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan);
-    setUint16(numOfChan*2); setUint16(16); setUint32(0x61746164); setUint32(length-pos-4);
-
-    for(i=0;i<numOfChan;i++) channels.push(abuffer.getChannelData(i));
-
-    while(pos<length){
-        for(i=0;i<numOfChan;i++){
-            sample=Math.max(-1,Math.min(1,channels[i][offset]));
-            sample=(0.5+sample*0.5)*65535;
-            view.setUint16(pos,sample,true); pos+=2;
-        }
-        offset++;
-    }
-
-    return new Blob([buffer], {type:"audio/wav"});
-
-    function setUint16(data){ view.setUint16(pos,data,true); pos+=2; }
-    function setUint32(data){ view.setUint32(pos,data,true); pos+=4; }
-}
 </script>
 </body>
 </html>
