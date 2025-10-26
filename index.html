@@ -16,6 +16,11 @@ h1 { margin:20px 0; }
 .name { font-weight:bold; font-size:1.1rem; margin-bottom:5px; }
 .price { color:#7c3aed; font-weight:bold; margin-bottom:5px; }
 .desc { font-size:0.85rem; color:#9aa7bd; }
+/* Modal */
+.modal-wrap { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:1000; }
+.modal { background:#071029; padding:20px; border-radius:12px; max-width:600px; width:90%; text-align:center; position:relative; }
+.modal img { width:300px; height:300px; border-radius:50%; object-fit:cover; margin-bottom:15px; }
+.close-btn { position:absolute; top:10px; right:10px; background:#7c3aed; border:none; color:#fff; padding:5px 10px; border-radius:5px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -23,8 +28,18 @@ h1 { margin:20px 0; }
 <h1>Custom Skins</h1>
 <div class="grid" id="gallery"></div>
 
+<!-- Modal -->
+<div class="modal-wrap" id="modalWrap">
+  <div class="modal">
+    <button class="close-btn" id="closeModal">Sluiten</button>
+    <img id="modalImage" src="" alt="">
+    <div id="modalName" class="name"></div>
+    <div id="modalPrice" class="price"></div>
+    <div id="modalDesc" class="desc"></div>
+  </div>
+</div>
+
 <script>
-// Zet je skins hier, met exacte bestandsnamen en juiste extensies!
 const skins = [
   { name: "Baby Dragon", file: "skins/IMG_4073.png", price: "€3.49", desc: "Een schattige, speelse dragon-skin met zachte schubben en felle accenten." },
   { name: "Thor Hamer", file: "skins/IMG_4027.jpeg", price: "€4.99", desc: "Donker metalen theme met bliksemeffecten rondom de hamer — krachtig en imposant." },
@@ -32,6 +47,14 @@ const skins = [
 ];
 
 const gallery = document.getElementById('gallery');
+const modalWrap = document.getElementById('modalWrap');
+const modalImage = document.getElementById('modalImage');
+const modalName = document.getElementById('modalName');
+const modalPrice = document.getElementById('modalPrice');
+const modalDesc = document.getElementById('modalDesc');
+const closeModal = document.getElementById('closeModal');
+
+// Maak skins zichtbaar
 skins.forEach(skin => {
   const card = document.createElement('div');
   card.className = 'card';
@@ -52,7 +75,21 @@ skins.forEach(skin => {
   card.appendChild(price);
   card.appendChild(desc);
   gallery.appendChild(card);
+
+  // Klik om modal te openen
+  card.addEventListener('click', () => {
+    modalImage.src = skin.file;
+    modalImage.alt = skin.name;
+    modalName.textContent = skin.name;
+    modalPrice.textContent = skin.price;
+    modalDesc.textContent = skin.desc;
+    modalWrap.style.display = 'flex';
+  });
 });
+
+// Sluit modal
+closeModal.addEventListener('click', () => { modalWrap.style.display = 'none'; });
+modalWrap.addEventListener('click', (e) => { if(e.target === modalWrap) modalWrap.style.display = 'none'; });
 </script>
 
 </body>
