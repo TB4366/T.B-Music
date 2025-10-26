@@ -1,156 +1,59 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Custom Skins — T.B Agar.io</title>
 <style>
-:root {
-  --bg:#0b1220; --card:#071029; --muted:#9aa7bd; --accent:#7c3aed; --text:#e6eef8;
-}
-*{box-sizing:border-box;}
-body{
-  margin:0;font-family:Inter, system-ui, -apple-system,'Segoe UI',Roboto,Arial;
-  background:var(--bg); color:var(--text);
-}
-header{
-  display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border-bottom:1px solid rgba(255,255,255,0.03); gap:12px;
-}
-.logo-container{display:flex;align-items:center;gap:12px;}
-.logo{width:52px;height:52px;border-radius:50%;object-fit:cover;}
-.site-title{font-weight:700;font-size:1.15rem;}
-.header-actions{display:flex;gap:8px;align-items:center;}
-.toggle-btn, .menu-btn{border:0;padding:6px 10px;border-radius:10px;cursor:pointer;}
-main{max-width:1100px;margin:22px auto;padding:0 16px;}
-h1{margin:6px 0 12px;font-size:1.45rem;}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
-@media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:560px){.grid{grid-template-columns:1fr;}}
-.card{
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border-radius:14px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.03);
-  box-shadow:0 8px 28px rgba(2,6,23,0.6);
-  transition:transform .18s ease, box-shadow .18s ease;opacity:0;transform:translateY(8px);
-}
-.card.visible{opacity:1;transform:none;transition:opacity .5s ease, transform .45s cubic-bezier(.2,.9,.2,1);}
-.card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(2,6,23,0.8);}
-.avatar{
-  width:220px;height:220px;border-radius:50%;overflow:hidden;margin:0 auto;
-  background:linear-gradient(135deg,#061026, rgba(124,58,237,0.06));
-  border:6px solid rgba(255,255,255,0.03);
-  transition:transform .35s ease, box-shadow .35s ease;
-}
-.avatar img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease;}
-.card:hover .avatar img{transform:scale(1.03) rotate(-1deg);}
-.meta{margin-top:12px;}
-.name{font-size:1.05rem;font-weight:800;margin-bottom:6px;color:var(--text);}
-.price{font-weight:900;display:block;margin-bottom:6px;color:var(--accent);}
-.desc{font-size:0.88rem;color:var(--muted);line-height:1.35;margin-bottom:8px;min-height:44px;}
-.row{display:flex;justify-content:center;gap:10px;align-items:center;}
-.btn{background:var(--accent);color:white;border:0;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(124,58,237,0.14);transition:transform .12s ease;}
-.btn:active{transform:translateY(1px);}
-.info-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:7px 10px;border-radius:10px;cursor:pointer;}
-.avatar::after{content:'';display:block;width:100%;height:100%;border-radius:50%;position:relative;top:-100%;left:0;box-shadow:0 8px 40px rgba(124,58,237,0);transition:box-shadow .28s ease;pointer-events:none;}
-.card:hover .avatar::after{box-shadow:0 18px 60px rgba(124,58,237,0.14);}
-/* Modal */
-.modal-wrap{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;}
-.modal-backdrop{position:absolute;inset:0;background:rgba(2,6,23,0.6);backdrop-filter: blur(2px);}
-.modal{position:relative;background:linear-gradient(180deg, #091226, #051026);border-radius:14px;padding:18px;max-width:920px;width:95%;display:grid;grid-template-columns:420px 1fr;gap:18px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 40px 120px rgba(2,6,23,0.8);}
-@media(max-width:920px){.modal{grid-template-columns:1fr;max-width:720px;}}
-.modal .big-img{width:100%;height:420px;border-radius:12px;overflow:hidden;background:#071029;display:flex;align-items:center;justify-content:center;}
-.modal .big-img img{width:100%;height:100%;object-fit:cover;display:block;}
-.modal .content{color:var(--text);}
-.modal .content h2{margin:0 0 8px;font-size:1.25rem;}
-.modal .content p.desc{color:var(--muted);margin:8px 0 14px;line-height:1.45;}
-.modal .modal-actions{display:flex;gap:10px;align-items:center;margin-top:12px;}
-body.light{--bg:#f6f7fb;--card:#ffffff;--text:#0f1724;--muted:#55687c;--accent:#6b46c1;}
+body { background:#0b1220; color:#fff; font-family:Arial,sans-serif; text-align:center; margin:0; }
+h1 { margin:20px 0; }
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; max-width:1000px; margin:0 auto; }
+@media(max-width:800px){ .grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:500px){ .grid { grid-template-columns:1fr; } }
+.card { background:#071029; border-radius:15px; padding:10px; transition: transform 0.2s; cursor:pointer; }
+.card:hover { transform:scale(1.05); }
+.card img { width:200px; height:200px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 10px; }
+.name { font-weight:bold; font-size:1.1rem; margin-bottom:5px; }
+.price { color:#7c3aed; font-weight:bold; margin-bottom:5px; }
+.desc { font-size:0.85rem; color:#9aa7bd; }
 </style>
 </head>
 <body>
-<header>
-<div class="logo-container">
-<img src="skins/IMG_2718.png" alt="Logo" class="logo">
-<div><div class="site-title">T.B Agar.io</div><div style="font-size:0.78rem;color:var(--muted)">Custom skins gallery</div></div>
-</div>
-<div class="header-actions">
-<button id="themeToggle" class="toggle-btn">🌙</button>
-</div>
-</header>
-<main>
+
 <h1>Custom Skins</h1>
 <div class="grid" id="gallery"></div>
-</main>
-
-<!-- Modal -->
-<div class="modal-wrap" id="modalWrap" aria-hidden="true">
-<div class="modal-backdrop" id="modalBackdrop"></div>
-<div class="modal" role="dialog">
-<div class="big-img"><img id="modalImage" src="" alt=""></div>
-<div class="content">
-<h2 id="modalTitle"></h2>
-<div style="font-weight:900;font-size:1rem;margin-top:6px" id="modalPrice"></div>
-<p class="desc" id="modalDesc"></p>
-<div class="modal-actions">
-<button class="btn" id="buyBtn">Koop nu</button>
-<button class="info-btn" id="closeModal">Sluiten</button>
-</div>
-</div>
-</div>
-</div>
 
 <script>
-// Skins data
-const skins=[
-{name:"Baby Dragon",file:"skins/IMG_4073.png",price:"€3.49",desc:"Een schattige, speelse dragon-skin met zachte schubben en felle accenten."},
-{name:"Thor Hamer",file:"skins/IMG_4027.jpeg",price:"€4.99",desc:"Donker metalen theme met bliksemeffecten rondom de hamer — krachtig en imposant."},
-{name:"Sting Wasp",file:"skins/IMG_4028.jpeg",price:"€2.99",desc:"Fel gele en zwarte patronen, geïnspireerd op de razendsnelle wespen."},
-{name:"Fire Skeleton",file:"skins/IMG_4024.jpeg",price:"€3.49",desc:"Skeletten en vurige lijnen combineren tot een angstaanjagende look."},
-{name:"Fire Wolf",file:"skins/IMG_4025.jpeg",price:"€3.99",desc:"Woeste wolfvormen met vurige manen — rauw en stijlvol."},
-{name:"Captain Jay",file:"skins/IMG_4026.jpeg",price:"€2.49",desc:"Knappe captain-stijl met marinierdetails en een coole uitstraling."},
-{name:"Fire Art",file:"skins/IMG_4022.jpeg",price:"€4.49",desc:"Abstracte vuurkunst met vloeiende overgangen en diepte."},
-{name:"Mouth Fire Art",file:"skins/IMG_3180.jpeg",price:"€3.25",desc:"Mond-illusies met vuuraccenten — perfect voor show-off momenten."},
-{name:"Fire Snake",file:"skins/IMG_4032.jpeg",price:"€2.99",desc:"Sinuoziteit en vuur gecombineerd tot een dodelijk elegante skin."},
-{name:"The Tiger King",file:"skins/IMG_4037.jpeg",price:"€5.49",desc:"Koninklijke tijgerpatronen met gouden details voor de ultieme leider."}
+// Zet je skins hier, met exacte bestandsnamen en juiste extensies!
+const skins = [
+  { name: "Baby Dragon", file: "skins/IMG_4073.png", price: "€3.49", desc: "Een schattige, speelse dragon-skin met zachte schubben en felle accenten." },
+  { name: "Thor Hamer", file: "skins/IMG_4027.jpeg", price: "€4.99", desc: "Donker metalen theme met bliksemeffecten rondom de hamer — krachtig en imposant." },
+  { name: "Sting Wasp", file: "skins/IMG_4028.jpeg", price: "€2.99", desc: "Fel gele en zwarte patronen, geïnspireerd op de razendsnelle wespen." }
 ];
 
-const gallery=document.getElementById('gallery');
-skins.forEach((s,i)=>{
-  const card=document.createElement('div'); card.className='card';
-  const avatar=document.createElement('div'); avatar.className='avatar';
-  const img=document.createElement('img'); img.src=s.file; img.alt=s.name;
-  avatar.appendChild(img);
-  const meta=document.createElement('div'); meta.className='meta';
-  const name=document.createElement('div'); name.className='name'; name.textContent=s.name;
-  const price=document.createElement('div'); price.className='price'; price.textContent=s.price;
-  const desc=document.createElement('div'); desc.className='desc'; desc.textContent=s.desc;
-  meta.appendChild(name); meta.appendChild(price); meta.appendChild(desc);
-  card.appendChild(avatar); card.appendChild(meta);
+const gallery = document.getElementById('gallery');
+skins.forEach(skin => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const img = document.createElement('img');
+  img.src = skin.file;
+  img.alt = skin.name;
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = skin.name;
+  const price = document.createElement('div');
+  price.className = 'price';
+  price.textContent = skin.price;
+  const desc = document.createElement('div');
+  desc.className = 'desc';
+  desc.textContent = skin.desc;
+  card.appendChild(img);
+  card.appendChild(name);
+  card.appendChild(price);
+  card.appendChild(desc);
   gallery.appendChild(card);
-  setTimeout(()=>{card.classList.add('visible');},i*80);
-
-  // Modal click
-  card.addEventListener('click',()=>{
-    document.getElementById('modalWrap').style.display='flex';
-    document.getElementById('modalImage').src=s.file;
-    document.getElementById('modalImage').alt=s.name;
-    document.getElementById('modalTitle').textContent=s.name;
-    document.getElementById('modalPrice').textContent=s.price;
-    document.getElementById('modalDesc').textContent=s.desc;
-  });
-});
-
-// Close modal
-document.getElementById('modalBackdrop').addEventListener('click',()=>{document.getElementById('modalWrap').style.display='none';});
-document.getElementById('closeModal').addEventListener('click',()=>{document.getElementById('modalWrap').style.display='none';});
-
-// Dark/light mode
-const themeBtn=document.getElementById('themeToggle');
-themeBtn.addEventListener('click',()=>{
-  document.body.classList.toggle('light');
-  themeBtn.textContent=document.body.classList.contains('light')?'☀️':'🌙';
 });
 </script>
+
 </body>
 </html>
