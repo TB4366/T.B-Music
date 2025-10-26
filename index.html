@@ -1,95 +1,271 @@
-<!DOCTYPE html>
-<html lang="nl">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Custom Skins — T.B Agar.io</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Custom Skins — T.B Agar.io Website</title>
 <style>
-body { background:#0b1220; color:#fff; font-family:Arial,sans-serif; text-align:center; margin:0; }
-h1 { margin:20px 0; }
-.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; max-width:1000px; margin:0 auto; }
-@media(max-width:800px){ .grid { grid-template-columns:repeat(2,1fr); } }
-@media(max-width:500px){ .grid { grid-template-columns:1fr; } }
-.card { background:#071029; border-radius:15px; padding:10px; transition: transform 0.2s; cursor:pointer; }
-.card:hover { transform:scale(1.05); }
-.card img { width:200px; height:200px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 10px; }
-.name { font-weight:bold; font-size:1.1rem; margin-bottom:5px; }
-.price { color:#7c3aed; font-weight:bold; margin-bottom:5px; }
-.desc { font-size:0.85rem; color:#9aa7bd; }
-/* Modal */
-.modal-wrap { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:1000; }
-.modal { background:#071029; padding:20px; border-radius:12px; max-width:600px; width:90%; text-align:center; position:relative; }
-.modal img { width:300px; height:300px; border-radius:50%; object-fit:cover; margin-bottom:15px; }
-.close-btn { position:absolute; top:10px; right:10px; background:#7c3aed; border:none; color:#fff; padding:5px 10px; border-radius:5px; cursor:pointer; }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0b1220;
+    color: white;
+    text-align: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Dark mode styles */
+  body.dark {
+    background: #f0f0f0;
+    color: #222;
+  }
+
+  /* Header + menu */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: #0f172a;
+    position: relative;
+    transition: background-color 0.3s ease;
+  }
+
+  body.dark header {
+    background: #e0e0e0;
+  }
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+  }
+
+  .site-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  /* Toggle knop naast site-title */
+  .toggle-btn-header {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    color: #0077b6;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .toggle-btn-header:hover {
+    background-color: #48cae4;
+    color: white;
+  }
+
+  body.dark .toggle-btn-header {
+    color: #4dd0e1;
+  }
+
+  body.dark .toggle-btn-header:hover {
+    background-color: #0077b6;
+    color: white;
+  }
+
+  /* Hamburger menu button */
+  .menu-btn {
+    cursor: pointer;
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: white;
+  }
+
+  body.dark .menu-btn {
+    color: #222;
+  }
+
+  /* Dropdown menu */
+  .menu {
+    display: none;
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background: #1e293b;
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 160px;
+    z-index: 10;
+  }
+
+  body.dark .menu {
+    background: #ccc;
+  }
+
+  .menu a {
+    display: block;
+    padding: 12px;
+    text-decoration: none;
+    color: white;
+    border-bottom: 1px solid #334155;
+  }
+
+  body.dark .menu a {
+    color: #222;
+    border-bottom: 1px solid #aaa;
+  }
+
+  .menu a:hover {
+    background: #334155;
+  }
+
+  body.dark .menu a:hover {
+    background: #ddd;
+  }
+
+  /* Skins grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* altijd 3 naast elkaar */
+    gap: 30px;
+    max-width: 900px; /* breedte voor 3 cirkels */
+    margin: 20px auto;
+    padding: 0 10px;
+  }
+
+  .skin {
+    background: #071029;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 0 8px #0f172a;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  body.dark .skin {
+    background: #e8e8e8;
+    box-shadow: 0 0 8px #bbb;
+  }
+
+  .skin img {
+    width: 220px;   /* grotere cirkels */
+    height: 220px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto 15px; /* ruimte boven de naam */
+    background: #1a202c;
+    transition: background-color 0.3s ease;
+  }
+
+  body.dark .skin img {
+    background: #ccc;
+  }
+
+  .skin-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 5px;
+    color: #cbd5e1;
+    transition: color 0.3s ease;
+  }
+
+  body.dark .skin-name {
+    color: #333;
+  }
 </style>
 </head>
 <body>
 
-<h1>Custom Skins</h1>
-<div class="grid" id="gallery"></div>
-
-<!-- Modal -->
-<div class="modal-wrap" id="modalWrap">
-  <div class="modal">
-    <button class="close-btn" id="closeModal">Sluiten</button>
-    <img id="modalImage" src="" alt="">
-    <div id="modalName" class="name"></div>
-    <div id="modalPrice" class="price"></div>
-    <div id="modalDesc" class="desc"></div>
+<header>
+  <div class="logo-container">
+    <img src="IMG_2718.png" alt="Logo" class="logo" />
+    <span class="site-title">T.B Agar.io</span>
+    <button class="toggle-btn-header" id="themeToggleBtn">🌙</button>
   </div>
-</div>
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <div class="menu" id="menu">
+    <a href="index.html">🏠 Home Pagina</a>
+    <a href="custom-skins.html">🎨 Custom Skins</a>
+    <a href="mod-menu.html">🛠️ Mod Menu</a>
+  </div>
+</header>
+
+<main>
+  <h1>Custom Skins</h1>
+  <div class="grid" id="gallery"></div>
+</main>
 
 <script>
-const skins = [
-  { name: "Baby Dragon", file: "skins/IMG_4073.png", price: "€3.49", desc: "Een schattige, speelse dragon-skin met zachte schubben en felle accenten." },
-  { name: "Thor Hamer", file: "skins/IMG_4027.jpeg", price: "€4.99", desc: "Donker metalen theme met bliksemeffecten rondom de hamer — krachtig en imposant." },
-  { name: "Sting Wasp", file: "skins/IMG_4028.jpeg", price: "€2.99", desc: "Fel gele en zwarte patronen, geïnspireerd op de razendsnelle wespen." }
-];
+  function toggleMenu() {
+    const menu = document.getElementById('menu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  }
 
-const gallery = document.getElementById('gallery');
-const modalWrap = document.getElementById('modalWrap');
-const modalImage = document.getElementById('modalImage');
-const modalName = document.getElementById('modalName');
-const modalPrice = document.getElementById('modalPrice');
-const modalDesc = document.getElementById('modalDesc');
-const closeModal = document.getElementById('closeModal');
+  // Skins lijst
+  const skins = [
+    { name: "Baby Dragon", url: "IMG_4073.png" },
+    { name: "Thor Hamer", url: "IMG_4027.jpeg" },
+    { name: "Sting wasp", url: "IMG_4028.jpeg" },
+    { name: "fire skeleton", url: "IMG_4024.jpeg" },
+    { name: "fire wolf", url: "IMG_4025.jpeg" },
+    { name: "captain jay", url: "IMG_4026.jpeg" },
+    { name: "Fire Art", url: "IMG_4022.jpeg" },
+    { name: "mouth fire art", url: "IMG_3180.jpeg" },
+    { name: "fire snake", url: "IMG_4032.jpeg" },
+    { name: "the tiger king", url: "IMG_4037.jpeg" },
+  ];
 
-// Maak skins zichtbaar
-skins.forEach(skin => {
-  const card = document.createElement('div');
-  card.className = 'card';
-  const img = document.createElement('img');
-  img.src = skin.file;
-  img.alt = skin.name;
-  const name = document.createElement('div');
-  name.className = 'name';
-  name.textContent = skin.name;
-  const price = document.createElement('div');
-  price.className = 'price';
-  price.textContent = skin.price;
-  const desc = document.createElement('div');
-  desc.className = 'desc';
-  desc.textContent = skin.desc;
-  card.appendChild(img);
-  card.appendChild(name);
-  card.appendChild(price);
-  card.appendChild(desc);
-  gallery.appendChild(card);
+  const gallery = document.getElementById('gallery');
 
-  // Klik om modal te openen
-  card.addEventListener('click', () => {
-    modalImage.src = skin.file;
-    modalImage.alt = skin.name;
-    modalName.textContent = skin.name;
-    modalPrice.textContent = skin.price;
-    modalDesc.textContent = skin.desc;
-    modalWrap.style.display = 'flex';
+  skins.forEach(skin => {
+    const card = document.createElement('div');
+    card.className = 'skin';
+
+    const img = document.createElement('img');
+    img.src = skin.url;
+    img.alt = skin.name;
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'skin-name';
+    nameDiv.textContent = skin.name;
+
+    card.appendChild(img);
+    card.appendChild(nameDiv);
+    gallery.appendChild(card);
   });
-});
 
-// Sluit modal
-closeModal.addEventListener('click', () => { modalWrap.style.display = 'none'; });
-modalWrap.addEventListener('click', (e) => { if(e.target === modalWrap) modalWrap.style.display = 'none'; });
+  // Dark/light mode toggle code
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  const body = document.body;
+
+  // Laad voorkeur uit localStorage (default licht)
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    body.classList.add('dark');
+    toggleBtn.textContent = '☀️';
+  } else {
+    toggleBtn.textContent = '🌙';
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    body.classList.toggle('dark');
+    if (body.classList.contains('dark')) {
+      toggleBtn.textContent = '☀️';
+      localStorage.setItem('theme', 'dark');
+    } else {
+      toggleBtn.textContent = '🌙';
+      localStorage.setItem('theme', 'light');
+    }
+  });
 </script>
 
 </body>
