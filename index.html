@@ -6,7 +6,14 @@
   <title>Skins Shop — Voorbeeld</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .card-img { width:72px; height:72px; object-fit:cover; border-radius:8px; }
+    .card-img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 9999px; /* ronde cirkel */
+      margin: 0 auto;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -26,30 +33,18 @@
       <button id="optionsBtn" class="bg-blue-500 text-white rounded px-4 py-2">Options</button>
     </div>
 
-    <div id="grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <div class="fixed right-6 bottom-6">
-      <button class="bg-teal-500 text-white px-4 py-3 rounded shadow-lg">Skins Cart</button>
-    </div>
+    <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
   </main>
 
   <template id="card-template">
-    <div class="bg-white rounded shadow p-4 flex flex-col">
-      <div class="flex justify-between items-start">
-        <div class="flex-1 pr-4">
-          <h3 class="font-semibold truncate card-title"></h3>
-          <p class="text-sm text-gray-500 mt-1 card-price"></p>
-        </div>
-        <img src="" alt="thumb" class="card-img shadow" />
-      </div>
-
-      <div class="mt-3 text-sm text-gray-700 card-desc flex-1"></div>
-
-      <ul class="mt-3 text-sm list-disc ml-4 card-items"></ul>
-
+    <div class="bg-white rounded shadow p-4 flex flex-col items-center text-center">
+      <img src="" alt="thumb" class="card-img" />
+      <h3 class="font-semibold mt-4 card-title text-lg"></h3>
+      <p class="text-sm text-gray-600 mt-1 card-desc"></p>
+      <p class="text-md font-medium text-gray-800 mt-2 card-price"></p>
       <div class="mt-4 flex gap-3">
-        <button class="shareBtn bg-blue-500 text-white rounded px-3 py-1">Share</button>
-        <button class="selectBtn bg-green-600 text-white rounded px-3 py-1">Select</button>
+        <button class="shareBtn bg-blue-500 text-white rounded px-4 py-2">Share</button>
+        <button class="selectBtn bg-green-600 text-white rounded px-4 py-2">Select</button>
       </div>
     </div>
   </template>
@@ -58,27 +53,24 @@
     const bundles = [
       {
         "id": "10000_coin_700_dna_2000_arena_event_token_1_skin_gashoot",
-        "name": "gashoot",
+        "name": "Gashoot",
         "price": 8.99,
         "image": "https://i.imgur.com/UwZJj6g.png",
-        "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)",
-        "items": ["10000 coin", "700 dna", "2000 arena_event_token", "1 skin_gashoot"]
+        "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)"
       },
       {
         "id": "5200_dna_1_skin_jack_odoom_1_skin_swamp_watcher",
-        "name": "jack_odoom",
+        "name": "Jack Odoom",
         "price": 22.99,
         "image": "https://i.imgur.com/TuX3y6P.png",
-        "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)",
-        "items": ["5200 dna", "1 skin_jack_odoom", "1 skin_swamp_watcher"]
+        "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)"
       },
       {
         "id": "27000_coin_1_skin_flame_gremlin",
-        "name": "flame_gremlin",
+        "name": "Flame Gremlin",
         "price": 17.99,
-        "image": "IMG_6174.webpg",
-        "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)",
-        "items": ["27000 coin", "1 skin_flame_gremlin"]
+        "image": "https://i.imgur.com/zAOoOR6.png",
+        "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)"
       }
     ];
 
@@ -90,19 +82,11 @@
       grid.innerHTML = '';
       list.forEach(item => {
         const el = template.content.cloneNode(true);
-        el.querySelector('.card-title').textContent = item.id || item.name || 'Onbekend';
-        el.querySelector('.card-price').textContent = `Price: USD ${item.price.toFixed(2)}`;
-        el.querySelector('.card-img').src = item.image || 'https://via.placeholder.com/72';
+        el.querySelector('.card-title').textContent = item.name || item.id || 'Onbekend';
+        el.querySelector('.card-price').textContent = `USD ${item.price.toFixed(2)}`;
+        el.querySelector('.card-img').src = item.image || 'https://via.placeholder.com/120';
         el.querySelector('.card-img').alt = item.name || 'thumb';
-
-        el.querySelector('.card-desc').textContent = item.note || 'No extra payment / taxes / secret charges.';
-
-        const ul = el.querySelector('.card-items');
-        (item.items || []).forEach(it => {
-          const li = document.createElement('li');
-          li.textContent = it;
-          ul.appendChild(li);
-        });
+        el.querySelector('.card-desc').textContent = item.note || '';
 
         const shareBtn = el.querySelector('.shareBtn');
         shareBtn.addEventListener('click', () => {
@@ -116,7 +100,7 @@
 
         const selectBtn = el.querySelector('.selectBtn');
         selectBtn.addEventListener('click', () => {
-          alert(`Geselecteerd: ${item.id || item.name}`);
+          alert(`Geselecteerd: ${item.name}`);
         });
 
         grid.appendChild(el);
@@ -125,7 +109,7 @@
 
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
-      const filtered = bundles.filter(b => (b.id || b.name || '').toLowerCase().includes(q));
+      const filtered = bundles.filter(b => (b.name || '').toLowerCase().includes(q));
       render(filtered);
     });
 
