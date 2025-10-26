@@ -1,82 +1,107 @@
 <!doctype html>
 <html lang="nl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Custom Skins — T.B Agar.io</title>
 <style>
-:root{--bg:#0b1220;--card:#071029;--muted:#9aa7bd;--accent:#7c3aed;--glass: rgba(255,255,255,0.03);--text:#e6eef8}
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;}
-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-bottom:1px solid rgba(255,255,255,0.03);gap:12px;}
-.logo-container{display:flex;align-items:center;gap:12px}
-.logo{width:52px;height:52px;border-radius:50%;object-fit:cover}
-.site-title{font-weight:700;font-size:1.15rem}
-.header-actions{display:flex;gap:8px;align-items:center}
-.toggle-btn{border:0;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:700;background:transparent;color:var(--muted);}
-.menu-btn{border:0;background:transparent;color:var(--muted);font-size:20px;padding:6px;cursor:pointer}
-main{max-width:1100px;margin:22px auto;padding:0 16px}
-h1{margin:6px 0 12px;font-size:1.45rem}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:start;}
-@media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:560px){.grid{grid-template-columns:1fr}}
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 28px rgba(2,6,23,0.6);transition:transform .18s ease, box-shadow .18s ease;opacity:0;transform:translateY(8px);}
-.card:focus-within, .card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(2,6,23,0.8)}
-.avatar{width:220px;height:220px;border-radius:50%;overflow:hidden;margin:0 auto;display:block;background:linear-gradient(135deg,#061026, rgba(124,58,237,0.06));border:6px solid rgba(255,255,255,0.03);transition:transform .35s ease, box-shadow .35s ease;}
-.avatar img{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transition:transform .5s ease}
-.card:hover .avatar img{transform:scale(1.03) rotate(-1deg)}
-.meta{margin-top:12px}
-.name{font-size:1.05rem;font-weight:800;margin-bottom:6px;color:var(--text)}
-.price{font-weight:900;display:block;margin-bottom:6px;color:var(--accent)}
-.desc{font-size:0.88rem;color:var(--muted);line-height:1.35;margin-bottom:8px;min-height:44px}
-.row{display:flex;justify-content:center;gap:10px;align-items:center}
+:root {
+  --bg:#0b1220; --card:#071029; --muted:#9aa7bd; --accent:#7c3aed; --text:#e6eef8;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;font-family:Inter, system-ui, -apple-system,'Segoe UI',Roboto,Arial;
+  background:var(--bg); color:var(--text);
+}
+header{
+  display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-bottom:1px solid rgba(255,255,255,0.03); gap:12px;
+}
+.logo-container{display:flex;align-items:center;gap:12px;}
+.logo{width:52px;height:52px;border-radius:50%;object-fit:cover;}
+.site-title{font-weight:700;font-size:1.15rem;}
+.header-actions{display:flex;gap:8px;align-items:center;}
+.toggle-btn, .menu-btn{border:0;padding:6px 10px;border-radius:10px;cursor:pointer;}
+main{max-width:1100px;margin:22px auto;padding:0 16px;}
+h1{margin:6px 0 12px;font-size:1.45rem;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+@media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.grid{grid-template-columns:1fr;}}
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius:14px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.03);
+  box-shadow:0 8px 28px rgba(2,6,23,0.6);
+  transition:transform .18s ease, box-shadow .18s ease;opacity:0;transform:translateY(8px);
+}
+.card.visible{opacity:1;transform:none;transition:opacity .5s ease, transform .45s cubic-bezier(.2,.9,.2,1);}
+.card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(2,6,23,0.8);}
+.avatar{
+  width:220px;height:220px;border-radius:50%;overflow:hidden;margin:0 auto;
+  background:linear-gradient(135deg,#061026, rgba(124,58,237,0.06));
+  border:6px solid rgba(255,255,255,0.03);
+  transition:transform .35s ease, box-shadow .35s ease;
+}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease;}
+.card:hover .avatar img{transform:scale(1.03) rotate(-1deg);}
+.meta{margin-top:12px;}
+.name{font-size:1.05rem;font-weight:800;margin-bottom:6px;color:var(--text);}
+.price{font-weight:900;display:block;margin-bottom:6px;color:var(--accent);}
+.desc{font-size:0.88rem;color:var(--muted);line-height:1.35;margin-bottom:8px;min-height:44px;}
+.row{display:flex;justify-content:center;gap:10px;align-items:center;}
 .btn{background:var(--accent);color:white;border:0;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(124,58,237,0.14);transition:transform .12s ease;}
-.btn:active{transform:translateY(1px)}
-.info-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:7px 10px;border-radius:10px;cursor:pointer}
+.btn:active{transform:translateY(1px);}
+.info-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:7px 10px;border-radius:10px;cursor:pointer;}
 .avatar::after{content:'';display:block;width:100%;height:100%;border-radius:50%;position:relative;top:-100%;left:0;box-shadow:0 8px 40px rgba(124,58,237,0);transition:box-shadow .28s ease;pointer-events:none;}
-.card:hover .avatar::after{box-shadow:0 18px 60px rgba(124,58,237,0.14)}
-.card.visible{opacity:1;transform:none;transition:opacity .5s ease, transform .45s cubic-bezier(.2,.9,.2,1)}
-.modal-wrap{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60}
-.modal-backdrop{position:absolute;inset:0;background:rgba(2,6,23,0.6);backdrop-filter: blur(2px)}
-.modal{position:relative;background:linear-gradient(180deg, #091226, #051026);border-radius:14px;padding:18px;max-width:920px;width:95%;display:grid;grid-template-columns: 420px 1fr;gap:18px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 40px 120px rgba(2,6,23,0.8);}
-@media (max-width:920px){.modal{grid-template-columns:1fr;max-width:720px}}
-.modal .big-img{width:100%;height:420px;border-radius:12px;overflow:hidden;background:#071029;display:flex;align-items:center;justify-content:center}
-.modal .big-img img{width:100%;height:100%;object-fit:cover;display:block}
-.modal .content{color:var(--text)}
-.modal .content h2{margin:0 0 8px;font-size:1.25rem}
-.modal .content p.desc{color:var(--muted);margin:8px 0 14px;line-height:1.45}
-.modal .modal-actions{display:flex;gap:10px;align-items:center;margin-top:12px}
-body.light{--bg:#f6f7fb;--card:#ffffff;--text:#0f1724;--muted:#55687c;--accent:#6b46c1}
-body.light header{background:linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01))}
-body.light .card{box-shadow:0 8px 26px rgba(6,10,14,0.06)}
-body.light .modal{background:linear-gradient(180deg,#ffffff,#f7f8fb)}
-body.light .modal .content p.desc{color:var(--muted)}
-.sr-only{position:absolute!important;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.card:hover .avatar::after{box-shadow:0 18px 60px rgba(124,58,237,0.14);}
+/* Modal */
+.modal-wrap{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;}
+.modal-backdrop{position:absolute;inset:0;background:rgba(2,6,23,0.6);backdrop-filter: blur(2px);}
+.modal{position:relative;background:linear-gradient(180deg, #091226, #051026);border-radius:14px;padding:18px;max-width:920px;width:95%;display:grid;grid-template-columns:420px 1fr;gap:18px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 40px 120px rgba(2,6,23,0.8);}
+@media(max-width:920px){.modal{grid-template-columns:1fr;max-width:720px;}}
+.modal .big-img{width:100%;height:420px;border-radius:12px;overflow:hidden;background:#071029;display:flex;align-items:center;justify-content:center;}
+.modal .big-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.modal .content{color:var(--text);}
+.modal .content h2{margin:0 0 8px;font-size:1.25rem;}
+.modal .content p.desc{color:var(--muted);margin:8px 0 14px;line-height:1.45;}
+.modal .modal-actions{display:flex;gap:10px;align-items:center;margin-top:12px;}
+body.light{--bg:#f6f7fb;--card:#ffffff;--text:#0f1724;--muted:#55687c;--accent:#6b46c1;}
 </style>
 </head>
 <body>
 <header>
 <div class="logo-container">
-<img src="skins/IMG_2718.png" alt="Logo" class="logo" />
+<img src="skins/IMG_2718.png" alt="Logo" class="logo">
 <div><div class="site-title">T.B Agar.io</div><div style="font-size:0.78rem;color:var(--muted)">Custom skins gallery</div></div>
 </div>
-<div class="header-actions" role="toolbar" aria-label="Header actions">
-<button id="themeToggle" class="toggle-btn" aria-pressed="false" title="Wissel thema">🌙</button>
-<button id="menuBtn" class="menu-btn" aria-expanded="false" aria-controls="menu">☰</button>
+<div class="header-actions">
+<button id="themeToggle" class="toggle-btn">🌙</button>
 </div>
 </header>
 <main>
 <h1>Custom Skins</h1>
-<div class="grid" id="gallery" aria-live="polite"></div>
+<div class="grid" id="gallery"></div>
 </main>
+
+<!-- Modal -->
 <div class="modal-wrap" id="modalWrap" aria-hidden="true">
-<div class="modal-backdrop" id="modalBackdrop" tabindex="-1"></div>
-<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-<div class="big-img" id="modalImageWrap"><img id="modalImage" src="" alt=""></div>
-<div class="content"><h2 id="modalTitle">Naam Skin</h2><div style="font-weight:900;font-size:1rem;margin-top:6px" id="modalPrice">€0.00</div><p class="desc" id="modalDesc">Beschrijving...</p><div class="modal-actions"><button class="btn" id="buyBtn">Koop nu</button><button class="info-btn" id="closeModal">Sluiten</button></div></div>
+<div class="modal-backdrop" id="modalBackdrop"></div>
+<div class="modal" role="dialog">
+<div class="big-img"><img id="modalImage" src="" alt=""></div>
+<div class="content">
+<h2 id="modalTitle"></h2>
+<div style="font-weight:900;font-size:1rem;margin-top:6px" id="modalPrice"></div>
+<p class="desc" id="modalDesc"></p>
+<div class="modal-actions">
+<button class="btn" id="buyBtn">Koop nu</button>
+<button class="info-btn" id="closeModal">Sluiten</button>
 </div>
 </div>
+</div>
+</div>
+
 <script>
+// Skins data
 const skins=[
 {name:"Baby Dragon",file:"skins/IMG_4073.png",price:"€3.49",desc:"Een schattige, speelse dragon-skin met zachte schubben en felle accenten."},
 {name:"Thor Hamer",file:"skins/IMG_4027.jpeg",price:"€4.99",desc:"Donker metalen theme met bliksemeffecten rondom de hamer — krachtig en imposant."},
@@ -89,10 +114,43 @@ const skins=[
 {name:"Fire Snake",file:"skins/IMG_4032.jpeg",price:"€2.99",desc:"Sinuoziteit en vuur gecombineerd tot een dodelijk elegante skin."},
 {name:"The Tiger King",file:"skins/IMG_4037.jpeg",price:"€5.49",desc:"Koninklijke tijgerpatronen met gouden details voor de ultieme leider."}
 ];
+
 const gallery=document.getElementById('gallery');
 skins.forEach((s,i)=>{
-const card=document.createElement('article');card.className='card';card.tabIndex=0;card.setAttribute('aria-labelledby',`skin-name-${i}`);
-const avatar=document.createElement('div');avatar.className='avatar';const img=document.createElement('img');img.src=s.file;img.alt=s.name;img.loading='lazy';avatar.appendChild(img);
-const meta=document.createElement('div');meta.className='meta';
-const name=document.createElement('div');name.className='name';name.id=`skin-name-${i}`;name.textContent=s.name;
-const price=document.createElement('div');price.className='price';price.textContent
+  const card=document.createElement('div'); card.className='card';
+  const avatar=document.createElement('div'); avatar.className='avatar';
+  const img=document.createElement('img'); img.src=s.file; img.alt=s.name;
+  avatar.appendChild(img);
+  const meta=document.createElement('div'); meta.className='meta';
+  const name=document.createElement('div'); name.className='name'; name.textContent=s.name;
+  const price=document.createElement('div'); price.className='price'; price.textContent=s.price;
+  const desc=document.createElement('div'); desc.className='desc'; desc.textContent=s.desc;
+  meta.appendChild(name); meta.appendChild(price); meta.appendChild(desc);
+  card.appendChild(avatar); card.appendChild(meta);
+  gallery.appendChild(card);
+  setTimeout(()=>{card.classList.add('visible');},i*80);
+
+  // Modal click
+  card.addEventListener('click',()=>{
+    document.getElementById('modalWrap').style.display='flex';
+    document.getElementById('modalImage').src=s.file;
+    document.getElementById('modalImage').alt=s.name;
+    document.getElementById('modalTitle').textContent=s.name;
+    document.getElementById('modalPrice').textContent=s.price;
+    document.getElementById('modalDesc').textContent=s.desc;
+  });
+});
+
+// Close modal
+document.getElementById('modalBackdrop').addEventListener('click',()=>{document.getElementById('modalWrap').style.display='none';});
+document.getElementById('closeModal').addEventListener('click',()=>{document.getElementById('modalWrap').style.display='none';});
+
+// Dark/light mode
+const themeBtn=document.getElementById('themeToggle');
+themeBtn.addEventListener('click',()=>{
+  document.body.classList.toggle('light');
+  themeBtn.textContent=document.body.classList.contains('light')?'☀️':'🌙';
+});
+</script>
+</body>
+</html>
