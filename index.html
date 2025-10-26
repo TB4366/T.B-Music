@@ -50,13 +50,12 @@
   </template>
 
   <script>
-    // Bundles met jouw eigen afbeelding
     const bundles = [
       {
         "id": "special_skin_1",
         "name": "Special Skin",
         "price": 9.99,
-        "image": "IMG_6174.webp", // <--- jouw afbeelding
+        "image": "IMG_6174.webp", // jouw afbeelding
         "note": "No extra fees or taxes."
       },
       {
@@ -71,6 +70,7 @@
     const grid = document.getElementById('grid');
     const template = document.getElementById('card-template');
     const searchInput = document.getElementById('search');
+    const fallbackImg = "https://via.placeholder.com/120?text=No+Image"; // fallback afbeelding
 
     function render(list) {
       grid.innerHTML = '';
@@ -78,8 +78,10 @@
         const el = template.content.cloneNode(true);
         el.querySelector('.card-title').textContent = item.name || item.id || 'Onbekend';
         el.querySelector('.card-price').textContent = `USD ${item.price.toFixed(2)}`;
-        el.querySelector('.card-img').src = item.image || 'https://via.placeholder.com/120';
-        el.querySelector('.card-img').alt = item.name || 'thumb';
+        const img = el.querySelector('.card-img');
+        img.src = item.image || fallbackImg;
+        img.alt = item.name || 'thumb';
+        img.onerror = () => { img.src = fallbackImg }; // fallback als laden mislukt
         el.querySelector('.card-desc').textContent = item.note || '';
 
         const shareBtn = el.querySelector('.shareBtn');
