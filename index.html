@@ -107,7 +107,10 @@
         const card=document.createElement('div');
         card.className='card';
         card.innerHTML=`
-          <div class="thumb"><img src="${s.img}" alt="${s.name}"></div>
+          <div class="thumb">
+            <img src="${s.img}" alt="${s.name}"
+                 onerror="this.onerror=null; this.src='https://via.placeholder.com/256.png?text=No+Image'; console.warn('Afbeelding niet gevonden:', this.src);" />
+          </div>
           <div class="name">${s.name}</div>
           <div class="rarity">${s.rarity}</div>
           <div class="price">${formatPrice(s.price)}</div>
