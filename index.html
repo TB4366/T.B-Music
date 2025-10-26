@@ -1,274 +1,709 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>T.B Agar.io Prize Hunt</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f3f3f3;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>T.B Agar.io Prize Hunt — Million Hunt (Deal or No Deal)</title>
+<style>
+  :root{
+    --primary:#111827;
+    --accent:#0ea5a4;
+    --muted:#6b7280;
+    --bg:#f3f4f6;
+    --card:#ffffff;
+  }
+  body{
+    margin:0;
+    font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    background:var(--bg);
+    color:#111;
+    -webkit-font-smoothing:antialiased;
+  }
 
-    /* Top bar */
-    .navbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background-color: #1a1a1a;
-      color: white;
-      padding: 10px 20px;
-    }
-    .navbar img {
-      height: 40px;
-      margin-right: 10px;
-    }
-    .navbar-left {
-      display: flex;
-      align-items: center;
-    }
-    .navbar-right {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .navbar-right button {
-      background: #444;
-      border: none;
-      color: white;
-      padding: 8px 14px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .navbar-right button:hover {
-      background: #666;
-    }
+  /* Top bar */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 18px;
+    background:linear-gradient(90deg,#0f172a,#0b1220);
+    color:#fff;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand img{height:44px; width:44px; border-radius:6px; background:#fff;}
+  .brand h2{margin:0; font-size:18px; letter-spacing:0.4px;}
+  .nav-actions{display:flex; align-items:center; gap:10px;}
+  .nav-actions button{
+    background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.12);
+    padding:8px 12px; border-radius:8px; cursor:pointer;
+  }
+  .nav-actions button.primary{
+    background:var(--accent); border:none; color:#012;
+  }
 
-    /* Title and line */
-    h1 {
-      margin-top: 30px;
-    }
-    hr {
-      width: 60%;
-      margin: 10px auto;
-    }
+  /* Layout */
+  .container{max-width:1100px;margin:24px auto;padding:0 16px;}
+  .title{ text-align:center; margin-top:6px;}
+  .lead{ color:var(--muted); text-align:center; margin-top:6px;}
 
-    /* Access code section */
-    .access-section {
-      margin-top: 20px;
-    }
-    input[type="text"], input[type="password"], input[type="email"] {
-      padding: 10px;
-      margin: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background-color: #28a745;
-      color: white;
-      margin-top: 10px;
-    }
-    button:hover {
-      background-color: #218838;
-    }
+  .game-area{ display:flex; gap:20px; margin-top:20px; align-items:flex-start; }
+  .left-panel, .right-panel{ background:var(--card); border-radius:10px; padding:16px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+  .left-panel{ flex:1; min-height:520px; }
+  .right-panel{ width:320px; }
 
-    /* Cases section */
-    .cases {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 10px;
-      width: 80%;
-      margin: 30px auto;
-    }
-    .case {
-      background-color: gold;
-      border-radius: 10px;
-      padding: 20px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .case.opened {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
+  /* Access & messages */
+  .access{
+    display:flex; gap:8px; justify-content:center; align-items:center;
+    margin-top:12px;
+  }
+  input[type="text"], input[type="email"], input[type="password"]{
+    padding:10px; border-radius:8px; border:1px solid #e5e7eb; width:220px;
+  }
 
-    /* Coins display */
-    .coins {
-      position: fixed;
-      left: 20px;
-      top: 70px;
-      background-color: #fff3cd;
-      padding: 10px 15px;
-      border-radius: 8px;
-      border: 1px solid #ffeeba;
-      display: none;
-    }
+  /* Cases grid */
+  .cases-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:10px;
+    margin-top:18px;
+  }
+  .case{
+    background:linear-gradient(180deg,#fef3c7,#fde68a);
+    border-radius:10px; padding:12px; text-align:center; cursor:pointer; font-weight:700;
+    user-select:none; border:2px solid rgba(0,0,0,0.06);
+  }
+  .case.locked{ background:#e6e6e6; cursor:not-allowed; opacity:0.9; }
+  .case.chosen{ outline:4px solid #ef4444; }
 
-    /* Settings panel */
-    .settings {
-      display: none;
-      position: fixed;
-      right: 20px;
-      top: 70px;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      width: 250px;
-    }
-  </style>
+  /* Money column */
+  .amounts { display:flex; flex-direction:column; gap:6px; max-height:420px; overflow:auto; padding:8px; }
+  .amount { padding:8px 10px; border-radius:6px; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; border:1px solid #eef2ff; }
+  .amount.removed { text-decoration:line-through; opacity:0.35; background:#fff; }
+
+  /* Controls */
+  .controls{ margin-top:16px; display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; }
+  .btn{ padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+  .btn.red{ background:#ef4444; color:white; }
+  .btn.green{ background:#10b981; color:white; }
+  .small{ padding:8px 10px; font-size:13px; }
+
+  /* Status / bank modal simple */
+  .status{ background:#eef2ff; padding:12px; border-radius:8px; margin-top:12px; color:#0f172a; border:1px solid #dbeafe; }
+
+  /* footer */
+  .footer{ text-align:center; margin-top:18px; color:var(--muted); font-size:13px; }
+
+  /* modal */
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,0.55); display:flex; align-items:center; justify-content:center; z-index:50; }
+  .modal{ background:white; padding:18px; border-radius:12px; width:420px; max-width:94%; box-shadow:0 10px 30px rgba(2,6,23,0.4); }
+  .modal h3{ margin-top:0; }
+  .row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+
+  /* responsive */
+  @media (max-width:900px){
+    .game-area{ flex-direction:column; }
+    .cases-grid{ grid-template-columns:repeat(5,1fr); }
+  }
+  @media (max-width:520px){
+    .cases-grid{ grid-template-columns:repeat(4,1fr); }
+    .nav-actions button{ padding:6px 8px; font-size:13px; }
+    .right-panel{ width:100%; }
+  }
+</style>
 </head>
 <body>
 
-  <div class="navbar">
-    <div class="navbar-left">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png" alt="Logo" />
-      <h2>T.B Agar.io Prize Hunt</h2>
+  <div class="topbar">
+    <div class="brand">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png" alt="logo">
+      <div>
+        <h2>T.B Agar.io Prize Hunt</h2>
+        <div style="font-size:12px;color:#cbd5e1">Million Hunt — Deal or No Deal style</div>
+      </div>
     </div>
-    <div class="navbar-right">
+
+    <div class="nav-actions">
+      <div id="coinsDisplay" style="display:none; padding:6px 10px; background:#fff; color:#111; border-radius:8px; font-weight:700;">
+        💰 Coins: <span id="coinsValue">0</span>
+      </div>
       <button id="loginBtn">Login</button>
       <button id="registerBtn">Register</button>
-      <button id="logoutBtn" style="display:none;">Logout</button>
-      <button id="settingsBtn" style="display:none;">⚙️ Settings</button>
+      <button id="logoutBtn" style="display:none">Logout</button>
+      <button id="settingsBtn" style="display:none">Settings</button>
     </div>
   </div>
 
-  <div class="coins" id="coinsDisplay">💰 Coins: 0</div>
+  <div class="container">
+    <div class="title">
+      <h1>Prize Hunt</h1>
+      <p class="lead">Do you want to take a chance and win the grand prize? Enter an access code to start the game.</p>
+    </div>
 
-  <h1>Prize Hunt</h1>
-  <hr>
-  <p>Do you want to take a chance and win the grand prize? Join now!<br>
-  Enter your access code to start the game.</p>
+    <!-- Access area -->
+    <div style="display:flex; justify-content:center; margin-top:12px;">
+      <div class="access">
+        <input id="accessCodeInput" type="text" placeholder="Enter access code (required)">
+        <button id="accessOk" class="btn green">OK</button>
+      </div>
+    </div>
 
-  <div class="access-section">
-    <input type="text" id="accessCode" placeholder="Enter access code">
-    <button id="accessBtn">OK</button>
+    <div id="lockedMessage" style="text-align:center; color:#ef4444; margin-top:10px; display:none;">
+      You must be logged in and enter a valid access code to start.
+    </div>
+
+    <div class="game-area" id="mainGame" style="display:none;">
+      <!-- left: cases and game controls -->
+      <div class="left-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>Your chosen case:</strong>
+            <div id="chosenDisplay" style="font-weight:800; margin-top:6px;">None</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;color:var(--muted)">Round</div>
+            <div id="roundLabel" style="font-weight:800; font-size:18px">0</div>
+          </div>
+        </div>
+
+        <div class="cases-grid" id="casesGrid" aria-hidden="false" style="margin-top:14px;"></div>
+
+        <div class="controls">
+          <button id="startMatchBtn" class="btn primary small" style="background:#0ea5a4; color:#012">Start Match</button>
+          <button id="openCaseBtn" class="btn small" disabled>Open Case</button>
+          <button id="revealBtn" class="btn small" disabled>Reveal My Case</button>
+        </div>
+
+        <div id="roundInfo" class="status" style="display:none; margin-top:12px;">
+          <div id="openCountInfo"></div>
+        </div>
+      </div>
+
+      <!-- right: amounts, bank, history -->
+      <div class="right-panel">
+        <h3 style="margin-top:0">Money amounts</h3>
+        <div class="amounts" id="amountsList"></div>
+
+        <div style="margin-top:12px;">
+          <h4 style="margin:6px 0 8px;">Bank offer</h4>
+          <div id="offerBox" style="padding:10px; border-radius:8px; background:#f8fafc; border:1px solid #e6f4ff;">
+            <div style="font-size:14px; color:var(--muted)">Current offer</div>
+            <div id="offerValue" style="font-weight:900; font-size:20px; margin-top:6px;">—</div>
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              <button id="dealBtn" class="btn green small" disabled>Deal</button>
+              <button id="noDealBtn" class="btn red small" disabled>No Deal</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <h4 style="margin:6px 0 8px;">Game history</h4>
+          <div id="historyBox" style="padding:10px; border-radius:8px; min-height:80px; background:#fff; border:1px solid #eef2ff; color:var(--muted);"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">Prototype — all data local. Access code in this demo: <strong>1234</strong></div>
   </div>
 
-  <div id="gameArea" style="display:none;">
-    <h3>Select your briefcase (1–30)</h3>
-    <div class="cases" id="casesContainer"></div>
-    <button id="startGame" disabled>Start Game</button>
-  </div>
+  <!-- Modal container -->
+  <div id="modalRoot" style="display:none;"></div>
 
-  <!-- Settings panel -->
-  <div class="settings" id="settingsPanel">
-    <h4>Settings</h4>
-    <label>Change Background: </label>
-    <input type="color" id="bgColorPicker"><br><br>
-    <label>Change Email: </label><input type="email" id="newEmail"><br>
-    <label>Change Password: </label><input type="password" id="newPassword"><br>
-    <button onclick="saveSettings()">Save</button>
-  </div>
+<script>
+/* =========================
+   Simple local "auth" and settings
+   ========================= */
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const coinsDisplay = document.getElementById('coinsDisplay');
+const coinsValue = document.getElementById('coinsValue');
 
-  <script>
-    const loginBtn = document.getElementById("loginBtn");
-    const registerBtn = document.getElementById("registerBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const settingsBtn = document.getElementById("settingsBtn");
-    const settingsPanel = document.getElementById("settingsPanel");
-    const coinsDisplay = document.getElementById("coinsDisplay");
+let currentUser = null;
+const USERS_KEY = 'mh_demo_users';
+const COINS_KEY = 'mh_demo_coins';
 
-    let loggedIn = false;
-    let selectedCase = null;
+function loadUsers(){
+  try { return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); } catch(e){ return {}; }
+}
+function saveUsers(u){ localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
 
-    // Generate briefcases
-    const casesContainer = document.getElementById("casesContainer");
-    for (let i = 1; i <= 30; i++) {
-      const c = document.createElement("div");
-      c.className = "case";
-      c.innerText = i;
-      c.onclick = () => selectCase(i, c);
-      casesContainer.appendChild(c);
+function showAuthState(){
+  if(currentUser){
+    loginBtn.style.display='none';
+    registerBtn.style.display='none';
+    logoutBtn.style.display='inline-block';
+    settingsBtn.style.display='inline-block';
+    coinsDisplay.style.display='inline-block';
+    document.getElementById('lockedMessage').style.display='none';
+    coinsValue.textContent = localStorage.getItem(COINS_KEY+'_'+currentUser) || '0';
+  } else {
+    loginBtn.style.display='inline-block';
+    registerBtn.style.display='inline-block';
+    logoutBtn.style.display='none';
+    settingsBtn.style.display='none';
+    coinsDisplay.style.display='none';
+  }
+}
+
+loginBtn.onclick = () => {
+  const email = prompt('Enter your email to login:');
+  if(!email) return;
+  const users = loadUsers();
+  if(!users[email]) { alert('No account found. Please register first.'); return; }
+  const pass = prompt('Enter your password:');
+  if(pass === users[email].password){
+    currentUser = email;
+    alert('Logged in as ' + email);
+    showAuthState();
+  } else alert('Wrong password.');
+};
+
+registerBtn.onclick = () => {
+  const first = prompt('First name:');
+  if(!first) return;
+  const last = prompt('Last name:');
+  if(!last) return;
+  const email = prompt('Email:');
+  if(!email) return;
+  const pass = prompt('Password:');
+  if(!pass) return;
+  const users = loadUsers();
+  if(users[email]) { alert('An account with this email already exists.'); return; }
+  users[email] = { first, last, password: pass };
+  saveUsers(users);
+  // seed coins
+  localStorage.setItem(COINS_KEY+'_'+email, '100'); // seed demo coins
+  alert('Registered. You have been given 100 demo coins.');
+};
+
+logoutBtn.onclick = () => {
+  currentUser = null;
+  alert('Logged out.');
+  showAuthState();
+};
+
+settingsBtn.onclick = () => {
+  if(!currentUser) return;
+  const choice = prompt('Settings:\n1) Change background color\n2) Change password\nEnter 1 or 2');
+  if(choice === '1'){
+    const color = prompt('Enter a hex color for background (example #f3f4f6):');
+    if(color) document.body.style.background = color;
+  } else if(choice === '2'){
+    const users = loadUsers();
+    const newPass = prompt('Enter new password:');
+    if(newPass){
+      users[currentUser].password = newPass;
+      saveUsers(users);
+      alert('Password changed.');
     }
+  }
+};
 
-    function selectCase(num, el) {
-      if (!document.getElementById("startGame").disabled) return;
-      selectedCase = num;
-      document.querySelectorAll(".case").forEach(e => e.style.border = "none");
-      el.style.border = "4px solid red";
-      document.getElementById("startGame").disabled = false;
-    }
+showAuthState();
 
-    document.getElementById("accessBtn").onclick = () => {
-      const code = document.getElementById("accessCode").value;
-      if (!loggedIn) {
-        alert("Please log in before entering an access code!");
-        return;
-      }
-      if (code === "1234") { // Example special code
-        alert("Special access granted! Let's play!");
-        document.getElementById("gameArea").style.display = "block";
-      } else {
-        alert("Invalid code!");
-      }
-    };
+/* =========================
+   Game constants & state
+   ========================= */
+const ACCESS_CODES = {
+  '1234': { name: 'Standard Ticket', note:'Standard play' },
+  'VIP2025': { name:'VIP Ticket', note:'Higher starting coins' }
+};
 
-    document.getElementById("startGame").onclick = () => {
-      alert("Game started! Open 5 cases to see the bank's offer!");
-    };
+const AMOUNTS = [
+  0.01, 1, 5, 10, 50, 100, 250, 500,
+  1000, 2500, 5000, 10000, 25000, 50000,
+  100000, 250000, 500000, 750000, 1000000, 2000000,
+  3000000, 4000000, 5000000, 7500000, 10000000, 15000000
+];
+// Note: used larger top amounts to illustrate "million" feel. Values are in generic currency units.
 
-    loginBtn.onclick = () => {
-      const email = prompt("Enter your email:");
-      const pass = prompt("Enter your password:");
-      if (email && pass) {
-        loggedIn = true;
-        alert("Welcome back, " + email + "!");
-        updateLoginState();
-      }
-    };
+let game = null;
 
-    registerBtn.onclick = () => {
-      const name = prompt("First name:");
-      const surname = prompt("Last name:");
-      const email = prompt("Email:");
-      const pass = prompt("Password:");
-      if (name && surname && email && pass) {
-        alert("Registration successful!");
-      }
-    };
+/* =========================
+   Utilities
+   ========================= */
+function fmt(n){
+  if(n === null || n === undefined) return '—';
+  // show with 2 decimals and thousands separators
+  return new Intl.NumberFormat('en-US', { style:'currency', currency:'EUR', maximumFractionDigits:2 }).format(n);
+}
 
-    logoutBtn.onclick = () => {
-      loggedIn = false;
-      alert("You have logged out.");
-      updateLoginState();
-    };
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
 
-    settingsBtn.onclick = () => {
-      settingsPanel.style.display = settingsPanel.style.display === "block" ? "none" : "block";
-    };
+/* =========================
+   Build game UI and logic
+   ========================= */
+const startMatchBtn = document.getElementById('startMatchBtn');
+const accessOk = document.getElementById('accessOk');
+const accessInput = document.getElementById('accessCodeInput');
+const mainGame = document.getElementById('mainGame');
+const casesGrid = document.getElementById('casesGrid');
+const amountsList = document.getElementById('amountsList');
+const chosenDisplay = document.getElementById('chosenDisplay');
+const roundLabel = document.getElementById('roundLabel');
+const openCaseBtn = document.getElementById('openCaseBtn');
+const startGameBtn = startMatchBtn;
+const revealBtn = document.getElementById('revealBtn');
+const openCountInfo = document.getElementById('openCountInfo');
+const roundInfo = document.getElementById('roundInfo');
+const offerValueEl = document.getElementById('offerValue');
+const dealBtn = document.getElementById('dealBtn');
+const noDealBtn = document.getElementById('noDealBtn');
+const historyBox = document.getElementById('historyBox');
+const modalRoot = document.getElementById('modalRoot');
+const lockedMessage = document.getElementById('lockedMessage');
 
-    function updateLoginState() {
-      if (loggedIn) {
-        loginBtn.style.display = "none";
-        registerBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        settingsBtn.style.display = "inline-block";
-        coinsDisplay.style.display = "block";
-      } else {
-        loginBtn.style.display = "inline-block";
-        registerBtn.style.display = "inline-block";
-        logoutBtn.style.display = "none";
-        settingsBtn.style.display = "none";
-        coinsDisplay.style.display = "none";
-        settingsPanel.style.display = "none";
-      }
-    }
+accessOk.onclick = () => {
+  const code = (accessInput.value || '').trim();
+  if(!currentUser){
+    lockedMessage.style.display = 'block';
+    alert('Please login or register first.');
+    return;
+  }
+  if(!ACCESS_CODES[code]){
+    alert('Invalid access code. Demo access code: 1234');
+    return;
+  }
+  // seed special behavior for VIP
+  if(code === 'VIP2025') {
+    localStorage.setItem(COINS_KEY+'_'+currentUser, String(Number(localStorage.getItem(COINS_KEY+'_'+currentUser) || 0) + 500));
+  }
+  startNewGame(code);
+  mainGame.style.display = 'flex';
+  lockedMessage.style.display = 'none';
+};
 
-    function saveSettings() {
-      const bg = document.getElementById("bgColorPicker").value;
-      document.body.style.backgroundColor = bg;
-      alert("Settings saved!");
-      settingsPanel.style.display = "none";
-    }
-  </script>
+function startNewGame(accessCode){
+  // reset UI
+  casesGrid.innerHTML = '';
+  amountsList.innerHTML = '';
+  historyBox.innerHTML = '';
+  chosenDisplay.textContent = 'None';
+  offerValueEl.textContent = '—';
+  dealBtn.disabled = true; noDealBtn.disabled = true;
+  openCaseBtn.disabled = true;
+  revealBtn.disabled = true;
+  roundInfo.style.display = 'none';
 
+  // prepare shuffled amounts for 26 cases
+  const shuffled = shuffle([...AMOUNTS]).slice(0,26);
+  // Create case objects
+  const cases = shuffled.map((amount, i) => ({
+    id: i+1,
+    amount,
+    opened:false
+  }));
+
+  game = {
+    accessCode,
+    cases,
+    chosenCaseId: null,
+    rounds: [6,5,4,3,2,1,1], // how many to open each round
+    currentRoundIndex: -1,
+    openInRound: 0,
+    openedCountThisRound: 0,
+    bankOffers: [],
+    history: []
+  };
+
+  renderCases();
+  renderAmounts();
+  logHistory('New game started. Pick your case (your personal case).');
+}
+
+/* Render functions */
+function renderCases(){
+  casesGrid.innerHTML = '';
+  game.cases.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'case' + (c.opened ? ' locked' : '');
+    el.dataset.id = c.id;
+    el.textContent = c.opened ? 'Opened' : c.id;
+    if(game.chosenCaseId === c.id) el.classList.add('chosen');
+    el.onclick = () => onCaseClick(c.id);
+    casesGrid.appendChild(el);
+  });
+}
+
+function renderAmounts(){
+  amountsList.innerHTML = '';
+  game.cases.slice().sort((a,b)=>a.amount-b.amount).forEach(c=>{
+    const div = document.createElement('div');
+    div.className = 'amount' + (c.opened ? ' removed' : '');
+    div.innerHTML = `<div>${fmt(c.amount)}</div><div style="font-weight:800">${c.opened ? '✖' : ''}</div>`;
+    amountsList.appendChild(div);
+  });
+}
+
+function onCaseClick(caseId){
+  if(!game) return;
+  const c = game.cases.find(x => x.id === caseId);
+  if(!c) return;
+  // If chosen case not set yet, allow choosing your own case
+  if(!game.chosenCaseId){
+    game.chosenCaseId = caseId;
+    chosenDisplay.textContent = 'Case #' + caseId;
+    logHistory('You chose case #' + caseId + ' as your personal case.');
+    renderCases();
+    // enable Start Match (to start opening rounds)
+    openCaseBtn.disabled = true;
+    startMatchBtn.disabled = false;
+    return;
+  }
+
+  // If chosen and in round, allow opening other cases (not your chosen)
+  if(c.id === game.chosenCaseId || c.opened) return;
+  if(game.currentRoundIndex === -1){ alert('Start the match first.'); return; }
+  // if still allowed to open this round
+  if(game.openedCountThisRound >= game.openInRound){ alert('You have opened all cases for this round.'); return; }
+  // Opening case
+  openSpecificCase(c.id);
+}
+
+function openSpecificCase(caseId){
+  const c = game.cases.find(x => x.id === caseId);
+  if(!c || c.opened) return;
+  c.opened = true;
+  game.openedCountThisRound++;
+  logHistory('Opened case #' + c.id + ' — ' + fmt(c.amount));
+  renderCases();
+  renderAmounts();
+  updateRoundInfo();
+
+  // After each opened case, check if we finished the round
+  if(game.openedCountThisRound >= game.openInRound){
+    // compute bank offer after short pause (simulate)
+    setTimeout(()=> { makeBankOffer(); }, 400);
+  }
+}
+
+startMatchBtn.onclick = () => {
+  if(!game) { alert('Enter access code and start game.'); return; }
+  if(!game.chosenCaseId){ alert('Pick your personal case first by clicking one case.'); return; }
+  if(game.currentRoundIndex === -1){
+    advanceRound();
+    startMatchBtn.textContent = 'Pick cases to open';
+    startMatchBtn.disabled = true;
+  }
+};
+
+function advanceRound(){
+  game.currentRoundIndex++;
+  if(game.currentRoundIndex >= game.rounds.length){
+    // Final stage
+    roundLabel.textContent = 'Final';
+    roundInfo.style.display = 'block';
+    openCountInfo.textContent = 'Final stage — open remaining cases until only your case remains or accept deal.';
+    // Allow opening until last
+    game.openInRound = game.cases.filter(c=>!c.opened && c.id!==game.chosenCaseId).length;
+    game.openedCountThisRound = 0;
+    openCaseBtn.disabled = false;
+    return;
+  }
+  game.openInRound = game.rounds[game.currentRoundIndex];
+  game.openedCountThisRound = 0;
+  roundLabel.textContent = (game.currentRoundIndex+1);
+  roundInfo.style.display = 'block';
+  updateRoundInfo();
+  openCaseBtn.disabled = false;
+}
+
+function updateRoundInfo(){
+  openCountInfo.textContent = `Round ${game.currentRoundIndex+1}: open ${game.openInRound} cases — you opened ${game.openedCountThisRound}.`;
+}
+
+/* Make bank offer */
+function makeBankOffer(){
+  // compute average of remaining amounts
+  const remaining = game.cases.filter(c=>!c.opened).map(c=>c.amount);
+  const avg = remaining.reduce((a,b)=>a+b,0)/remaining.length;
+
+  // multiplier increases by round to tempt / escalate
+  const roundIndex = Math.max(0, game.currentRoundIndex);
+  const base = 0.45; // initial % of expected value
+  const increase = 0.10; // per round
+  const multiplier = Math.min(0.95, base + roundIndex * increase + Math.random()*0.06); // add slight randomness
+
+  const offer = Math.round(avg * multiplier * 100) / 100;
+  game.bankOffers.push(offer);
+  offerValueEl.textContent = fmt(offer);
+  dealBtn.disabled = false;
+  noDealBtn.disabled = false;
+  logHistory(`Bank offers ${fmt(offer)} (multiplier ~${(multiplier*100).toFixed(0)}%).`);
+
+  // show modal with bank offer
+  showOfferModal(offer);
+}
+
+/* Offer modal */
+function showOfferModal(amount){
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>Bank Offer</h3>
+      <p>The bank offers you: <strong>${fmt(amount)}</strong></p>
+      <div style="margin-top:10px; display:flex; gap:10px; justify-content:flex-end;">
+        <button id="modalDeal" class="btn green">DEAL</button>
+        <button id="modalNoDeal" class="btn red">NO DEAL</button>
+      </div>
+      <div style="margin-top:12px; color:var(--muted); font-size:13px;">Tip: if you take the deal it's over and your amount is bank payout.</div>
+    </div>
+  `;
+  modalRoot.innerHTML = '';
+  modalRoot.appendChild(modal);
+  modalRoot.style.display = 'block';
+
+  document.getElementById('modalDeal').onclick = () => {
+    takeDeal(amount);
+    closeModal();
+  };
+  document.getElementById('modalNoDeal').onclick = () => {
+    logHistory('You said: No Deal.');
+    closeModal();
+    // advance to next round or continue opening
+    game.openedCountThisRound = 0;
+    // move on to next round
+    advanceRound();
+  };
+}
+
+function closeModal(){ modalRoot.innerHTML=''; modalRoot.style.display='none'; }
+
+/* Player takes bank offer */
+function takeDeal(amount){
+  // Give coins (or update coins) and end game
+  logHistory('You accepted the deal: ' + fmt(amount));
+  // award coins corresponding to amount (simple conversion)
+  if(currentUser){
+    const existing = Number(localStorage.getItem(COINS_KEY+'_'+currentUser) || 0);
+    const add = Math.floor(amount/1000); // convert currency to coins (example)
+    localStorage.setItem(COINS_KEY+'_'+currentUser, String(existing + add));
+    coinsValue.textContent = String(existing + add);
+  }
+  // reveal player's case
+  const playerCase = game.cases.find(c=>c.id === game.chosenCaseId);
+  setTimeout(()=> {
+    alert('Game over. Your case contained ' + fmt(playerCase.amount) + '. You took the bank offer of ' + fmt(amount) + '.');
+    endGame();
+  }, 300);
+}
+
+/* Open a random allowed case (button) - instruct player to click a case instead, but keep this as helper */
+openCaseBtn.onclick = () => {
+  if(!game) return;
+  // open next unopened non-chosen case - choose the first available to keep simple
+  const candidate = game.cases.find(c => !c.opened && c.id !== game.chosenCaseId);
+  if(!candidate){ alert('No available cases to open.'); return; }
+  openSpecificCase(candidate.id);
+  // If round finished and still not handled, make bank offer will be triggered at end of round
+  // If all but one left, reveal final stage
+  if(game.cases.filter(c=>!c.opened && c.id !== game.chosenCaseId).length === 0){
+    // final: reveal
+    revealBtn.disabled = false;
+    openCaseBtn.disabled = true;
+    roundInfo.style.display = false;
+  }
+};
+
+dealBtn.onclick = () => {
+  const offer = game.bankOffers[game.bankOffers.length-1];
+  if(!offer) return;
+  takeDeal(offer);
+};
+
+noDealBtn.onclick = () => {
+  // hide offer and advance to next round
+  dealBtn.disabled = true; noDealBtn.disabled = true;
+  logHistory('No Deal clicked — continue the game.');
+  advanceRound();
+  closeModal();
+};
+
+/* Reveal player's case */
+revealBtn.onclick = () => {
+  const playerCase = game.cases.find(c=>c.id === game.chosenCaseId);
+  if(!playerCase) return;
+  alert('Your case contained ' + fmt(playerCase.amount) + '. Game over.');
+  logHistory('Game ended. Your case: ' + fmt(playerCase.amount));
+  // award coins based on prize
+  if(currentUser){
+    const existing = Number(localStorage.getItem(COINS_KEY+'_'+currentUser) || 0);
+    const add = Math.floor(playerCase.amount/1000);
+    localStorage.setItem(COINS_KEY+'_'+currentUser, String(existing + add));
+    coinsValue.textContent = String(existing + add);
+  }
+  endGame();
+};
+
+/* End/cleanup */
+function endGame(){
+  // disable interactions
+  openCaseBtn.disabled = true;
+  dealBtn.disabled = true;
+  noDealBtn.disabled = true;
+  revealBtn.disabled = true;
+  startMatchBtn.disabled = true;
+  // show summary modal
+  showSummaryModal();
+}
+
+function showSummaryModal(){
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>Game summary</h3>
+      <div style="margin-top:6px;">Thank you for playing. See history below.</div>
+      <div style="margin-top:12px; max-height:240px; overflow:auto; border-radius:8px; padding:8px; border:1px solid #eef2ff; background:#fff;">
+        ${game.history.map(h=>`<div style="padding:6px 0;border-bottom:1px dashed #eef2ff">${h}</div>`).join('')}
+      </div>
+      <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:8px;">
+        <button id="modalClose" class="btn">Close</button>
+      </div>
+    </div>
+  `;
+  modalRoot.innerHTML = '';
+  modalRoot.appendChild(modal);
+  modalRoot.style.display = 'block';
+  document.getElementById('modalClose').onclick = () => { closeModal(); };
+}
+
+/* Simple logging */
+function logHistory(text){
+  const ts = new Date().toLocaleTimeString();
+  game.history.push(`[${ts}] ${text}`);
+  historyBox.innerHTML = game.history.slice().reverse().map(t=>`<div style="padding:6px 0;border-bottom:1px dashed #f1f5f9">${t}</div>`).join('');
+}
+
+/* Helper: initialize a demo if user is already logged and enters code */
+document.addEventListener('DOMContentLoaded', ()=> {
+  // For quick demo: if user registers and uses code '1234' they start
+});
+
+/* Start: allow selecting case by clicking generated cases — but only after game created.
+   So we create a small helper to ensure user can click cases after game start. */
+
+// We also allow the user to click any case to choose it before starting match.
+function openSpecificCaseGUI(caseId){
+  openSpecificCase(caseId);
+}
+
+/* The prototype intentionally keeps logic front-end only and simple.
+   Good defaults: the demo access code is '1234' (see footer),
+   or 'VIP2025' for special coin bonus. */
+
+</script>
 </body>
 </html>
