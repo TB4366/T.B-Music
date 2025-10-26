@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Skins Shop — Voorbeeld</title>
-  <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .card-img { width:72px; height:72px; object-fit:cover; border-radius:8px; }
@@ -56,13 +55,12 @@
   </template>
 
   <script>
-    // Inline JSON-data (voorheen bundles.json)
     const bundles = [
       {
         "id": "10000_coin_700_dna_2000_arena_event_token_1_skin_gashoot",
         "name": "gashoot",
         "price": 8.99,
-        "image": "https://i.imgur.com/yourimage1.png",
+        "image": "https://i.imgur.com/UwZJj6g.png",
         "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)",
         "items": ["10000 coin", "700 dna", "2000 arena_event_token", "1 skin_gashoot"]
       },
@@ -70,7 +68,7 @@
         "id": "5200_dna_1_skin_jack_odoom_1_skin_swamp_watcher",
         "name": "jack_odoom",
         "price": 22.99,
-        "image": "https://i.imgur.com/yourimage2.png",
+        "image": "https://i.imgur.com/TuX3y6P.png",
         "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)",
         "items": ["5200 dna", "1 skin_jack_odoom", "1 skin_swamp_watcher"]
       },
@@ -78,7 +76,7 @@
         "id": "27000_coin_1_skin_flame_gremlin",
         "name": "flame_gremlin",
         "price": 17.99,
-        "image": "https://i.imgur.com/yourimage3.png",
+        "image": "https://i.imgur.com/e1QHzPz.png",
         "note": "No extra payment / taxes / secret charges asked when bought from biteyt (@mgbite.yt)",
         "items": ["27000 coin", "1 skin_flame_gremlin"]
       }
@@ -131,7 +129,6 @@
       render(filtered);
     });
 
-    // Initial render
     render(bundles);
   </script>
 </body>
