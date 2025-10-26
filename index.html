@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Skin Prices — voorbeeld</title>
+  <title>SkinPrices — ronde skins</title>
   <style>
     :root{
       --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#00d1b2;
@@ -24,26 +24,19 @@
     .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
     .filters{display:flex;gap:8px;align-items:center}
     .select{background:var(--card);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:8px}
-    .thumb{height:120px;border-radius:8px;background:#0b1220;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .thumb img{width:100%;height:100%;object-fit:cover}
-    .meta{display:flex;justify-content:space-between;align-items:center}
-    .name{font-weight:600;font-size:15px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:24px;justify-items:center}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border-radius:16px;padding:18px 12px;border:1px solid rgba(255,255,255,0.05);width:200px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:transform 0.2s ease, box-shadow 0.2s ease}
+    .card:hover{transform:translateY(-4px);box-shadow:0 0 12px rgba(0,255,200,0.1)}
+    .thumb{width:120px;height:120px;border-radius:50%;background:#0b1220;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:10px;}
+    .thumb::before{content:"";position:absolute;inset:0;border-radius:50%;padding:3px;background:linear-gradient(135deg,#00d1b2,#3bd1ff);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
+    .thumb img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    .name{font-weight:600;font-size:15px;margin-top:6px}
     .rarity{font-size:12px;color:var(--muted)}
-    .price-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
-    .price{font-weight:700}
-    .change{font-size:13px;padding:6px 8px;border-radius:999px;font-weight:700}
+    .price{margin-top:6px;font-weight:700}
+    .change{font-size:13px;padding:6px 8px;border-radius:999px;font-weight:700;margin-top:8px;display:inline-block}
     .up{background:rgba(34,197,94,0.12);color:#9ff1c4;border:1px solid rgba(34,197,94,0.12)}
     .down{background:rgba(239,68,68,0.08);color:#ffb3b3;border:1px solid rgba(239,68,68,0.06)}
-    footer{padding:18px 28px;color:var(--muted);font-size:13px}
-    .pager{display:flex;gap:8px;align-items:center}
-    .page-btn{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
-    @media (max-width:560px){
-      .search input{width:120px}
-      header{padding:12px}
-      main{padding:14px}
-    }
+    footer{padding:18px 28px;color:var(--muted);font-size:13px;text-align:center}
   </style>
 </head>
 <body>
@@ -52,13 +45,13 @@
       <div class="logo">SK</div>
       <div>
         <div class="title">SkinPrices</div>
-        <div style="font-size:12px;color:var(--muted)">Realtime skin prijzen — voorbeeld</div>
+        <div style="font-size:12px;color:var(--muted)">Ronde skin-kaarten — voorbeeld</div>
       </div>
     </div>
 
     <div class="controls">
-      <div class="search" title="Zoek skins">
-        🔍 <input id="q" placeholder="Zoek (naam, collectie...)" />
+      <div class="search">
+        🔍 <input id="q" placeholder="Zoek skins..." />
       </div>
       <button class="btn" id="refreshBtn">Vernieuwen</button>
     </div>
@@ -76,171 +69,67 @@
           <option value="classified">Classified</option>
           <option value="covert">Covert</option>
         </select>
-
-        <select id="sortBy" class="select">
-          <option value="price_desc">Prijs: Hoog → Laag</option>
-          <option value="price_asc">Prijs: Laag → Hoog</option>
-          <option value="change_desc">Stijging eerst</option>
-          <option value="name_asc">Naam A → Z</option>
-        </select>
       </div>
 
       <div style="color:var(--muted);font-size:13px">Tonen <span id="count">0</span> items</div>
     </div>
 
-    <section class="grid" id="grid">
-      <!-- kaarten worden hier door JS toegevoegd -->
-    </section>
-
-    <div style="height:18px"></div>
-
-    <div style="display:flex;justify-content:center;align-items:center">
-      <div class="pager" id="pager">
-        <button class="page-btn" id="prev">Vorige</button>
-        <div style="padding:8px 12px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.03)" id="pageInfo">Pagina 1</div>
-        <button class="page-btn" id="next">Volgende</button>
-      </div>
-    </div>
+    <section class="grid" id="grid"></section>
   </main>
 
   <footer>
-    Voorbeeldimplementatie — vervang de voorbeelddata door jouw eigen API-gegevens of JSON.
+    Voorbeeld met ronde skinweergave. Vervang voorbeelddata door je echte API-data.
   </footer>
 
   <script>
-    // --- voorbeelddata (vervang door echte API/responses) ---
     const SKINS = [
-      {id:1,name:"AK-47 | Redline",rarity:"classified",price:12.34,change_pct:2.3,img:"https://via.placeholder.com/400x250?text=AK-47+Redline"},
-      {id:2,name:"M4A1-S | Knight",rarity:"covert",price:245.99,change_pct:-1.2,img:"https://via.placeholder.com/400x250?text=M4A1-S+Knight"},
-      {id:3,name:"AWP | Asiimov",rarity:"covert",price:135.50,change_pct:4.8,img:"https://via.placeholder.com/400x250?text=AWP+Asiimov"},
-      {id:4,name:"P90 | Death by Kitty",rarity:"mil-spec",price:0.65,change_pct:-0.5,img:"https://via.placeholder.com/400x250?text=P90+Kitty"},
-      {id:5,name:"CZ75-Auto | Victoria",rarity:"restricted",price:2.45,change_pct:0.6,img:"https://via.placeholder.com/400x250?text=CZ75-Victoria"},
-      {id:6,name:"Desert Eagle | Blaze",rarity:"classified",price:56.00,change_pct:-3.4,img:"https://via.placeholder.com/400x250?text=Deagle+Blaze"},
-      {id:7,name:"Glock-18 | Fade",rarity:"covert",price:420.00,change_pct:1.1,img:"https://via.placeholder.com/400x250?text=Glock+Fade"},
-      {id:8,name:"USP-S | Cortex",rarity:"restricted",price:3.10,change_pct:0.0,img:"https://via.placeholder.com/400x250?text=USP-S+Cortex"},
-      {id:9,name:"P250 | Asiimov",rarity:"industrial",price:0.25,change_pct:7.5,img:"https://via.placeholder.com/400x250?text=P250+Asiimov"},
-      {id:10,name:"FAMAS | Commemoration",rarity:"consumer",price:0.03,change_pct:-0.1,img:"https://via.placeholder.com/400x250?text=FAMAS+Commemoration"}
+      {name:"Jack O'Doom", rarity:"covert", price:45.5, change_pct:3.2, img:"https://via.placeholder.com/256x256.png?text=Jack+O'Doom"},
+      {name:"Swamp Watcher", rarity:"classified", price:19.3, change_pct:-1.4, img:"https://via.placeholder.com/256x256.png?text=Swamp+Watcher"},
+      {name:"AK-47 | Redline", rarity:"restricted", price:12.5, change_pct:0.8, img:"https://via.placeholder.com/256x256.png?text=AK-47+Redline"},
+      {name:"M4A1-S | Printstream", rarity:"covert", price:210.0, change_pct:5.2, img:"https://via.placeholder.com/256x256.png?text=M4A1S+Printstream"}
     ];
 
-    // --- state ---
-    let state = {
-      items: SKINS.slice(),
-      q: "",
-      rarity: "all",
-      sort: "price_desc",
-      page: 1,
-      perPage: 8
-    };
+    const grid = document.getElementById('grid');
+    const count = document.getElementById('count');
+    const q = document.getElementById('q');
+    const rarityFilter = document.getElementById('rarityFilter');
 
-    // --- helpers ---
-    function formatPrice(p){
-      // locale NL, EUR symbol — pas aan naar USD of andere valuta indien gewenst
-      return p >= 1 ? p.toLocaleString('nl-NL', {style:'currency', currency:'EUR', maximumFractionDigits:2}) : p.toFixed(2) + "€";
-    }
-
-    function renderCard(item){
-      const el = document.createElement('div');
-      el.className = 'card';
-      el.innerHTML = `
-        <div class="thumb"><img loading="lazy" src="${item.img}" alt="${item.name}"></div>
-        <div class="meta">
-          <div>
-            <div class="name">${item.name}</div>
-            <div class="rarity">${item.rarity}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="price">${formatPrice(item.price)}</div>
-            <div class="rarity" style="margin-top:6px">${item.id} in stock</div>
-          </div>
-        </div>
-        <div class="price-row">
-          <div style="font-size:13px;color:var(--muted)">Laatste wijziging</div>
-          <div class="change ${item.change_pct>=0? 'up':'down'}">${item.change_pct>=0? '▲': '▼'} ${Math.abs(item.change_pct).toFixed(1)}%</div>
-        </div>
-      `;
-      return el;
-    }
-
-    function applyFilters(){
-      const q = state.q.trim().toLowerCase();
-      let list = SKINS.filter(s=>{
-        if(state.rarity !== 'all' && s.rarity !== state.rarity) return false;
-        if(q && !(s.name.toLowerCase().includes(q) || s.rarity.toLowerCase().includes(q))) return false;
-        return true;
-      });
-
-      // sort
-      switch(state.sort){
-        case 'price_asc': list.sort((a,b)=>a.price-b.price); break;
-        case 'price_desc': list.sort((a,b)=>b.price-a.price); break;
-        case 'change_desc': list.sort((a,b)=>b.change_pct-a.change_pct); break;
-        case 'name_asc': list.sort((a,b)=>a.name.localeCompare(b.name)); break;
-      }
-
-      state.items = list;
-      state.page = 1; // reset page on filter change
-      render();
-    }
+    function formatPrice(p){return p.toLocaleString('nl-NL',{style:'currency',currency:'EUR'});}
 
     function render(){
-      const grid = document.getElementById('grid');
-      grid.innerHTML = '';
-      document.getElementById('count').textContent = state.items.length;
-
-      const start = (state.page-1) * state.perPage;
-      const end = start + state.perPage;
-      const pageItems = state.items.slice(start,end);
-
-      if(pageItems.length === 0){
-        grid.innerHTML = '<div style="grid-column:1/-1;padding:28px;text-align:center;color:var(--muted)">Geen resultaten</div>';
-      } else {
-        pageItems.forEach(it=> grid.appendChild(renderCard(it)));
-      }
-
-      const totalPages = Math.max(1, Math.ceil(state.items.length / state.perPage));
-      document.getElementById('pageInfo').textContent = `Pagina ${state.page} / ${totalPages}`;
-
-      document.getElementById('prev').disabled = state.page <= 1;
-      document.getElementById('next').disabled = state.page >= totalPages;
+      const term = q.value.toLowerCase();
+      const rarity = rarityFilter.value;
+      const filtered = SKINS.filter(s=>{
+        return (rarity==='all'||s.rarity===rarity) && s.name.toLowerCase().includes(term);
+      });
+      grid.innerHTML='';
+      filtered.forEach(s=>{
+        const card=document.createElement('div');
+        card.className='card';
+        card.innerHTML=`
+          <div class="thumb"><img src="${s.img}" alt="${s.name}"></div>
+          <div class="name">${s.name}</div>
+          <div class="rarity">${s.rarity}</div>
+          <div class="price">${formatPrice(s.price)}</div>
+          <div class="change ${s.change_pct>=0?'up':'down'}">${s.change_pct>=0?'▲':'▼'} ${Math.abs(s.change_pct).toFixed(1)}%</div>
+        `;
+        grid.appendChild(card);
+      });
+      count.textContent = filtered.length;
     }
 
-    // --- events ---
-    document.getElementById('q').addEventListener('input', e=>{
-      state.q = e.target.value;
-      applyFilters();
-    });
-
-    document.getElementById('rarityFilter').addEventListener('change', e=>{
-      state.rarity = e.target.value;
-      applyFilters();
-    });
-
-    document.getElementById('sortBy').addEventListener('change', e=>{
-      state.sort = e.target.value;
-      applyFilters();
-    });
-
-    document.getElementById('prev').addEventListener('click', ()=>{
-      if(state.page > 1){ state.page--; render(); }
-    });
-    document.getElementById('next').addEventListener('click', ()=>{
-      const totalPages = Math.max(1, Math.ceil(state.items.length / state.perPage));
-      if(state.page < totalPages){ state.page++; render(); }
-    });
-
-    document.getElementById('refreshBtn').addEventListener('click', ()=>{
-      // Simuleer verversen — in echte implementatie: fetch('/api/skins')...
-      // Hier: willekeurige prijswijziging simulatie
+    q.addEventListener('input',render);
+    rarityFilter.addEventListener('change',render);
+    document.getElementById('refreshBtn').addEventListener('click',()=>{
       SKINS.forEach(s=>{
-        const delta = (Math.random()-0.45) * 5; // -2.25 .. +2.75 %
-        s.change_pct = +( (s.change_pct + delta).toFixed(1) );
-        s.price = Math.max(0.01, +(s.price * (1 + delta/100)).toFixed(2));
+        const delta=(Math.random()-0.5)*4;
+        s.price=Math.max(0.01,+(s.price*(1+delta/100)).toFixed(2));
+        s.change_pct=delta;
       });
-      applyFilters();
+      render();
     });
 
-    // initial render
-    applyFilters();
+    render();
   </script>
 </body>
 </html>
