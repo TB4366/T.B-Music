@@ -1,121 +1,337 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Skin Shop — Voorbeeld</title>
-  <style>
-    :root{
-      --bg:#0f1724;
-      --card:#0b1220;
-      --muted:#9aa7bd;
-      --accent:#7c3aed;
-      --glass: rgba(255,255,255,0.03);
-      --radius:16px;
-      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#071029 0%, #091426 60%);color:#e6eef8;display:flex;align-items:center;justify-content:center;padding:48px}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Custom Skins — T.B Agar.io</title>
+<style>
+  :root{
+    --bg:#0b1220; --card:#071029; --muted:#9aa7bd; --accent:#7c3aed;
+    --glass: rgba(255,255,255,0.03); --text:#e6eef8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;
+  }
 
-    .store{
-      width:100%;max-width:1100px;
-      display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;
-    }
+  /* Header */
+  header{
+    display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-bottom:1px solid rgba(255,255,255,0.03);
+    gap:12px;
+  }
+  .logo-container{display:flex;align-items:center;gap:12px}
+  .logo{width:52px;height:52px;border-radius:50%;object-fit:cover}
+  .site-title{font-weight:700;font-size:1.15rem}
+  .header-actions{display:flex;gap:8px;align-items:center}
 
-    .card{
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border-radius:var(--radius);padding:16px;box-shadow:0 6px 20px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);overflow:hidden;transition:transform .22s ease,box-shadow .22s ease;
-    }
-    .card:hover{transform:translateY(-6px);box-shadow:0 14px 40px rgba(2,6,23,0.75)}
+  .toggle-btn{
+    border:0;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:700;
+    background:transparent;color:var(--muted);
+  }
+  .menu-btn{border:0;background:transparent;color:var(--muted);font-size:20px;padding:6px;cursor:pointer}
 
-    /* skin image */
-    .art{
-      width:100%;height:260px;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0b1220 0%, rgba(124,58,237,0.12) 100%);position:relative;border:1px solid rgba(255,255,255,0.04)
-    }
-    .art img{width:100%;height:100%;object-fit:cover;display:block}
+  /* Container */
+  main{max-width:1100px;margin:22px auto;padding:0 16px}
+  h1{margin:6px 0 12px;font-size:1.45rem}
 
-    /* metadata */
-    .meta{padding-top:12px}
-    .name{font-size:1.35rem;font-weight:700;letter-spacing:0.2px;margin:4px 0}
-    .desc{font-size:0.86rem;color:var(--muted);line-height:1.35;margin-bottom:12px}
+  /* Grid: always 3 columns on wide screens */
+  .grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:22px;
+    align-items:start;
+  }
+  @media (max-width:980px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:560px){ .grid{grid-template-columns:1fr} }
 
-    .controls{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  /* Card */
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:14px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.03);
+    box-shadow:0 8px 28px rgba(2,6,23,0.6);transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .card:focus-within, .card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(2,6,23,0.8)}
 
-    .price{font-weight:700;background:linear-gradient(90deg,#ffc857,#ff6b6b);-webkit-background-clip:text;background-clip:text;color:transparent}
+  /* Round image */
+  .avatar{
+    width:220px;height:220px;border-radius:50%;overflow:hidden;margin:0 auto;
+    display:block; background:linear-gradient(135deg,#061026, rgba(124,58,237,0.06));
+    border:6px solid rgba(255,255,255,0.03); transition:transform .35s ease, box-shadow .35s ease;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transition:transform .5s ease}
+  .card:hover .avatar img{transform:scale(1.03) rotate(-1deg)}
 
-    .btn{
-      padding:8px 12px;border-radius:10px;background:var(--accent);border:none;color:white;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(124,58,237,0.18);transition:transform .14s ease;}
-    .btn:active{transform:translateY(1px)}
+  /* name / price / desc */
+  .meta{margin-top:12px}
+  .name{font-size:1.05rem;font-weight:800;margin-bottom:6px;color:var(--text)}
+  .price{font-weight:900;color:linear-gradient(90deg,#ffc857,#ff6b6b);display:block;margin-bottom:6px}
+  .desc{font-size:0.88rem;color:var(--muted);line-height:1.35;margin-bottom:8px;min-height:44px}
 
-    /* small footer info */
-    .foot{margin-top:10px;font-size:0.78rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  /* small action row */
+  .row{display:flex;justify-content:center;gap:10px;align-items:center}
+  .btn{
+    background:var(--accent);color:white;border:0;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;
+    box-shadow:0 8px 20px rgba(124,58,237,0.14);transition:transform .12s ease;
+  }
+  .btn:active{transform:translateY(1px)}
+  .info-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:7px 10px;border-radius:10px;cursor:pointer}
 
-    /* page header */
-    header{width:100%;max-width:1100px;margin-bottom:18px;color:var(--muted);display:flex;align-items:center;justify-content:space-between}
-    header h1{color:#e6eef8;margin:0;font-size:1.35rem}
+  /* hover glow behind circle */
+  .avatar::after{
+    content:'';display:block;width:100%;height:100%;border-radius:50%;position:relative;top:-100%;left:0;
+    box-shadow:0 8px 40px rgba(124,58,237,0);transition:box-shadow .28s ease;
+    pointer-events:none;
+  }
+  .card:hover .avatar::after{box-shadow:0 18px 60px rgba(124,58,237,0.14)}
 
-    @media (max-width:560px){
-      .art{height:200px}
-      .name{font-size:1.15rem}
-    }
-  </style>
+  /* fade-in animation for cards */
+  .card{opacity:0;transform:translateY(8px)}
+  .card.visible{opacity:1;transform:none;transition:opacity .5s ease, transform .45s cubic-bezier(.2,.9,.2,1)}
+
+  /* Modal */
+  .modal-wrap{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60}
+  .modal-backdrop{position:absolute;inset:0;background:rgba(2,6,23,0.6);backdrop-filter: blur(2px)}
+  .modal{
+    position:relative;background:linear-gradient(180deg, #091226, #051026);border-radius:14px;padding:18px;
+    max-width:920px;width:95%;display:grid;grid-template-columns: 420px 1fr;gap:18px;border:1px solid rgba(255,255,255,0.04);
+    box-shadow:0 40px 120px rgba(2,6,23,0.8);
+  }
+  @media (max-width:920px){ .modal{grid-template-columns:1fr;max-width:720px} }
+
+  .modal .big-img{width:100%;height:420px;border-radius:12px;overflow:hidden;background:#071029;display:flex;align-items:center;justify-content:center}
+  .modal .big-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .modal .content{color:var(--text)}
+  .modal .content h2{margin:0 0 8px;font-size:1.25rem}
+  .modal .content p.desc{color:var(--muted);margin:8px 0 14px;line-height:1.45}
+  .modal .modal-actions{display:flex;gap:10px;align-items:center;margin-top:12px}
+
+  /* Light theme (body.dark inversed - they used 'dark' class to invert in example) */
+  body.light{
+    --bg:#f6f7fb; --card:#ffffff; --text:#0f1724; --muted:#55687c; --accent:#6b46c1;
+  }
+  body.light header{background:linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01))}
+  body.light .card{box-shadow:0 8px 26px rgba(6,10,14,0.06)}
+  body.light .modal{background:linear-gradient(180deg,#ffffff,#f7f8fb)}
+  body.light .modal .content p.desc{color:var(--muted)}
+
+  /* small accessibility and utilities */
+  .sr-only{position:absolute!important;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+</style>
 </head>
 <body>
-  <main>
-    <header>
-      <h1>Skin Shop — Voorbeeld</h1>
-      <div style="font-size:0.9rem">Made to match the layout you asked for</div>
-    </header>
 
-    <section class="store">
+<header>
+  <div class="logo-container">
+    <img src="IMG_2718.png" alt="Logo" class="logo" />
+    <div>
+      <div class="site-title">T.B Agar.io</div>
+      <div style="font-size:0.78rem;color:var(--muted)">Custom skins gallery</div>
+    </div>
+  </div>
 
-      <!-- Card 1: voorbeeld skin -->
-      <article class="card">
-        <figure class="art">
-          <!-- voorbeeld afbeelding: als je eigen skin wilt, vervang de src met jouw afbeelding -->
-          <img src="https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="Voorbeeld skin">
-        </figure>
+  <div class="header-actions" role="toolbar" aria-label="Header actions">
+    <button id="themeToggle" class="toggle-btn" aria-pressed="false" title="Wissel thema">🌙</button>
+    <button id="menuBtn" class="menu-btn" aria-expanded="false" aria-controls="menu">☰</button>
+  </div>
+</header>
 
-        <div class="meta">
-          <div class="name">Nebula Hunter</div>
-          <div class="desc">Een futuristische, paarse skin met glinsterende details en lichtgevende randen — perfect voor nachtmissies en show-off.</div>
+<main>
+  <h1>Custom Skins</h1>
 
-          <div class="controls">
-            <div class="price">€4.99</div>
-            <button class="btn">Koop</button>
-          </div>
+  <div class="grid" id="gallery" aria-live="polite"></div>
+</main>
 
-          <div class="foot">
-            <div>Rarity: <strong>Epic</strong></div>
-            <div>Voorraad: <strong>Onbeperkt</strong></div>
-          </div>
-        </div>
-      </article>
+<!-- Modal -->
+<div class="modal-wrap" id="modalWrap" aria-hidden="true">
+  <div class="modal-backdrop" id="modalBackdrop" tabindex="-1"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="big-img" id="modalImageWrap">
+      <img id="modalImage" src="" alt="">
+    </div>
+    <div class="content">
+      <h2 id="modalTitle">Naam Skin</h2>
+      <div style="font-weight:900;font-size:1rem;margin-top:6px" id="modalPrice">€0.00</div>
+      <p class="desc" id="modalDesc">Beschrijving...</p>
+      <div class="modal-actions">
+        <button class="btn" id="buyBtn">Koop nu</button>
+        <button class="info-btn" id="closeModal">Sluiten</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-      <!-- Card 2: extra voorbeeld -->
-      <article class="card">
-        <figure class="art">
-          <img src="https://images.unsplash.com/photo-1518779578993-ec3579fee39f?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="Voorbeeld skin 2">
-        </figure>
+<script>
+/* --- Data: jouw skins (gebruik bestaande bestandsnamen) --- */
+const skins = [
+  { name: "Baby Dragon", file: "IMG_4073.png", price: "€3.49", desc: "Een schattige, speelse dragon-skin met zachte schubben en felle accenten." },
+  { name: "Thor Hamer", file: "IMG_4027.jpeg", price: "€4.99", desc: "Donker metalen theme met bliksemeffecten rondom de hamer — krachtig en imposant." },
+  { name: "Sting Wasp", file: "IMG_4028.jpeg", price: "€2.99", desc: "Fel gele en zwarte patronen, geïnspireerd op de razendsnelle wespen." },
+  { name: "Fire Skeleton", file: "IMG_4024.jpeg", price: "€3.49", desc: "Skeletten en vurige lijnen combineren tot een angstaanjagende look." },
+  { name: "Fire Wolf", file: "IMG_4025.jpeg", price: "€3.99", desc: "Woeste wolfvormen met vurige manen — rauw en stijlvol." },
+  { name: "Captain Jay", file: "IMG_4026.jpeg", price: "€2.49", desc: "Knappe captain-stijl met marinierdetails en een coole uitstraling." },
+  { name: "Fire Art", file: "IMG_4022.jpeg", price: "€4.49", desc: "Abstracte vuurkunst met vloeiende overgangen en diepte." },
+  { name: "Mouth Fire Art", file: "IMG_3180.jpeg", price: "€3.25", desc: "Mond-illusies met vuuraccenten — perfect voor show-off momenten." },
+  { name: "Fire Snake", file: "IMG_4032.jpeg", price: "€2.99", desc: "Sinuoziteit en vuur gecombineerd tot een dodelijk elegante skin." },
+  { name: "The Tiger King", file: "IMG_4037.jpeg", price: "€5.49", desc: "Koninklijke tijgerpatronen met gouden details voor de ultieme leider." }
+];
 
-        <div class="meta">
-          <div class="name">Crimson Reaver</div>
-          <div class="desc">Donkere rode, agressieve texturen met metallic accenten. Staat geweldig op donkere mappen.</div>
+/* --- Helper: create gallery cards --- */
+const gallery = document.getElementById('gallery');
 
-          <div class="controls">
-            <div class="price">€2.99</div>
-            <button class="btn">Koop</button>
-          </div>
+skins.forEach((s, i) => {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.tabIndex = 0;
+  card.setAttribute('aria-labelledby', `skin-name-${i}`);
 
-          <div class="foot">
-            <div>Rarity: <strong>Rare</strong></div>
-            <div>Voorraad: <strong>12</strong></div>
-          </div>
-        </div>
-      </article>
+  // avatar
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  const img = document.createElement('img');
+  img.src = s.file;
+  img.alt = s.name;
+  img.loading = 'lazy';
+  avatar.appendChild(img);
 
-    </section>
+  // meta
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.id = `skin-name-${i}`;
+  name.textContent = s.name;
+  const price = document.createElement('div');
+  price.className = 'price';
+  price.textContent = s.price;
+  const desc = document.createElement('div');
+  desc.className = 'desc';
+  desc.textContent = s.desc;
 
-  </main>
+  // actions
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  const buy = document.createElement('button');
+  buy.className = 'btn';
+  buy.textContent = 'Koop';
+  buy.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    openModal(s);
+  });
+
+  const info = document.createElement('button');
+  info.className = 'info-btn';
+  info.textContent = 'Bekijk';
+  info.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    openModal(s);
+  });
+
+  row.appendChild(buy);
+  row.appendChild(info);
+
+  meta.appendChild(name);
+  meta.appendChild(price);
+  meta.appendChild(desc);
+  meta.appendChild(row);
+
+  card.appendChild(avatar);
+  card.appendChild(meta);
+
+  // clicking card opens modal
+  card.addEventListener('click', () => openModal(s));
+  // keyboard accessibility: Enter opens modal
+  card.addEventListener('keydown', (e) => { if (e.key === 'Enter') openModal(s); });
+
+  gallery.appendChild(card);
+
+  // add staggered reveal
+  setTimeout(()=> card.classList.add('visible'), 80 * i);
+});
+
+/* --- Modal logic --- */
+const modalWrap = document.getElementById('modalWrap');
+const modalImage = document.getElementById('modalImage');
+const modalTitle = document.getElementById('modalTitle');
+const modalPrice = document.getElementById('modalPrice');
+const modalDesc = document.getElementById('modalDesc');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const closeModalBtn = document.getElementById('closeModal');
+const buyBtn = document.getElementById('buyBtn');
+
+let lastFocused = null;
+
+function openModal(skin) {
+  lastFocused = document.activeElement;
+  modalImage.src = skin.file;
+  modalImage.alt = skin.name;
+  modalTitle.textContent = skin.name;
+  modalPrice.textContent = skin.price;
+  modalDesc.textContent = skin.desc;
+
+  modalWrap.style.display = 'flex';
+  modalWrap.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  // focus management
+  closeModalBtn.focus();
+}
+
+function closeModal() {
+  modalWrap.style.display = 'none';
+  modalWrap.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+  if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+}
+
+/* close handlers */
+modalBackdrop.addEventListener('click', closeModal);
+closeModalBtn.addEventListener('click', closeModal);
+buyBtn.addEventListener('click', () => {
+  // eenvoudige placeholder voor koop actie
+  alert(`Aankoop gestart voor ${modalTitle.textContent} — ${modalPrice.textContent}`);
+});
+
+/* keyboard: Esc to close modal */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (modalWrap.style.display === 'flex') closeModal();
+  }
+});
+
+/* --- Theme toggle (light/dark) --- */
+const themeToggle = document.getElementById('themeToggle');
+const saved = localStorage.getItem('site-theme') || 'dark';
+if (saved === 'light') {
+  document.body.classList.add('light');
+  themeToggle.textContent = '☀️';
+  themeToggle.setAttribute('aria-pressed','true');
+} else {
+  themeToggle.textContent = '🌙';
+  themeToggle.setAttribute('aria-pressed','false');
+}
+
+themeToggle.addEventListener('click', () => {
+  if (document.body.classList.contains('light')) {
+    document.body.classList.remove('light');
+    localStorage.setItem('site-theme', 'dark');
+    themeToggle.textContent = '🌙';
+    themeToggle.setAttribute('aria-pressed','false');
+  } else {
+    document.body.classList.add('light');
+    localStorage.setItem('site-theme', 'light');
+    themeToggle.textContent = '☀️';
+    themeToggle.setAttribute('aria-pressed','true');
+  }
+});
+
+/* optional: simple menu toggle (kept minimal) */
+const menuBtn = document.getElementById('menuBtn');
+menuBtn.addEventListener('click', () =>{
+  // placeholder if you want a dropdown later
+  alert('Menu knop — voeg hier je navigatie toe of verwijder deze alert.');
+});
+</script>
+
 </body>
 </html>
