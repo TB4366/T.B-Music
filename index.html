@@ -45,7 +45,7 @@
       <div class="logo">SK</div>
       <div>
         <div class="title">SkinPrices</div>
-        <div style="font-size:12px;color:var(--muted)">Ronde skin-kaarten — voorbeeld</div>
+        <div style="font-size:12px;color:var(--muted)">Ronde skin-kaarten — base64 afbeelding</div>
       </div>
     </div>
 
@@ -78,12 +78,15 @@
   </main>
 
   <footer>
-    Voorbeeld met ronde skinweergave. Vervang voorbeelddata door je echte API-data.
+    Voorbeeld met ronde skinweergave en base64-afbeelding.
   </footer>
 
   <script>
     const SKINS = [
-      {name:"Jack O'Doom", rarity:"covert", price:5.00, change_pct:3.2, img:"IMG_6174.webp"},
+      {
+        name:"Jack O'Doom", rarity:"covert", price:5.00, change_pct:3.2,
+        img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAYAAACNeh8kAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA..."
+      },
       {name:"Swamp Watcher", rarity:"classified", price:19.3, change_pct:-1.4, img:"https://via.placeholder.com/256x256.png?text=Swamp+Watcher"},
       {name:"AK-47 | Redline", rarity:"restricted", price:12.5, change_pct:0.8, img:"https://via.placeholder.com/256x256.png?text=AK-47+Redline"},
       {name:"M4A1-S | Printstream", rarity:"covert", price:210.0, change_pct:5.2, img:"https://via.placeholder.com/256x256.png?text=M4A1S+Printstream"}
@@ -108,8 +111,7 @@
         card.className='card';
         card.innerHTML=`
           <div class="thumb">
-            <img src="${s.img}" alt="${s.name}"
-                 onerror="this.onerror=null; this.src='https://via.placeholder.com/256.png?text=No+Image'; console.warn('Afbeelding niet gevonden:', this.src);" />
+            <img src="${s.img}" alt="${s.name}" />
           </div>
           <div class="name">${s.name}</div>
           <div class="rarity">${s.rarity}</div>
