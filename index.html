@@ -1,140 +1,165 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SkinPrices — ronde skins</title>
-  <style>
-    :root{
-      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#00d1b2;
-      --glass: rgba(255,255,255,0.03);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,#071026 0%, #071430 100%); color:#e6eef6; min-height:100vh;}
-    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);backdrop-filter: blur(6px);border-bottom:1px solid rgba(255,255,255,0.03)}
-    .brand{display:flex;align-items:center;gap:12px}
-    .logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#00d1b2,#3bd1ff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#06202a}
-    .title{font-size:18px;font-weight:600}
-    .controls{display:flex;gap:12px;align-items:center}
-    .search{background:var(--glass);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;gap:8px;color:var(--muted)}
-    .search input{background:transparent;border:0;outline:none;color:inherit;width:220px}
-    .btn{padding:8px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,#0ea5a7,#06b6d4);color:#012;cursor:pointer;font-weight:600}
-    main{padding:28px}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
-    .filters{display:flex;gap:8px;align-items:center}
-    .select{background:var(--card);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:24px;justify-items:center}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border-radius:16px;padding:18px 12px;border:1px solid rgba(255,255,255,0.05);width:200px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:transform 0.2s ease, box-shadow 0.2s ease}
-    .card:hover{transform:translateY(-4px);box-shadow:0 0 12px rgba(0,255,200,0.1)}
-    .thumb{width:120px;height:120px;border-radius:50%;background:#0b1220;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:10px;}
-    .thumb::before{content:"";position:absolute;inset:0;border-radius:50%;padding:3px;background:linear-gradient(135deg,#00d1b2,#3bd1ff);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
-    .thumb img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-    .name{font-weight:600;font-size:15px;margin-top:6px}
-    .rarity{font-size:12px;color:var(--muted)}
-    .price{margin-top:6px;font-weight:700}
-    .change{font-size:13px;padding:6px 8px;border-radius:999px;font-weight:700;margin-top:8px;display:inline-block}
-    .up{background:rgba(34,197,94,0.12);color:#9ff1c4;border:1px solid rgba(34,197,94,0.12)}
-    .down{background:rgba(239,68,68,0.08);color:#ffb3b3;border:1px solid rgba(239,68,68,0.06)}
-    footer{padding:18px 28px;color:var(--muted);font-size:13px;text-align:center}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skin Shop & SkinPrices</title>
+<style>
+:root {
+  --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#00d1b2;
+  --glass: rgba(255,255,255,0.03);
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}
+body {margin:0; background:linear-gradient(180deg,#071026 0%,#071430 100%); color:#e6eef6; min-height:100vh; padding:20px;}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px; background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent); border-bottom:1px solid rgba(255,255,255,0.03);}
+.brand{display:flex;align-items:center;gap:12px;}
+.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#00d1b2,#3bd1ff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#06202a;}
+.title{font-size:18px;font-weight:600;}
+.controls{display:flex;gap:12px;align-items:center;}
+input, select, button {padding:8px 12px; border-radius:999px; border:none; font-size:14px;}
+button{cursor:pointer; background:#0af; color:#000;}
+.search{background:var(--glass);display:flex;align-items:center;gap:8px;color:var(--muted);}
+.search input{background:transparent;border:0;outline:none;color:inherit;width:180px;}
+main{padding:20px 0;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:20px;justify-items:center;}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,0.05);width:160px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:transform 0.2s ease, box-shadow 0.2s ease;}
+.card:hover{transform:translateY(-4px);box-shadow:0 0 12px rgba(0,255,200,0.1);}
+.thumb{width:120px;height:120px;border-radius:50%;background:#0b1220;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:8px;}
+.thumb::before{content:"";position:absolute;inset:0;border-radius:50%;padding:3px;background:linear-gradient(135deg,#00d1b2,#3bd1ff);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
+.thumb img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.name{font-weight:600;font-size:14px;margin-top:4px;}
+.rarity{font-size:12px;color:var(--muted);}
+.price{margin-top:4px;font-weight:700;}
+.change{font-size:13px;padding:4px 6px;border-radius:999px;font-weight:700;margin-top:6px;display:inline-block;}
+.up{background:rgba(34,197,94,0.12);color:#9ff1c4;border:1px solid rgba(34,197,94,0.12);}
+.down{background:rgba(239,68,68,0.08);color:#ffb3b3;border:1px solid rgba(239,68,68,0.06);}
+footer{padding:12px;color:var(--muted);font-size:13px;text-align:center;margin-top:20px;}
+
+/* Purchased Skins */
+#purchasedSkins img{width:96px;height:96px;border-radius:50%;border:2px solid #0af;object-fit:cover;margin:4px;}
+
+/* Key input / coins */
+#currency{display:flex;gap:18px;align-items:center;justify-content:flex-end;font-size:16px;margin-bottom:12px;}
+.currencyItem{display:flex;gap:6px;align-items:center;background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;}
+#message{color:yellow;margin-bottom:8px;text-align:center;}
+</style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <div class="logo">SK</div>
-      <div>
-        <div class="title">SkinPrices</div>
-        <div style="font-size:12px;color:var(--muted)">Ronde skin-kaarten — base64 afbeelding</div>
-      </div>
+
+<header>
+  <div class="brand">
+    <div class="logo">SK</div>
+    <div>
+      <div class="title">Skin Shop</div>
+      <div style="font-size:12px;color:var(--muted)">Ronde skins met coins/money systeem</div>
     </div>
-
-    <div class="controls">
-      <div class="search">
-        🔍 <input id="q" placeholder="Zoek skins..." />
-      </div>
-      <button class="btn" id="refreshBtn">Vernieuwen</button>
+  </div>
+  <div class="controls">
+    <div class="search">
+      🔍 <input id="q" placeholder="Zoek skins..." />
     </div>
-  </header>
+    <button id="refreshBtn">Vernieuwen</button>
+  </div>
+</header>
 
-  <main>
-    <div class="toolbar">
-      <div class="filters">
-        <select id="rarityFilter" class="select">
-          <option value="all">Alle zeldzaamheden</option>
-          <option value="consumer">Consumer</option>
-          <option value="industrial">Industrial</option>
-          <option value="mil-spec">Mil-Spec</option>
-          <option value="restricted">Restricted</option>
-          <option value="classified">Classified</option>
-          <option value="covert">Covert</option>
-        </select>
-      </div>
+<div id="currency">
+  <div class="currencyItem">💰 <span id="money">0.00</span></div>
+  <div class="currencyItem">🪙 <span id="coins">0</span></div>
+</div>
 
-      <div style="color:var(--muted);font-size:13px">Tonen <span id="count">0</span> items</div>
-    </div>
+<div id="message">Voer je key in of browse skins hieronder</div>
+<div style="margin:8px 0 12px;">
+  <input id="keyInput" placeholder="Enter your key here">
+  <button onclick="loadKey()">Load Key</button>
+  <button onclick="clearKey()">Clear</button>
+</div>
 
-    <section class="grid" id="grid"></section>
-  </main>
+<main>
+  <section class="grid" id="skinsGrid"></section>
+  <div id="purchasedSection">
+    <div id="purchasedTitle" style="margin-top:20px; font-size:16px; text-decoration:underline;">Gekochte skins:</div>
+    <div id="purchasedSkins"></div>
+  </div>
+</main>
 
-  <footer>
-    Voorbeeld met ronde skinweergave en base64-afbeelding.
-  </footer>
+<footer>
+  Voorbeeld van ronde skinweergave met Skin Shop functionaliteit
+</footer>
 
-  <script>
-    const SKINS = [
-      {
-        name:"Jack O'Doom", rarity:"covert", price:5.00, change_pct:3.2,
-        img:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAYAAACNeh8kAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA..."
-      },
-      {name:"Swamp Watcher", rarity:"classified", price:19.3, change_pct:-1.4, img:"https://via.placeholder.com/256x256.png?text=Swamp+Watcher"},
-      {name:"AK-47 | Redline", rarity:"restricted", price:12.5, change_pct:0.8, img:"https://via.placeholder.com/256x256.png?text=AK-47+Redline"},
-      {name:"M4A1-S | Printstream", rarity:"covert", price:210.0, change_pct:5.2, img:"https://via.placeholder.com/256x256.png?text=M4A1S+Printstream"}
-    ];
+<script>
+// ================= SKINS DATA =================
+const SKINS = [
+  {id:1,name:"Jack O'Doom", rarity:"covert", price:5, img:"https://via.placeholder.com/256x256.png?text=Jack+O'Doom"},
+  {id:2,name:"Swamp Watcher", rarity:"classified", price:19, img:"https://via.placeholder.com/256x256.png?text=Swamp+Watcher"},
+  {id:3,name:"AK-47 | Redline", rarity:"restricted", price:12, img:"https://via.placeholder.com/256x256.png?text=AK-47+Redline"},
+  {id:4,name:"M4A1-S | Printstream", rarity:"covert", price:210, img:"https://via.placeholder.com/256x256.png?text=M4A1S+Printstream"}
+];
 
-    const grid = document.getElementById('grid');
-    const count = document.getElementById('count');
-    const q = document.getElementById('q');
-    const rarityFilter = document.getElementById('rarityFilter');
+// ================= USER DATA =================
+let currentKey=null, coins=0, money=0, owned=[];
 
-    function formatPrice(p){return p.toLocaleString('nl-NL',{style:'currency',currency:'EUR'});}
+// ================= UTIL =================
+function showMessage(msg){document.getElementById('message').textContent=msg;}
+function formatPrice(p){return p+' 🪙';}
 
-    function render(){
-      const term = q.value.toLowerCase();
-      const rarity = rarityFilter.value;
-      const filtered = SKINS.filter(s=>{
-        return (rarity==='all'||s.rarity===rarity) && s.name.toLowerCase().includes(term);
-      });
-      grid.innerHTML='';
-      filtered.forEach(s=>{
-        const card=document.createElement('div');
-        card.className='card';
-        card.innerHTML=`
-          <div class="thumb">
-            <img src="${s.img}" alt="${s.name}" />
-          </div>
-          <div class="name">${s.name}</div>
-          <div class="rarity">${s.rarity}</div>
-          <div class="price">${formatPrice(s.price)}</div>
-          <div class="change ${s.change_pct>=0?'up':'down'}">${s.change_pct>=0?'▲':'▼'} ${Math.abs(s.change_pct).toFixed(1)}%</div>
-        `;
-        grid.appendChild(card);
-      });
-      count.textContent = filtered.length;
+// ================= RENDER SKINS =================
+const skinsGrid=document.getElementById('skinsGrid');
+const purchasedContainer=document.getElementById('purchasedSkins');
+const qInput=document.getElementById('q');
+
+function renderSkins(){
+  const term=qInput.value.toLowerCase();
+  skinsGrid.innerHTML=''; purchasedContainer.innerHTML='';
+  SKINS.forEach(s=>{
+    const isOwned=owned.includes(s.id);
+    if(isOwned){
+      addPurchasedItem(s.img,s.name);
+      return;
     }
+    if(term && !s.name.toLowerCase().includes(term)) return;
 
-    q.addEventListener('input',render);
-    rarityFilter.addEventListener('change',render);
-    document.getElementById('refreshBtn').addEventListener('click',()=>{
-      SKINS.forEach(s=>{
-        const delta=(Math.random()-0.5)*4;
-        s.price=Math.max(0.01,+(s.price*(1+delta/100)).toFixed(2));
-        s.change_pct=delta;
-      });
-      render();
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`
+      <div class="thumb"><img src="${s.img}" alt="${s.name}"></div>
+      <div class="name">${s.name}</div>
+      <div class="rarity">${s.rarity}</div>
+      <div class="price">${formatPrice(s.price)}</div>
+    `;
+    card.addEventListener('click', ()=>{
+      if(!currentKey){ showMessage('Voer eerst je key in'); return; }
+      buySkin(s.id,s.price);
     });
+    skinsGrid.appendChild(card);
+  });
+  document.getElementById('coins').textContent=coins;
+  document.getElementById('money').textContent=money.toFixed(2);
+}
 
-    render();
-  </script>
+function addPurchasedItem(img,name){
+  const imgEl=document.createElement('img'); imgEl.src=img; imgEl.alt=name;
+  purchasedContainer.appendChild(imgEl);
+}
+
+// ================= BUY SKIN =================
+function buySkin(id,price){
+  if(coins<price){ showMessage('Niet genoeg coins'); return; }
+  coins-=price; owned.push(id); showMessage('✅ Skin gekocht!'); renderSkins();
+}
+
+// ================= KEY HANDLING =================
+function loadKey(){
+  const key=document.getElementById('keyInput').value.trim();
+  if(!key){ showMessage('Voer een key in'); return; }
+  currentKey=key; coins=100; money=50; owned=[]; showMessage('✅ Key geladen'); renderSkins();
+}
+function clearKey(){currentKey=null; coins=0; money=0; owned=[]; showMessage('Key gewist'); renderSkins();}
+
+// ================= EVENTS =================
+qInput.addEventListener('input',render);
+document.getElementById('refreshBtn').addEventListener('click',render);
+
+// Initial render
+renderSkins();
+</script>
 </body>
 </html>
