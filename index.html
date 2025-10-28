@@ -1,129 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <title>Legend Express Agar.io Extension</title>
-    <style>
-        /* Simpel menu bovenaan */
-        #legendMenu {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            z-index: 9999;
-            font-family: Arial, sans-serif;
-        }
-        #legendMenu button {
-            display: block;
-            margin: 5px 0;
-            padding: 5px 10px;
-            background: #1E90FF;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-        }
-        #legendMenu button:hover {
-            background: #104E8B;
-        }
-    </style>
-    <script>
-        const modVersion = '1.8';
-        const version = 2;
-
-        // Voeg het menu toe
-        function addLegendMenu() {
-            const menu = document.createElement('div');
-            menu.id = 'legendMenu';
-
-            const items = [
-                {text: 'Legend Mod Website', url: 'http://jimboy3100.github.io'},
-                {text: 'LM Library', url: 'https://github.com/jimboy3100/jimboy3100.github.io/'},
-                {text: 'Donate for Legend Mod', url: 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CM3GDVCW6PBF6'}
-            ];
-
-            items.forEach(item => {
-                const btn = document.createElement('button');
-                btn.textContent = item.text;
-                btn.onclick = () => window.open(item.url, '_blank');
-                menu.appendChild(btn);
-            });
-
-            document.body.appendChild(menu);
-        }
-
-        // Laad scripts of HTML
-        function loadScript(url) {
-            return fetch(url)
-                .then(response => response.text())
-                .then(scriptText => {
-                    const scriptEl = document.createElement('script');
-                    scriptEl.textContent = scriptText;
-                    document.body.appendChild(scriptEl);
-                });
-        }
-
-        function loadHTML(url) {
-            fetch(url)
-                .then(response => response.text())
-                .then(htmlText => {
-                    const injected = htmlText.replace("</body>", `<script>init('${modVersion}');</script></body>`);
-                    document.open();
-                    document.write(injected);
-                    document.close();
-                    setTimeout(() => history.pushState(null, null, "/"), 2000);
-                });
-        }
-
-        // Redirect agar.io root naar legendmod
-        if (location.host === "agar.io" && location.pathname === "/") {
-            const url = window.location.href;
-            localStorage.setItem("url", url);
-            location.href = "https://agar.io/legendmod" + location.hash;
-        }
-
-        // Bepaal mode
-        const mode = location.pathname.slice(1);
-        let modWebsite;
-
-        switch(mode) {
-            case 'normal': modWebsite = 'https://agar.io'; loadHTML(modWebsite); break;
-            case 'hslo': modWebsite = 'https://hslo.io/install.user.js'; loadScript(modWebsite); break;
-            case 'agartool': modWebsite = 'https://www.agartool.io/agartool.user.js'; loadScript(modWebsite); break;
-            case 'vanilla': modWebsite = 'http://imasters.org.ru/agar/js/vanilla.user.js'; loadScript(modWebsite); break;
-            case 'ogario': modWebsite = 'https://cdn.ogario.ovh/v4/beta/ogario.v4.user.js'; loadScript(modWebsite); break;
-            case 'delta': modWebsite = 'https://deltav4.glitch.me/v4/index.html'; loadHTML(modWebsite); break;
-            case 'neo': 
-                modWebsite = 'https://www.legendmod.ml/play.html?' + version; 
-                loadHTML(modWebsite);
-                setTimeout(() => loadScript('https://jimboy3100.github.io/ExampleScripts/Neoprivate.js'), 5000);
-                break;
-            case 'mobile': 
-                modWebsite = 'https://www.legendmod.ml/play.html';
-                loadHTML(modWebsite);
-                setTimeout(() => loadScript('https://www.legendmod.ml/ExampleScripts/gamepad.user.js'), 5000);
-                break;
-            case 'captcha': modWebsite = 'https://www.legendmod.ml/ogario/captcha.html'; loadHTML(modWebsite); break;
-            case 'legendmod':
-            default: modWebsite = 'https://www.legendmod.ml/play.html?' + version; loadHTML(modWebsite); break;
-        }
-
-        window.onload = addLegendMenu;
-
-        function getParameterByName(name, url) {
-            if (!url) url = window.location.href;
-            name = name.replace(/[\[\]]/g, "\\$&");
-            const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-                  results = regex.exec(url);
-            if (!results) return null;
-            if (!results[2]) return '';
-            return decodeURIComponent(results[2].replace(/\+/g, " "));
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agar.io Officiële Premium Skins</title>
+  <style>
+    body {
+      font-family: system-ui, Segoe UI, Roboto, Arial;
+      margin: 20px;
+      background: #f7f7fb;
+      color: #222;
+    }
+    h1 { text-align: center; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .card {
+      background: white;
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      margin-bottom: 8px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: #0056cc; }
+    .info {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 30px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+  </style>
 </head>
 <body>
+  <h1>Agar.io Officiële Premium Skins</h1>
+  <p style="text-align:center;">
+    Hieronder zie je enkele **officiële premium skins** van Agar.io; als je op “Koop officieel” klikt word je naar de officiële winkel van Agar.io geleid.  
+    Het bedrag dat je betaalt gaat rechtstreeks naar Agar.io, en de skin wordt door Agar.io aan jouw account gekoppeld.
+  </p>
+
+  <div id="skins" class="grid"></div>
+
+  <div class="info">
+    <h3>Hoe koop je een premium skin?</h3>
+    <ol>
+      <li>Open de officiële Agar.io-app of ga naar <a href="https://agar.io" target="_blank">agar.io</a>.</li>
+      <li>Log in met je account.</li>
+      <li>Ga naar de in-game Store / Shop.</li>
+      <li>Kies de gewenste skin en betaal via de aangeboden officiële betaalmethode (bijv. Play Store / App Store). :contentReference[oaicite:1]{index=1}</li>
+      <li>Na de betaling wordt de skin automatisch toegevoegd aan je account door Agar.io zelf.</li>
+    </ol>
+    <p><strong>Belangrijk:</strong> Deze pagina int zelf geen geld en wij voegen geen skins handmatig toe. Wij verwijzen alleen door naar de officiële Agar.io-winkel.</p>
+  </div>
+
+  <script>
+    // Voorbeeldlijst met officiële premium skins (op basis van lijst publieke wiki) :contentReference[oaicite:2]{index=2}
+    const skins = [
+      { id: 'venus', name: 'Venus', premium: true, img: 'https://example.com/skins/venus.png' },
+      { id: 'mercury', name: 'Mercury', premium: true, img: 'https://example.com/skins/mercury.png' },
+      { id: 'banana', name: 'Banana', premium: true, img: 'https://example.com/skins/banana.png' }
+      // … voeg meer skins toe
+    ];
+
+    function renderSkins(){
+      const container = document.getElementById('skins');
+      skins.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${s.img}" alt="${s.name}">
+          <h3>${s.name}</h3>
+          <p>${s.premium ? '💎 Premium Skin' : ''}</p>
+          <button onclick="buySkin('${s.id}')">Koop officieel</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function buySkin(id){
+      const skin = skins.find(s => s.id === id);
+      if (!skin) return;
+      const choice = confirm(
+        `Je wordt doorgestuurd naar de officiële Agar.io-winkel om de skin "${skin.name}" te kopen.\n` +
+        `Na betaling wordt de skin door Agar.io toegevoegd aan je account.`
+      );
+      if(choice){
+        // voorbeeldlink naar Google Play Agar.io-app
+        window.open('https://play.google.com/store/apps/details?id=com.miniclip.agar.io', '_blank');
+      }
+    }
+
+    renderSkins();
+  </script>
 </body>
 </html>
