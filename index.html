@@ -1,114 +1,306 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agar.io Officiële Premium Skins</title>
-  <style>
-    body {
-      font-family: system-ui, Segoe UI, Roboto, Arial;
-      margin: 20px;
-      background: #f7f7fb;
-      color: #222;
-    }
-    h1 { text-align: center; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .card {
-      background: white;
-      padding: 16px;
-      border-radius: 14px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-      text-align: center;
-    }
-    img {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 8px;
-    }
-    button {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 8px;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover { background: #0056cc; }
-    .info {
-      background: white;
-      padding: 16px;
-      border-radius: 12px;
-      margin-top: 30px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Live verkiezingsgrafiek — partijen kabinet</title>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 18px; }
+  h1 { font-size: 1.4rem; margin-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
+  .card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+  label { display:block; margin-top:8px; font-weight:600; }
+  input[type="text"], input[type="number"], select { width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd; }
+  button { margin-top:10px; padding:8px 12px; border-radius:8px; border:0; cursor:pointer; background:#0b5fff; color:#fff; }
+  .small { font-size:0.86rem; color:#555; margin-top:8px; }
+  #liveFrame { width:100%; height:380px; border:0; border-radius:8px; }
+  .party-row { display:flex; gap:8px; align-items:center; margin-top:8px; }
+  .party-row input { width:70%; }
+  .controls { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+</style>
 </head>
 <body>
-  <h1>Agar.io Officiële Premium Skins</h1>
-  <p style="text-align:center;">
-    Hieronder zie je enkele **officiële premium skins** van Agar.io; als je op “Koop officieel” klikt word je naar de officiële winkel van Agar.io geleid.  
-    Het bedrag dat je betaalt gaat rechtstreeks naar Agar.io, en de skin wordt door Agar.io aan jouw account gekoppeld.
-  </p>
 
-  <div id="skins" class="grid"></div>
+<h1>Live verkiezingsgrafiek — partijen in (oorspronkelijk) kabinet</h1>
+<p class="small">Startlijst: PVV, VVD, NSC, BBB (partijen die bij het Schoof-kabinet betrokken waren). De grafiek toont percentages (0–100%). Je kunt handmatig invoeren of een JSON-endpoint laten pollen. Open de pagina en zet "Auto-poll" aan om automatisch bij te werken terwijl de pagina openstaat.</p>
 
-  <div class="info">
-    <h3>Hoe koop je een premium skin?</h3>
-    <ol>
-      <li>Open de officiële Agar.io-app of ga naar <a href="https://agar.io" target="_blank">agar.io</a>.</li>
-      <li>Log in met je account.</li>
-      <li>Ga naar de in-game Store / Shop.</li>
-      <li>Kies de gewenste skin en betaal via de aangeboden officiële betaalmethode (bijv. Play Store / App Store). :contentReference[oaicite:1]{index=1}</li>
-      <li>Na de betaling wordt de skin automatisch toegevoegd aan je account door Agar.io zelf.</li>
-    </ol>
-    <p><strong>Belangrijk:</strong> Deze pagina int zelf geen geld en wij voegen geen skins handmatig toe. Wij verwijzen alleen door naar de officiële Agar.io-winkel.</p>
+<div class="grid">
+  <div>
+    <div class="card">
+      <label>Partijen en percentages</label>
+
+      <div id="partiesContainer">
+        <!-- Dynamische rijen komen hier -->
+      </div>
+
+      <button id="addPartyBtn">+ Partij toevoegen</button>
+      <div class="controls">
+        <button id="applyBtn">Pas waarden toe op grafiek</button>
+        <button id="resetBtn" style="background:#888">Reset naar 0%</button>
+      </div>
+
+      <label>Manual JSON endpoint (optioneel)</label>
+      <input id="jsonUrl" type="text" placeholder="Plak hier een JSON URL die { 'PVV':12, 'VVD':23, ... } teruggeeft" />
+      <div class="controls">
+        <label style="margin:0;"><input id="autoPoll" type="checkbox"> Auto-poll</label>
+        <select id="intervalSelect">
+          <option value="15">15s</option>
+          <option value="30" selected>30s</option>
+          <option value="60">60s</option>
+          <option value="120">120s</option>
+        </select>
+        <button id="testFetch" style="background:#0a8">Test fetch</button>
+      </div>
+
+      <div class="small">
+        <strong>Hoe te gebruiken:</strong> voer percentages in per partij en klik "Pas waarden toe".  
+        Of plak een JSON URL die een simple key→value object teruggeeft (partijnaam → percentage).  
+        Als fetch faalt door CORS, kun je resultaat handmatig plakken.
+      </div>
+
+      <label style="margin-top:12px">Handmatig plakken van JSON-resultaat</label>
+      <textarea id="manualJson" rows="4" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ddd;" placeholder='{"VVD":25,"PVV":30,"NSC":20,"BBB":5}'></textarea>
+      <div class="controls">
+        <button id="pasteBtn" style="background:#d35400">Plak naar grafiek</button>
+      </div>
+
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3 style="margin:0 0 8px 0">Instructies & bronnen</h3>
+      <p class="small">Officiële uitslagen & datasets: Kiesraad / Verkiezingsuitslagen. Live-nieuws en tussentijdse tellingen vaak op NOS en ANP. Deze pagina kan alleen zichzelf updaten terwijl hij openstaat; ik kan niet in deze chat automatisch berichten posten. :contentReference[oaicite:3]{index=3}</p>
+      <p class="small"><strong>Tip:</strong> als je een betrouwbare JSON-bron hebt, plak de URL en zet Auto-poll aan.</p>
+    </div>
   </div>
 
-  <script>
-    // Voorbeeldlijst met officiële premium skins (op basis van lijst publieke wiki) :contentReference[oaicite:2]{index=2}
-    const skins = [
-      { id: 'venus', name: 'Venus', premium: true, img: 'https://example.com/skins/venus.png' },
-      { id: 'mercury', name: 'Mercury', premium: true, img: 'https://example.com/skins/mercury.png' },
-      { id: 'banana', name: 'Banana', premium: true, img: 'https://example.com/skins/banana.png' }
-      // … voeg meer skins toe
-    ];
+  <div>
+    <div class="card">
+      <canvas id="chart" height="160"></canvas>
+    </div>
 
-    function renderSkins(){
-      const container = document.getElementById('skins');
-      skins.forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <img src="${s.img}" alt="${s.name}">
-          <h3>${s.name}</h3>
-          <p>${s.premium ? '💎 Premium Skin' : ''}</p>
-          <button onclick="buySkin('${s.id}')">Koop officieel</button>
-        `;
-        container.appendChild(card);
-      });
+    <div class="card" style="margin-top:12px;">
+      <h3 style="margin:0 0 8px 0">NOS livestream (naast de grafiek)</h3>
+      <!-- NOS livestream embedpagina — als iframe werkt -->
+      <iframe id="liveFrame" src="https://nos.nl/livestream/2588139-kijk-mee-achter-de-schermen-bij-nos-nederland-kiest" title="NOS livestream" allowfullscreen></iframe>
+      <p class="small">Als de iframe niet laadt kun je NOS livestream of andere nieuwszenders openen in een nieuw tabblad. :contentReference[oaicite:4]{index=4}</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* --- begin: instellingen en init data --- */
+const initialParties = [
+  { name: "PVV", pct: 0 },
+  { name: "VVD", pct: 0 },
+  { name: "NSC", pct: 0 },
+  { name: "BBB", pct: 0 }
+];
+
+let parties = JSON.parse(JSON.stringify(initialParties));
+let pollTimer = null;
+
+/* --- Chart.js opzetten --- */
+const ctx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: parties.map(p => p.name),
+    datasets: [{
+      label: 'Stem% (schatting/uitslag)',
+      data: parties.map(p => p.pct),
+      borderRadius: 8,
+      barThickness: 28
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+    },
+    animation: { duration: 300 },
+    plugins: { legend: { display: false } }
+  }
+});
+
+/* --- DOM helpers --- */
+function refreshPartiesForm() {
+  const container = document.getElementById('partiesContainer');
+  container.innerHTML = '';
+  parties.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.className = 'party-row';
+    row.innerHTML = `
+      <input type="text" value="${escapeHtml(p.name)}" data-idx="${idx}" class="party-name" />
+      <input type="number" min="0" max="100" value="${p.pct}" data-idx="${idx}" class="party-pct" />
+      <button data-idx="${idx}" class="rm" style="background:#b83131;color:#fff;border-radius:6px;padding:6px 8px;border:0;cursor:pointer;">−</button>
+    `;
+    container.appendChild(row);
+  });
+
+  // add listeners
+  container.querySelectorAll('.party-name').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = +e.target.dataset.idx;
+      parties[i].name = e.target.value;
+      updateChart();
+    });
+  });
+  container.querySelectorAll('.party-pct').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = +e.target.dataset.idx;
+      let v = Number(e.target.value);
+      if (isNaN(v)) v = 0;
+      parties[i].pct = Math.max(0, Math.min(100, v));
+      updateChart();
+    });
+  });
+  container.querySelectorAll('.rm').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const i = +e.target.dataset.idx;
+      parties.splice(i,1);
+      refreshPartiesForm();
+      updateChart();
+    });
+  });
+}
+
+function updateChart() {
+  chart.data.labels = parties.map(p => p.name || '(naam)');
+  chart.data.datasets[0].data = parties.map(p => Number(p.pct) || 0);
+  chart.update();
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+/* --- functies voor JSON parsing / toepassen --- */
+function applyJsonObject(obj) {
+  // obj: { "VVD": 23, "PVV": 30, ... }
+  // match partijen op naam (exact) en update pct; als nieuwe partij: push
+  Object.entries(obj).forEach(([name,val]) => {
+    const found = parties.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const pct = Number(val) || 0;
+    if (found) {
+      found.pct = Math.max(0, Math.min(100, pct));
+    } else {
+      parties.push({ name, pct: Math.max(0, Math.min(100, pct)) });
     }
+  });
+  refreshPartiesForm();
+  updateChart();
+}
 
-    function buySkin(id){
-      const skin = skins.find(s => s.id === id);
-      if (!skin) return;
-      const choice = confirm(
-        `Je wordt doorgestuurd naar de officiële Agar.io-winkel om de skin "${skin.name}" te kopen.\n` +
-        `Na betaling wordt de skin door Agar.io toegevoegd aan je account.`
-      );
-      if(choice){
-        // voorbeeldlink naar Google Play Agar.io-app
-        window.open('https://play.google.com/store/apps/details?id=com.miniclip.agar.io', '_blank');
+function tryParseJsonText(txt) {
+  try {
+    return JSON.parse(txt);
+  } catch(e) {
+    // ook proberen key:value zonder quotes — poging met eval (veiligheid: beperkt)
+    try {
+      // eslint-disable-next-line no-new-func
+      const f = new Function('return (' + txt + ')');
+      return f();
+    } catch(err) {
+      return null;
+    }
+  }
+}
+
+/* --- polling / fetch --- */
+async function fetchAndApply(url) {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json') || contentType.includes('text/json')) {
+      const data = await res.json();
+      // data might be structured — try to find a simple map
+      if (typeof data === 'object' && !Array.isArray(data)) {
+        applyJsonObject(data);
+        return { ok:true, msg:'JSON toegepast' };
+      } else {
+        return { ok:false, msg:'JSON niet in verwacht key→value formaat' };
+      }
+    } else {
+      // poging: probeer tekst en parse
+      const txt = await res.text();
+      const parsed = tryParseJsonText(txt);
+      if (parsed && typeof parsed === 'object') {
+        applyJsonObject(parsed);
+        return { ok:true, msg:'Tekst geparsed en toegepast' };
+      } else {
+        return { ok:false, msg:'Response geen JSON of parseerbaar object' };
       }
     }
+  } catch (err) {
+    return { ok:false, msg: String(err) };
+  }
+}
 
-    renderSkins();
-  </script>
+function startPolling() {
+  const url = document.getElementById('jsonUrl').value.trim();
+  if (!url) { alert('Plak eerst een JSON URL'); document.getElementById('autoPoll').checked = false; return; }
+  const interval = Number(document.getElementById('intervalSelect').value) * 1000;
+  if (pollTimer) clearInterval(pollTimer);
+  // eerste fetch onmiddellijk
+  fetchAndApply(url).then(r => {
+    console.info('fetch result:', r);
+  });
+  pollTimer = setInterval(() => {
+    fetchAndApply(url).then(r => console.info('polled:', r));
+  }, interval);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+/* --- event listeners --- */
+document.getElementById('addPartyBtn').addEventListener('click', () => {
+  parties.push({ name: 'NieuwePartij', pct: 0 });
+  refreshPartiesForm();
+  updateChart();
+});
+
+document.getElementById('applyBtn').addEventListener('click', () => {
+  // waarden zijn al in parties door inputs — alleen chart updaten
+  updateChart();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  parties.forEach(p => p.pct = 0);
+  refreshPartiesForm();
+  updateChart();
+});
+
+document.getElementById('pasteBtn').addEventListener('click', () => {
+  const txt = document.getElementById('manualJson').value;
+  const parsed = tryParseJsonText(txt);
+  if (!parsed || typeof parsed !== 'object') { alert('Geen geldig JSON object gevonden. Gebruik bijv. {\"VVD\":25,\"PVV\":30}'); return; }
+  applyJsonObject(parsed);
+});
+
+document.getElementById('testFetch').addEventListener('click', async () => {
+  const url = document.getElementById('jsonUrl').value.trim();
+  if (!url) { alert('Plak een JSON URL om te testen.'); return; }
+  const result = await fetchAndApply(url);
+  alert(result.ok ? 'Fetch geslaagd: ' + result.msg : 'Fetch mislukt: ' + result.msg);
+});
+
+document.getElementById('autoPoll').addEventListener('change', (e) => {
+  if (e.target.checked) startPolling(); else stopPolling();
+});
+
+/* --- init --- */
+refreshPartiesForm();
+updateChart();
+
+/* --- eind --- */
+</script>
+
 </body>
 </html>
