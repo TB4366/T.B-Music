@@ -3,304 +3,268 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Live verkiezingsgrafiek — partijen kabinet</title>
-
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
+<title>Demo: Game Helper UI (Veilige demo)</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 18px; }
-  h1 { font-size: 1.4rem; margin-bottom: 6px; }
-  .grid { display: grid; grid-template-columns: 420px 1fr; gap: 16px; align-items: start; }
-  .card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-  label { display:block; margin-top:8px; font-weight:600; }
-  input[type="text"], input[type="number"], select { width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd; }
-  button { margin-top:10px; padding:8px 12px; border-radius:8px; border:0; cursor:pointer; background:#0b5fff; color:#fff; }
-  .small { font-size:0.86rem; color:#555; margin-top:8px; }
-  #liveFrame { width:100%; height:380px; border:0; border-radius:8px; }
-  .party-row { display:flex; gap:8px; align-items:center; margin-top:8px; }
-  .party-row input { width:70%; }
-  .controls { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  :root{
+    --blue:#0b84ff; --green:#218838; --muted:#f5f6f8;
+    --card-bg:#fff; --panel:#dfefff;
+  }
+  body{font-family: Inter, "Segoe UI", Roboto, Arial; margin:0; background:#f2f4f7; color:#222;}
+  .container{max-width:900px;margin:28px auto;padding:18px;}
+  .header{background:linear-gradient(90deg,#0b7dff,#0057d9);color:white;padding:18px;border-radius:8px 8px 0 0;}
+  h1{margin:0;font-size:20px;}
+  .card{background:var(--card-bg);border-radius:8px;padding:18px;box-shadow:0 6px 18px rgba(15,20,30,0.06);}
+  .form-row{margin:12px 0;display:flex;gap:12px;flex-wrap:wrap;}
+  .field{flex:1;min-width:220px;}
+  label{display:block;font-size:13px;color:#333;margin-bottom:6px;}
+  input[type="text"], select, input[type="number"]{
+    width:100%;padding:10px;border-radius:6px;border:1px solid #e1e4e8;background:white;
+    box-sizing:border-box;font-size:15px;
+  }
+  .small{max-width:220px;}
+  .actions{display:flex;gap:12px;align-items:center;margin-top:14px;}
+  .btn{padding:10px 16px;border-radius:8px;border:none;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--green);color:white;flex:1;}
+  .btn-verify{background:#0b84ff;color:white;}
+  .note{font-size:13px;color:#666;margin-top:6px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  /* modal */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;padding:16px;}
+  .modal{background:white;border-radius:8px;max-width:760px;width:100%;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,0.28);}
+  .modal h2{margin:0 0 8px 0;}
+  table{width:100%;border-collapse:collapse;margin-top:10px;}
+  td,th{padding:10px;border:1px solid #e9eef4;font-size:14px;}
+  .modal-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:12px;}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#edf7f0;color:#0a7b3a;font-weight:600}
+  .grid-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:720px){ .grid-two{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
-
-<h1>Live verkiezingsgrafiek — partijen in (oorspronkelijk) kabinet</h1>
-<p class="small">Startlijst: PVV, VVD, NSC, BBB (partijen die bij het Schoof-kabinet betrokken waren). De grafiek toont percentages (0–100%). Je kunt handmatig invoeren of een JSON-endpoint laten pollen. Open de pagina en zet "Auto-poll" aan om automatisch bij te werken terwijl de pagina openstaat.</p>
-
-<div class="grid">
-  <div>
-    <div class="card">
-      <label>Partijen en percentages</label>
-
-      <div id="partiesContainer">
-        <!-- Dynamische rijen komen hier -->
-      </div>
-
-      <button id="addPartyBtn">+ Partij toevoegen</button>
-      <div class="controls">
-        <button id="applyBtn">Pas waarden toe op grafiek</button>
-        <button id="resetBtn" style="background:#888">Reset naar 0%</button>
-      </div>
-
-      <label>Manual JSON endpoint (optioneel)</label>
-      <input id="jsonUrl" type="text" placeholder="Plak hier een JSON URL die { 'PVV':12, 'VVD':23, ... } teruggeeft" />
-      <div class="controls">
-        <label style="margin:0;"><input id="autoPoll" type="checkbox"> Auto-poll</label>
-        <select id="intervalSelect">
-          <option value="15">15s</option>
-          <option value="30" selected>30s</option>
-          <option value="60">60s</option>
-          <option value="120">120s</option>
-        </select>
-        <button id="testFetch" style="background:#0a8">Test fetch</button>
-      </div>
-
-      <div class="small">
-        <strong>Hoe te gebruiken:</strong> voer percentages in per partij en klik "Pas waarden toe".  
-        Of plak een JSON URL die een simple key→value object teruggeeft (partijnaam → percentage).  
-        Als fetch faalt door CORS, kun je resultaat handmatig plakken.
-      </div>
-
-      <label style="margin-top:12px">Handmatig plakken van JSON-resultaat</label>
-      <textarea id="manualJson" rows="4" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ddd;" placeholder='{"VVD":25,"PVV":30,"NSC":20,"BBB":5}'></textarea>
-      <div class="controls">
-        <button id="pasteBtn" style="background:#d35400">Plak naar grafiek</button>
-      </div>
-
+  <div class="container">
+    <div class="header">
+      <h1>Start a Game Helper — Demo (veilig, geen echte bots)</h1>
     </div>
 
     <div class="card" style="margin-top:12px;">
-      <h3 style="margin:0 0 8px 0">Instructies & bronnen</h3>
-      <p class="small">Officiële uitslagen & datasets: Kiesraad / Verkiezingsuitslagen. Live-nieuws en tussentijdse tellingen vaak op NOS en ANP. Deze pagina kan alleen zichzelf updaten terwijl hij openstaat; ik kan niet in deze chat automatisch berichten posten. :contentReference[oaicite:3]{index=3}</p>
-      <p class="small"><strong>Tip:</strong> als je een betrouwbare JSON-bron hebt, plak de URL en zet Auto-poll aan.</p>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="btn btn-verify" id="verifyBtn">Verify Key</button>
+        <button class="btn" id="checkSessions">Check Running Sessions</button>
+        <div style="margin-left:auto" class="pill">Demo Mode</div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="secretKey">Console ID / Skin Key</label>
+          <input id="secretKey" type="text" placeholder="skin_LY193fTv">
+        </div>
+        <div class="small">
+          <label>&nbsp;</label>
+          <button class="btn" id="btnVerifyInline">Verify</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="region">Choose Bot Region</label>
+          <select id="region">
+            <option>EU Central 1</option>
+            <option>EU West 3</option>
+            <option>US East 1</option>
+            <option>US West 1</option>
+            <option>AP Southeast 1</option>
+            <option>SA East 1</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="mode">Set Bot Game Mode</label>
+          <select id="mode">
+            <option>Burst</option>
+            <option>Classic</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="party">Put Bot Party (URL or code)</label>
+          <input id="party" type="text" placeholder="https://r.agar.io/?party=AR7RWB">
+        </div>
+
+        <div class="field">
+          <label for="targetType">Set Bot Target</label>
+          <select id="targetType">
+            <option>Follow Player (put UID)</option>
+            <option>Follow Position</option>
+            <option>Wander</option>
+          </select>
+          <input id="targetUid" type="text" placeholder="enter UID (optional)" style="margin-top:8px;">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div style="flex:1">
+          <label><input type="checkbox" id="massBoost" checked> Turn on 3x Mass Boost Big</label>
+          <div class="note">Big Tracker Models: Trackmodel v4 (demo)</div>
+        </div>
+      </div>
+
+      <div class="form-row grid-two">
+        <div>
+          <label for="useTime">Set Bot UseTime (Minutes)</label>
+          <input id="useTime" type="number" min="1" value="5">
+        </div>
+        <div>
+          <label for="power">Set Bot Power (helpers count)</label>
+          <input id="power" type="number" min="1" value="50">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="startBtn">Start (Demo)</button>
+      </div>
+
+      <p class="note">Deze demo verzendt alleen gegevens naar een generieke API-endpoint. Gebruik nooit echte keys op onbekende servers.</p>
+    </div>
+
+    <!-- Response log -->
+    <div class="card" style="margin-top:14px;">
+      <h3>Response Log</h3>
+      <pre id="log" style="height:160px;overflow:auto;background:#fbfdff;padding:12px;border-radius:6px;">Ready.</pre>
     </div>
   </div>
 
-  <div>
-    <div class="card">
-      <canvas id="chart" height="160"></canvas>
-    </div>
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div style="text-align:center;margin-bottom:6px;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#cdeed1" stroke-width="2" fill="#f7fffb"/><path d="M7 13l3 3 7-7" stroke="#2e9a4e" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2>Bot Key Verified</h2>
+      <p>Here are your Full Console ID or Secret Key Details (demo):</p>
 
-    <div class="card" style="margin-top:12px;">
-      <h3 style="margin:0 0 8px 0">NOS livestream (naast de grafiek)</h3>
-      <!-- NOS livestream embedpagina — als iframe werkt -->
-      <iframe id="liveFrame" src="https://nos.nl/livestream/2588139-kijk-mee-achter-de-schermen-bij-nos-nederland-kiest" title="NOS livestream" allowfullscreen></iframe>
-      <p class="small">Als de iframe niet laadt kun je NOS livestream of andere nieuwszenders openen in een nieuw tabblad. :contentReference[oaicite:4]{index=4}</p>
+      <table>
+        <tr><th>Your UID</th><td id="tblUid">—</td></tr>
+        <tr><th>Your Secret Key</th><td id="tblKey">—</td></tr>
+        <tr><th>4K CustomSkins Subscription</th><td id="tblSubs">—</td></tr>
+        <tr><th>Free Skin Credits</th><td id="tblCredits">—</td></tr>
+        <tr><th>Bot Minutes</th><td id="tblBotMins">—</td></tr>
+        <tr><th>4K CustomSkins Expiry Date</th><td id="tblExpiry">—</td></tr>
+        <tr><th>Follow/tracker Bot Expiry Date</th><td id="tblTracker">—</td></tr>
+      </table>
+
+      <div class="modal-actions">
+        <button class="btn" id="modalAdd">Add Botting (demo)</button>
+        <button class="btn" id="modalOk">OK</button>
+      </div>
     </div>
   </div>
-</div>
 
 <script>
-/* --- begin: instellingen en init data --- */
-const initialParties = [
-  { name: "PVV", pct: 0 },
-  { name: "VVD", pct: 0 },
-  { name: "NSC", pct: 0 },
-  { name: "BBB", pct: 0 }
-];
+/*
+  Demo script:
+  - Simuleert verificatie. 
+  - Als je een echte server hebt en toestemming, vervang VERIFY_URL door jouw endpoint.
+  - Nooit echte keys op onbekende servers plaatsen.
+*/
+const VERIFY_URL = "https://api.example.com/verify-key"; // placeholder: vervang alleen als je eigen server hebt.
 
-let parties = JSON.parse(JSON.stringify(initialParties));
-let pollTimer = null;
+const log = (txt)=> {
+  const el = document.getElementById('log');
+  el.textContent = (new Date()).toLocaleTimeString() + " — " + txt + "\n" + el.textContent;
+};
 
-/* --- Chart.js opzetten --- */
-const ctx = document.getElementById('chart').getContext('2d');
-const chart = new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: parties.map(p => p.name),
-    datasets: [{
-      label: 'Stem% (schatting/uitslag)',
-      data: parties.map(p => p.pct),
-      borderRadius: 8,
-      barThickness: 28
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    scales: {
-      x: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
-    },
-    animation: { duration: 300 },
-    plugins: { legend: { display: false } }
-  }
+function openModal(data){
+  document.getElementById('tblUid').textContent = data.uid || "n/a";
+  document.getElementById('tblKey').textContent = data.key || "n/a";
+  document.getElementById('tblSubs').textContent = data.subscription || "Inactive";
+  document.getElementById('tblCredits').textContent = data.credits ?? 0;
+  document.getElementById('tblBotMins').textContent = data.botMinutes || "Unlimited (demo)";
+  document.getElementById('tblExpiry').textContent = data.expiry || "2038-01-01 (demo)";
+  document.getElementById('tblTracker').textContent = data.trackerExpiry || "2025-11-22 (demo)";
+  document.getElementById('modalBackdrop').style.display = 'flex';
+}
+
+function closeModal(){ document.getElementById('modalBackdrop').style.display='none'; }
+
+document.getElementById('btnVerifyInline').addEventListener('click', ()=> doVerify());
+document.getElementById('verifyBtn').addEventListener('click', ()=> doVerify());
+document.getElementById('modalOk').addEventListener('click', closeModal);
+document.getElementById('modalAdd').addEventListener('click', ()=> {
+  alert("Add Botting: demo action (no real botting).");
+  closeModal();
 });
 
-/* --- DOM helpers --- */
-function refreshPartiesForm() {
-  const container = document.getElementById('partiesContainer');
-  container.innerHTML = '';
-  parties.forEach((p, idx) => {
-    const row = document.createElement('div');
-    row.className = 'party-row';
-    row.innerHTML = `
-      <input type="text" value="${escapeHtml(p.name)}" data-idx="${idx}" class="party-name" />
-      <input type="number" min="0" max="100" value="${p.pct}" data-idx="${idx}" class="party-pct" />
-      <button data-idx="${idx}" class="rm" style="background:#b83131;color:#fff;border-radius:6px;padding:6px 8px;border:0;cursor:pointer;">−</button>
-    `;
-    container.appendChild(row);
-  });
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  const payload = gatherForm();
+  // Demo: we only log and simulate a server response.
+  log("Start requested (demo). Payload: " + JSON.stringify(payload));
+  alert("Start (demo): this UI does NOT start real bots. Replace with your own server if you have permission.");
+});
 
-  // add listeners
-  container.querySelectorAll('.party-name').forEach(el => {
-    el.addEventListener('input', e => {
-      const i = +e.target.dataset.idx;
-      parties[i].name = e.target.value;
-      updateChart();
-    });
-  });
-  container.querySelectorAll('.party-pct').forEach(el => {
-    el.addEventListener('input', e => {
-      const i = +e.target.dataset.idx;
-      let v = Number(e.target.value);
-      if (isNaN(v)) v = 0;
-      parties[i].pct = Math.max(0, Math.min(100, v));
-      updateChart();
-    });
-  });
-  container.querySelectorAll('.rm').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const i = +e.target.dataset.idx;
-      parties.splice(i,1);
-      refreshPartiesForm();
-      updateChart();
-    });
-  });
+/* Gather form fields */
+function gatherForm(){
+  return {
+    key: document.getElementById('secretKey').value.trim(),
+    region: document.getElementById('region').value,
+    mode: document.getElementById('mode').value,
+    party: document.getElementById('party').value,
+    targetType: document.getElementById('targetType').value,
+    targetUid: document.getElementById('targetUid').value,
+    massBoost: document.getElementById('massBoost').checked,
+    useTime: Number(document.getElementById('useTime').value),
+    power: Number(document.getElementById('power').value)
+  };
 }
 
-function updateChart() {
-  chart.data.labels = parties.map(p => p.name || '(naam)');
-  chart.data.datasets[0].data = parties.map(p => Number(p.pct) || 0);
-  chart.update();
-}
+/* Verify key: if you have a real API, you can send fetch() to VERIFY_URL.
+   Here we ALWAYS simulate unless VERIFY_URL is replaced by you. */
+async function doVerify(){
+  const key = document.getElementById('secretKey').value.trim();
+  if(!key){ alert("Vul eerst een key in (demo)."); return; }
 
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
+  log("Verifying key (demo): " + key);
 
-/* --- functies voor JSON parsing / toepassen --- */
-function applyJsonObject(obj) {
-  // obj: { "VVD": 23, "PVV": 30, ... }
-  // match partijen op naam (exact) en update pct; als nieuwe partij: push
-  Object.entries(obj).forEach(([name,val]) => {
-    const found = parties.find(p => p.name.toLowerCase() === name.toLowerCase());
-    const pct = Number(val) || 0;
-    if (found) {
-      found.pct = Math.max(0, Math.min(100, pct));
-    } else {
-      parties.push({ name, pct: Math.max(0, Math.min(100, pct)) });
-    }
-  });
-  refreshPartiesForm();
-  updateChart();
-}
-
-function tryParseJsonText(txt) {
+  // If you want to connect to your own server, uncomment the fetch block and ensure CORS + HTTPS + auth on server.
+  // --- Real server example (DO NOT USE for third-party servers) ---
+  /*
   try {
-    return JSON.parse(txt);
-  } catch(e) {
-    // ook proberen key:value zonder quotes — poging met eval (veiligheid: beperkt)
-    try {
-      // eslint-disable-next-line no-new-func
-      const f = new Function('return (' + txt + ')');
-      return f();
-    } catch(err) {
-      return null;
-    }
+    const resp = await fetch(VERIFY_URL, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ secretKey: key })
+    });
+    if(!resp.ok) throw new Error("Server returned " + resp.status);
+    const data = await resp.json();
+    openModal(data);
+    log("Server verification success: " + JSON.stringify(data));
+    return;
+  } catch(err){
+    log("Server verify error: " + err.message);
+    alert("Verify failed: " + err.message);
+    return;
   }
+  */
+
+  // --- Simulated verification response (for demo only) ---
+  const simulated = {
+    uid: "66464ffd-a57c-496c-b60f-79ecc0d82a4a",
+    key: key,
+    subscription: "Active",
+    credits: 0,
+    botMinutes: "Unlimited Normal/Big Bots",
+    expiry: "2038-01-08 (time left: 4450 days)",
+    trackerExpiry: "2025-11-22 (time left: 20 days)"
+  };
+  // small delay to feel real
+  await new Promise(r=>setTimeout(r,600));
+  openModal(simulated);
+  log("Key verified (simulated). UID: " + simulated.uid);
 }
 
-/* --- polling / fetch --- */
-async function fetchAndApply(url) {
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json') || contentType.includes('text/json')) {
-      const data = await res.json();
-      // data might be structured — try to find a simple map
-      if (typeof data === 'object' && !Array.isArray(data)) {
-        applyJsonObject(data);
-        return { ok:true, msg:'JSON toegepast' };
-      } else {
-        return { ok:false, msg:'JSON niet in verwacht key→value formaat' };
-      }
-    } else {
-      // poging: probeer tekst en parse
-      const txt = await res.text();
-      const parsed = tryParseJsonText(txt);
-      if (parsed && typeof parsed === 'object') {
-        applyJsonObject(parsed);
-        return { ok:true, msg:'Tekst geparsed en toegepast' };
-      } else {
-        return { ok:false, msg:'Response geen JSON of parseerbaar object' };
-      }
-    }
-  } catch (err) {
-    return { ok:false, msg: String(err) };
-  }
-}
-
-function startPolling() {
-  const url = document.getElementById('jsonUrl').value.trim();
-  if (!url) { alert('Plak eerst een JSON URL'); document.getElementById('autoPoll').checked = false; return; }
-  const interval = Number(document.getElementById('intervalSelect').value) * 1000;
-  if (pollTimer) clearInterval(pollTimer);
-  // eerste fetch onmiddellijk
-  fetchAndApply(url).then(r => {
-    console.info('fetch result:', r);
-  });
-  pollTimer = setInterval(() => {
-    fetchAndApply(url).then(r => console.info('polled:', r));
-  }, interval);
-}
-
-function stopPolling() {
-  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-}
-
-/* --- event listeners --- */
-document.getElementById('addPartyBtn').addEventListener('click', () => {
-  parties.push({ name: 'NieuwePartij', pct: 0 });
-  refreshPartiesForm();
-  updateChart();
-});
-
-document.getElementById('applyBtn').addEventListener('click', () => {
-  // waarden zijn al in parties door inputs — alleen chart updaten
-  updateChart();
-});
-
-document.getElementById('resetBtn').addEventListener('click', () => {
-  parties.forEach(p => p.pct = 0);
-  refreshPartiesForm();
-  updateChart();
-});
-
-document.getElementById('pasteBtn').addEventListener('click', () => {
-  const txt = document.getElementById('manualJson').value;
-  const parsed = tryParseJsonText(txt);
-  if (!parsed || typeof parsed !== 'object') { alert('Geen geldig JSON object gevonden. Gebruik bijv. {\"VVD\":25,\"PVV\":30}'); return; }
-  applyJsonObject(parsed);
-});
-
-document.getElementById('testFetch').addEventListener('click', async () => {
-  const url = document.getElementById('jsonUrl').value.trim();
-  if (!url) { alert('Plak een JSON URL om te testen.'); return; }
-  const result = await fetchAndApply(url);
-  alert(result.ok ? 'Fetch geslaagd: ' + result.msg : 'Fetch mislukt: ' + result.msg);
-});
-
-document.getElementById('autoPoll').addEventListener('change', (e) => {
-  if (e.target.checked) startPolling(); else stopPolling();
-});
-
-/* --- init --- */
-refreshPartiesForm();
-updateChart();
-
-/* --- eind --- */
+/* Security notes shown in console for developer */
+console.log("DEMO: This page is a safe UI demonstration. Do not use it to automate or bot on third-party services without permission.");
 </script>
-
 </body>
 </html>
