@@ -1,106 +1,202 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Agar.io Config Viewer (read-only)</title>
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; background:#f6f8fb; color:#0b1220;}
-    header { margin-bottom: 12px; }
-    .skin { background: white; border-radius:8px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.08); margin-bottom:10px; display:flex; gap:12px; align-items:center;}
-    .thumb { width:72px; height:72px; background:#eee; display:flex; align-items:center; justify-content:center; border-radius:8px; overflow:hidden;}
-    .meta { flex:1; }
-    pre { background:#0b1220; color:#e6eef8; padding:8px; border-radius:6px; overflow:auto; max-height:240px;}
-    .warning { color:#8a2b2b; font-weight:600; margin-bottom:10px; }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Agar.io — Xsolla redirect demo (UID vereist)</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f6f8fb;color:#0b1220;padding:18px}
+  .card{max-width:980px;margin:10px auto;background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  label{font-weight:600}
+  input[type=text]{padding:8px;border-radius:6px;border:1px solid #d8e0ea;width:100%}
+  .skins{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+  .skin{width:200px;padding:10px;border-radius:8px;border:1px solid #e6eef8;background:#fbfdff;cursor:pointer}
+  .skin.selected{outline:3px solid #2b6cb0}
+  button{background:#2b6cb0;color:white;border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+  .note{font-size:0.9rem;color:#4b5563;margin-top:8px}
+  pre{max-height:220px;overflow:auto;background:#0b1220;color:#e6eef8;padding:10px;border-radius:8px}
+  .danger{color:#8a2b2b;font-weight:700}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Agar.io Config Viewer — read-only</h1>
-    <p class="warning">Dit is alleen een leesweergave. Dit script kan <strong>geen</strong> aankopen doen of gegevens op de server wijzigen.</p>
-    <label for="url">Config URL:</label>
-    <input id="url" type="text" style="width:70%;" placeholder="Plak hier de GameConfiguration.json URL" 
-           value="https://configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json">
-    <button id="load">Laad config</button>
-  </header>
+  <div class="card">
+    <h2>Agar.io Config Viewer + Xsolla‑redirect (demo)</h2>
+    <p class="note">Voer hieronder je officiële <strong>player UID</strong> in. Deze demo stuurt je naar Xsolla met metadata; <em>hij kent geen skins toe</em> — toekenning vereist een beveiligde backend + Miniclip API.</p>
 
-  <main id="main"></main>
+    <div class="row" style="margin-top:6px;">
+      <div style="flex:1;">
+        <label for="uid">Player UID (verplicht)</label>
+        <input id="uid" type="text" placeholder="bv. player-12345">
+      </div>
+      <div style="width:320px;">
+        <label for="configUrl">Config URL</label>
+        <input id="configUrl" type="text" value="https://configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json">
+      </div>
+    </div>
 
-  <script>
-    const main = document.getElementById('main');
-    document.getElementById('load').addEventListener('click', async () => {
-      main.innerHTML = '<p>Laden…</p>';
-      const url = document.getElementById('url').value.trim();
-      if (!url) { main.innerHTML = '<p>Vul een geldige URL in.</p>'; return; }
-      try {
-        const resp = await fetch(url, { cache: 'no-store' });
-        if (!resp.ok) throw new Error('Server antwoordde met status ' + resp.status);
-        const json = await resp.json();
-        render(json);
-      } catch (err) {
-        main.innerHTML = `<p style="color:crimson">Kon config niet laden: ${err.message}</p>
-                          <p>Opmerking: als de server CORS-beperkingen heeft, werkt directe fetch vanuit de browser niet. In dat geval download het bestand via een server/ backend of vraag Miniclip om een CORS-toegestane dev-endpoint.</p>`;
-      }
-    });
+    <div style="margin-top:12px;">
+      <button id="load">Laad config en toon skins</button>
+      <span style="margin-left:10px;color:#6b7280">Let op CORS: als fetch faalt, download JSON en open lokaal of via proxy.</span>
+    </div>
 
-    function render(cfg) {
-      main.innerHTML = '';
-      const pretty = document.createElement('section');
-      pretty.innerHTML = '<h2>Volledige JSON (ingekort)</h2>';
-      const pre = document.createElement('pre');
-      pre.textContent = JSON.stringify(cfg, null, 2);
-      pretty.appendChild(pre);
-      main.appendChild(pretty);
+    <section id="viewer" style="margin-top:16px;"></section>
 
-      // Voorbeeld: zoek naar 'skins' of items
-      const skins = findSkins(cfg);
-      const h = document.createElement('h2');
-      h.textContent = `Gevonden skins (${skins.length})`;
-      main.appendChild(h);
-      if (!skins.length) {
-        main.appendChild(document.createElement('p')).textContent = 'Geen skinlijst gevonden in deze config.';
-        return;
-      }
-      skins.forEach(s => {
-        const el = document.createElement('div');
-        el.className = 'skin';
-        const thumb = document.createElement('div');
-        thumb.className = 'thumb';
-        if (s.image) {
-          const img = document.createElement('img');
-          img.src = s.image.startsWith('http') ? s.image : s.image;
-          img.alt = s.productId || '';
-          img.style.maxWidth = '100%'; img.style.maxHeight = '100%';
-          thumb.appendChild(img);
-        } else thumb.textContent = 'no image';
-        const meta = document.createElement('div');
-        meta.className = 'meta';
-        const title = document.createElement('div');
-        title.innerHTML = `<strong>${s.productId || 'onbekend'}</strong> — gameplayId: ${s.gameplayId ?? '-'} — type: ${s.skinType ?? '-'}`;
-        const details = document.createElement('div');
-        details.innerHTML = `<small>cellColor: ${s.cellColor ?? '-'} | prijs: ${s.price ?? '-'}</small>`;
-        meta.appendChild(title);
-        meta.appendChild(details);
-        el.appendChild(thumb);
-        el.appendChild(meta);
-        main.appendChild(el);
+    <hr/>
+
+    <div class="card" style="background:#f8fafc;">
+      <h3>Xsolla redirect instellingen</h3>
+      <label for="xsollaUrl">Xsolla Paystation URL</label>
+      <input id="xsollaUrl" type="text" style="width:100%;" value="https://secure.xsolla.com/paystation3/desktop/list/?access_token=ryolz2LhiI7Zeb0G0BliTvHwx9Si0LiA_lc_en&preferences=eyJpdGVtUHJvbW90aW9ucyI6IltdIn0-&sessional=eyJoaXN0b3J5IjpbWyJzYXZlZG1ldGhvZCJdLFsibGlzdCIsdHJ1ZV1dfQ--">
+      <p class="note">Dit is de door jou opgegeven Xsolla‑URL. De demo voegt client‑metadata toe als query‑parameter <code>metadata</code> (URI‑encoded JSON met uid/productId/gameplayId).</p>
+    </div>
+
+    <div style="margin-top:14px;">
+      <button id="buy" style="display:block">Accepteer geselecteerde skin en ga naar Xsolla</button>
+      <p id="status" class="note"></p>
+      <p class="note danger">BELANGRIJK: deze demo voert géén server‑side toekenning uit. Zorg dat jouw backend Xsolla‑webhooks verwerkt en dat Miniclip officieel jouw partner‑API levert voordat je automatische toekenning inschakelt.</p>
+      <details style="margin-top:8px;">
+        <summary>Hoe werkt dit technisch?</summary>
+        <ol>
+          <li>Frontend stuurt gebruiker naar Xsolla met metadata (UID + skin).</li>
+          <li>Xsola behandelt betaling (sandbox of productie afhankelijk van token/URL).</li>
+          <li>Jouw backend ontvangt Xsolla webhook, valideert deze en roept Miniclip toe‑kenning API aan (alleen als Miniclip je daartoe machtigt).</li>
+        </ol>
+      </details>
+    </div>
+
+    <hr/>
+    <h4>Volledige JSON (voor debugging)</h4>
+    <pre id="jsonRaw">Geen config geladen.</pre>
+  </div>
+
+<script>
+(async function(){
+  const loadBtn = document.getElementById('load');
+  const viewer = document.getElementById('viewer');
+  const jsonRaw = document.getElementById('jsonRaw');
+  const buyBtn = document.getElementById('buy');
+  const status = document.getElementById('status');
+
+  let skins = []; // gevonden skins
+  let selected = null;
+
+  loadBtn.addEventListener('click', async () => {
+    viewer.innerHTML = '<p>Laden…</p>';
+    const url = document.getElementById('configUrl').value.trim();
+    if (!url) { viewer.innerHTML = '<p>Vul een geldige URL in.</p>'; return; }
+    try {
+      const r = await fetch(url, {cache:'no-store'});
+      if (!r.ok) throw new Error('Status ' + r.status);
+      const cfg = await r.json();
+      jsonRaw.textContent = JSON.stringify(cfg, null, 2);
+      skins = findSkins(cfg);
+      renderSkins(skins);
+    } catch (err) {
+      viewer.innerHTML = `<p style="color:crimson">Kon config niet laden: ${err.message}</p>
+        <p class="note">CORS kan fetch blokkeren. Download het JSON bestand handmatig of serveer via een kleine proxy/webserver.</p>`;
+      jsonRaw.textContent = 'Kon JSON niet laden: ' + err.message;
+    }
+  });
+
+  function renderSkins(list){
+    viewer.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'skins';
+    if (!list.length) {
+      viewer.innerHTML = '<p>Geen skins gevonden in deze config.</p>';
+      return;
+    }
+    list.forEach(s=>{
+      const el = document.createElement('div');
+      el.className = 'skin';
+      el.innerHTML = `<div style="height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+          ${s.image ? `<img src="${sanitizeImg(s.image)}" alt="${escapeHtml(s.productId||'')}" style="max-width:100%;max-height:100%"/>` : '<div style="color:#9ca3af">no image</div>'}
+        </div>
+        <div><strong>${escapeHtml(s.productId || 'onbekend')}</strong></div>
+        <div style="font-size:0.9rem;color:#6b7280">gameplayId: ${s.gameplayId ?? '-'} — ${s.skinType ?? '-'}</div>
+        <div style="font-size:0.85rem;color:#374151">prijs: ${s.price ?? '-'}</div>`;
+      el.addEventListener('click', ()=> {
+        document.querySelectorAll('.skin').forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        selected = s;
+        status.textContent = `Geselecteerd: ${s.productId || 'onbekend'}`;
       });
-    }
+      wrap.appendChild(el);
+    });
+    viewer.appendChild(wrap);
+  }
 
-    function findSkins(obj) {
-      // Recursieve zoekfunctie: zoekt naar objecten met productId of skinType
-      const found = [];
-      (function recurse(o) {
-        if (!o || typeof o !== 'object') return;
-        if (o.productId || o.skinType) {
-          found.push(o);
-        }
-        for (const k of Object.keys(o)) {
-          recurse(o[k]);
-        }
-      })(obj);
-      return found;
+  buyBtn.addEventListener('click', ()=> {
+    status.textContent = '';
+    const uid = document.getElementById('uid').value.trim();
+    if (!uid) { status.textContent = 'Vul eerst je player UID in.'; return; }
+    if (!selected) { status.textContent = 'Selecteer eerst een skin.'; return; }
+
+    // Bouw metadata met uid/product/gameplay
+    const metadata = { uid: uid, productId: selected.productId, gameplayId: selected.gameplayId, price: selected.price };
+
+    // Standaard Xsolla URL uit input
+    let base = document.getElementById('xsollaUrl').value.trim();
+    if (!base) { status.textContent = 'Vul de Xsolla Paystation URL in.'; return; }
+
+    // Voeg metadata toe als query param (URI-encoded JSON). Als url al query params heeft, gebruik &
+    const sep = base.includes('?') ? '&' : '?';
+    const redirectUrl = base + sep + 'metadata=' + encodeURIComponent(JSON.stringify(metadata));
+
+    // Open Xsolla (nieuw tabblad) — gebruiker voltooit betaling daar
+    window.open(redirectUrl, '_blank');
+
+    // Informeer gebruiker wat er moet gebeuren nadat betaald is
+    status.innerHTML = 'Je wordt naar Xsolla gestuurd (nieuw tabblad). <br/>Na betaling moet jouw server Xsolla‑webhook verwerken en Miniclip (alleen met officiële toestemming) instrueren de skin toe te kennen.';
+  });
+
+  // recursieve zoekfunctie voor skins (zoals eerder)
+  function findSkins(obj){
+    const found = [];
+    (function recurse(o){
+      if (!o || typeof o !== 'object') return;
+      // heuristiek: objecten met productId of skinType of image
+      if (o.productId || o.skinType || o.image) {
+        // verzamel relevante velden veilig
+        found.push({
+          productId: o.productId,
+          skinType: o.skinType,
+          gameplayId: o.gameplayId,
+          image: o.image,
+          price: o.price,
+          cellColor: o.cellColor
+        });
+      }
+      for (const k of Object.keys(o)) recurse(o[k]);
+    })(obj);
+    // dedupe by productId (optioneel)
+    const seen = new Map();
+    return found.filter(f=>{
+      const key = f.productId || JSON.stringify(f);
+      if (seen.has(key)) return false;
+      seen.set(key, true);
+      return true;
+    });
+  }
+
+  // helpers: basic sanitize/escape to avoid injecting markup
+  function escapeHtml(s){ if (!s) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function sanitizeImg(src){
+    if (!src) return '';
+    src = String(src);
+    // relative image names in config: attempt to build full path relative to config URL host
+    if (/^https?:\/\//i.test(src)) return encodeURI(src);
+    try {
+      const cfgUrl = new URL(document.getElementById('configUrl').value.trim());
+      // create absolute url adjacent to config base, e.g. /live/v15/10850/<image>
+      const basePath = cfgUrl.origin + cfgUrl.pathname.substring(0, cfgUrl.pathname.lastIndexOf('/')+1);
+      return encodeURI(basePath + src);
+    } catch(e) {
+      return encodeURI(src);
     }
-  </script>
+  }
+})();
+</script>
 </body>
 </html>
