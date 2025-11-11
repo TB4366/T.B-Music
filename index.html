@@ -3,57 +3,52 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Agar.io — Koop skin (demo, veilig)</title>
+<title>Agar.io Skin Betaal Demo (frontend-only)</title>
 <style>
-  body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f6f8fb;color:#0b1220;padding:18px}
-  .card{max-width:980px;margin:10px auto;background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
-  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  label{font-weight:600}
-  input[type=text]{padding:8px;border-radius:6px;border:1px solid #d8e0ea;width:100%}
-  .skins{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
-  .skin{width:200px;padding:10px;border-radius:8px;border:1px solid #e6eef8;background:#fbfdff;cursor:pointer}
-  .skin.selected{outline:3px solid #2b6cb0}
-  button{background:#2b6cb0;color:white;border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
-  .note{font-size:0.9rem;color:#4b5563;margin-top:8px}
-  pre{max-height:220px;overflow:auto;background:#0b1220;color:#e6eef8;padding:10px;border-radius:8px}
-  .danger{color:#8a2b2b;font-weight:700}
+body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f6f8fb;color:#0b1220;padding:18px}
+.card{max-width:980px;margin:10px auto;background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+label{font-weight:600}
+input[type=text]{padding:8px;border-radius:6px;border:1px solid #d8e0ea;width:100%}
+.skins{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.skin{width:200px;padding:10px;border-radius:8px;border:1px solid #e6eef8;background:#fbfdff;cursor:pointer}
+.skin.selected{outline:3px solid #2b6cb0}
+button{background:#2b6cb0;color:white;border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+.note{font-size:0.9rem;color:#4b5563;margin-top:8px}
+pre{max-height:220px;overflow:auto;background:#0b1220;color:#e6eef8;padding:10px;border-radius:8px}
 </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Agar.io — verkoop skin (demo)</h2>
-    <p class="note">Voer je player UID in en kies een skin. De frontend vraagt een Xsolla token bij de backend zodat exact de juiste skin/prijs wordt doorgegeven. Deze demo kent géén skins toe op Miniclip zonder officiële backend‑toegang van Miniclip.</p>
+<div class="card">
+<h2>Agar.io Skin Betaal Demo (frontend-only)</h2>
+<p class="note">Voer je player UID in, selecteer een skin en klik op “Accepteer en betaal”. De betaling opent Xsolla in een nieuw tabblad. Deze demo kent geen skins toe op Miniclip.</p>
 
-    <div class="row">
-      <div style="flex:1">
-        <label for="uid">Player UID (verplicht)</label>
-        <input id="uid" type="text" placeholder="bv. player-12345">
-      </div>
-      <div style="width:360px">
-        <label for="configUrl">Config URL</label>
-        <input id="configUrl" type="text" value="https://configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json">
-      </div>
-    </div>
-
-    <div style="margin-top:12px;">
-      <button id="load">Laad config</button>
-      <span style="margin-left:12px;color:#6b7280">CORS kan fetch blokkeren — zie README</span>
-    </div>
-
-    <section id="viewer" style="margin-top:16px;"></section>
-
-    <hr/>
-
-    <div style="margin-top:12px;">
-      <button id="buy" style="display:block">Accepteer geselecteerde skin en betaal</button>
-      <p id="status" class="note"></p>
-      <p class="note danger">LET OP: Backend verwerkt betaling en markeert order als PAID. De echte toekenning naar Miniclip gebeurt alleen als jouw organisatie Miniclip autoriseert en je hun endpoint/credentials gebruikt.</p>
-    </div>
-
-    <hr/>
-    <h4>Volledige JSON (debug)</h4>
-    <pre id="jsonRaw">Geen config geladen.</pre>
+<div class="row">
+  <div style="flex:1">
+    <label for="uid">Player UID (verplicht)</label>
+    <input id="uid" type="text" placeholder="bv. player-12345">
   </div>
+  <div style="width:360px">
+    <label for="configUrl">Config URL</label>
+    <input id="configUrl" type="text" value="https://configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json">
+  </div>
+</div>
+
+<div style="margin-top:12px;">
+  <button id="load">Laad skins</button>
+</div>
+
+<section id="viewer" style="margin-top:16px;"></section>
+
+<div style="margin-top:14px;">
+  <button id="buy">Accepteer geselecteerde skin en betaal</button>
+  <p id="status" class="note"></p>
+</div>
+
+<hr/>
+<h4>Volledige JSON (debug)</h4>
+<pre id="jsonRaw">Geen config geladen.</pre>
+</div>
 
 <script>
 (async function(){
@@ -62,134 +57,76 @@
   const jsonRaw = document.getElementById('jsonRaw');
   const buyBtn = document.getElementById('buy');
   const status = document.getElementById('status');
+  let skins = [], selected = null;
 
-  let skins = [];
-  let selected = null;
-
-  loadBtn.addEventListener('click', async () => {
-    viewer.innerHTML = '<p>Laden…</p>';
-    const url = document.getElementById('configUrl').value.trim();
-    if (!url) { viewer.innerHTML = '<p>Vul een geldige URL in.</p>'; return; }
-    try {
-      const r = await fetch(url, {cache:'no-store'});
-      if (!r.ok) throw new Error('Status ' + r.status);
-      const cfg = await r.json();
-      jsonRaw.textContent = JSON.stringify(cfg, null, 2);
-      skins = findSkins(cfg);
-      // convert to unique mapping and fill display price if absent
-      skins = normalizeSkins(skins);
+  loadBtn.addEventListener('click', async ()=>{
+    viewer.innerHTML='<p>Laden…</p>';
+    const url=document.getElementById('configUrl').value.trim();
+    if(!url){viewer.innerHTML='<p>Vul een geldige URL in.</p>';return;}
+    try{
+      const r=await fetch(url,{cache:'no-store'});
+      if(!r.ok)throw new Error('Status '+r.status);
+      const cfg=await r.json();
+      jsonRaw.textContent=JSON.stringify(cfg,null,2);
+      skins=findSkins(cfg);
       renderSkins(skins);
-    } catch (err) {
-      viewer.innerHTML = `<p style="color:crimson">Kon config niet laden: ${err.message}</p>
-        <p class="note">CORS kan fetch blokkeren. Download JSON of gebruik backend proxy.</p>`;
-      jsonRaw.textContent = 'Kon JSON niet laden: ' + err.message;
+    }catch(err){
+      viewer.innerHTML=`<p style="color:crimson">Kon config niet laden: ${err.message}</p>`;
+      jsonRaw.textContent='Kon JSON niet laden: '+err.message;
     }
   });
 
-  function normalizeSkins(list){
-    // Dedup en vul standaardprijs indien ontbreekt (demo)
-    const seen = new Map();
-    const out = [];
-    list.forEach(s=>{
-      const key = s.productId || JSON.stringify(s);
-      if (seen.has(key)) return;
-      seen.set(key,true);
-      out.push({
-        productId: s.productId,
-        gameplayId: s.gameplayId,
-        image: s.image,
-        skinType: s.skinType,
-        price: (s.price != null) ? s.price : (s.defaultPrice || 2.99) // demo fallback
-      });
-    });
-    return out;
+  function findSkins(obj){
+    const found=[];
+    (function r(o){
+      if(!o||typeof o!=='object')return;
+      if(o.productId||o.skinType||o.image){
+        found.push({productId:o.productId,gameplayId:o.gameplayId,image:o.image,skinType:o.skinType,price:o.price||2.99});
+      }
+      for(const k of Object.keys(o)) r(o[k]);
+    })(obj);
+    return found;
   }
 
   function renderSkins(list){
-    viewer.innerHTML = '';
-    if (!list.length) { viewer.innerHTML = '<p>Geen skins gevonden.</p>'; return; }
-    const wrap = document.createElement('div'); wrap.className='skins';
+    viewer.innerHTML='';
+    if(!list.length){viewer.innerHTML='<p>Geen skins gevonden.</p>';return;}
+    const wrap=document.createElement('div');wrap.className='skins';
     list.forEach(s=>{
-      const el = document.createElement('div'); el.className='skin';
-      el.innerHTML = `<div style="height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
-          ${s.image ? `<img src="${sanitizeImg(s.image)}" alt="${escapeHtml(s.productId||'')}" style="max-width:100%;max-height:100%"/>` : '<div style="color:#9ca3af">no image</div>'}
-        </div>
-        <div><strong>${escapeHtml(s.productId||'onbekend')}</strong></div>
-        <div style="font-size:0.9rem;color:#6b7280">gameplayId: ${s.gameplayId ?? '-'} — ${s.skinType ?? '-'}</div>
-        <div style="font-size:0.85rem;color:#374151">prijs: €${Number(s.price).toFixed(2)}</div>`;
-      el.addEventListener('click', ()=> {
+      const el=document.createElement('div');el.className='skin';
+      el.innerHTML=`<div style="height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+        ${s.image?`<img src="${sanitizeImg(s.image)}" alt="${escapeHtml(s.productId||'')}" style="max-width:100%;max-height:100%"/>`:'<div style="color:#9ca3af">no image</div>'}
+      </div>
+      <div><strong>${escapeHtml(s.productId||'onbekend')}</strong></div>
+      <div style="font-size:0.9rem;color:#6b7280">gameplayId: ${s.gameplayId??'-'} — ${s.skinType??'-'}</div>
+      <div style="font-size:0.85rem;color:#374151">prijs: €${Number(s.price).toFixed(2)}</div>`;
+      el.addEventListener('click',()=>{
         document.querySelectorAll('.skin').forEach(x=>x.classList.remove('selected'));
         el.classList.add('selected');
-        selected = s;
-        status.textContent = `Geselecteerd: ${s.productId || 'onbekend'} (€${Number(s.price).toFixed(2)})`;
+        selected=s;
+        status.textContent=`Geselecteerd: ${s.productId||'onbekend'} (€${Number(s.price).toFixed(2)})`;
       });
       wrap.appendChild(el);
     });
     viewer.appendChild(wrap);
   }
 
-  buyBtn.addEventListener('click', async () => {
-    status.textContent = '';
-    const uid = document.getElementById('uid').value.trim();
-    if (!uid) { status.textContent = 'Vul eerst je player UID in.'; return; }
-    if (!selected) { status.textContent = 'Selecteer eerst een skin.'; return; }
-
-    // Vraag backend om een payment token te maken voor de juiste skin
-    try {
-      const resp = await fetch('/create-payment-token', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          accountId: uid,
-          productId: selected.productId,
-          gameplayId: selected.gameplayId,
-          price: Number(selected.price),
-          currency: 'EUR'
-        })
-      });
-      const data = await resp.json();
-      if (data.error) { status.textContent = 'Fout backend: ' + data.error; return; }
-      // data.paystationUrl or data.token expected
-      if (data.paystationUrl) {
-        window.open(data.paystationUrl, '_blank');
-        status.innerHTML = 'Betaalpagina geopend in nieuw tabblad. Backend ontvangt webhook en markeert order als betaald zodra Xsolla bevestigt.';
-      } else if (data.token) {
-        // open default paystation url with token
-        const url = 'https://secure.xsolla.com/paystation3/desktop/list/?token=' + encodeURIComponent(data.token);
-        window.open(url,'_blank');
-        status.innerHTML = 'Betaalpagina geopend (token).';
-      } else {
-        status.textContent = 'Geen paystation info ontvangen van backend.';
-      }
-    } catch (err) {
-      status.textContent = 'Fout: ' + (err.message || err);
-    }
+  buyBtn.addEventListener('click',()=>{
+    status.textContent='';
+    const uid=document.getElementById('uid').value.trim();
+    if(!uid){status.textContent='Vul eerst je player UID in.';return;}
+    if(!selected){status.textContent='Selecteer eerst een skin.';return;}
+    // Bouw Xsolla URL
+    const xsollaBase='https://secure.xsolla.com/paystation3/desktop/list/?access_token=ryolz2LhiI7Zeb0G0BliTvHwx9Si0LiA_lc_en&preferences=eyJpdGVtUHJvbW90aW9ucyI6IltdIn0-&sessional=eyJoaXN0b3J5IjpbWyJzYXZlZG1ldGhvZCJdLFsibGlzdCIsdHJ1ZV1dfQ--';
+    const metadata=encodeURIComponent(JSON.stringify({uid:uid,productId:selected.productId,gameplayId:selected.gameplayId,price:selected.price}));
+    const sep=xsollaBase.includes('?')?'&':'?';
+    const finalUrl=xsollaBase+sep+'metadata='+metadata;
+    window.open(finalUrl,'_blank');
+    status.innerHTML='Betaalpagina geopend in nieuw tabblad. De daadwerkelijke skin-toekenning gebeurt alleen via Miniclip backend.';
   });
 
-  // recursieve zoekfunctie:
-  function findSkins(obj){
-    const found=[];
-    (function r(o){
-      if (!o || typeof o!=='object') return;
-      if (o.productId || o.skinType || o.image) {
-        found.push({
-          productId:o.productId, gameplayId:o.gameplayId, image:o.image, skinType:o.skinType, price:o.price, defaultPrice:o.defaultPrice
-        });
-      }
-      for (const k of Object.keys(o)) r(o[k]);
-    })(obj);
-    return found;
-  }
-
-  function escapeHtml(s){ if (!s) return ''; return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function sanitizeImg(src){
-    if (!src) return '';
-    if (/^https?:\/\//i.test(src)) return encodeURI(src);
-    try {
-      const cfgUrl = new URL(document.getElementById('configUrl').value.trim());
-      const basePath = cfgUrl.origin + cfgUrl.pathname.substring(0, cfgUrl.pathname.lastIndexOf('/')+1);
-      return encodeURI(basePath + src);
-    } catch(e){ return encodeURI(src); }
+  function escapeHtml(s){if(!s)return'';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function sanitizeImg(src){if(!src)return'';try{const cfgUrl=new URL(document.getElementById('configUrl').value.trim());const basePath=cfgUrl.origin+cfgUrl.pathname.substring(0,cfgUrl.pathname.lastIndexOf('/')+1);return encodeURI(src.startsWith('http')?src:basePath+src);}catch(e){return encodeURI(src);}
   }
 })();
 </script>
