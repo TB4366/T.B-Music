@@ -1,13 +1,87 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Agar.io Skins Betaaldemo</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agar.io skins demo</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f6f8fb;margin:20px;color:#0b1220}
+  .grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+  .skin{background:white;border:1px solid #ddd;border-radius:8px;padding:10px;width:180px;text-align:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  .skin img{max-width:100%;max-height:80px}
+  .skin.selected{outline:3px solid #2563eb}
+  #status{margin-top:10px}
+</style>
 </head>
 <body>
-  <div id="app"></div>
-  <script src="app.js"></script>
+<h2>Agar.io skins viewer (demo)</h2>
+<p>Dit toont de skins uit de officiële configuratie. Het doet geen echte aankopen of account-wijzigingen.</p>
+<label>Player UID: <input id="uid" style="padding:5px"></label>
+<button id="load">Laad skins</button>
+<div id="status"></div>
+<div id="grid" class="grid"></div>
+<button id="pay" style="margin-top:15px;padding:8px 12px">Accepteer & betaal (demo)</button>
+
+<script>
+const configUrl =
+  "https://api.allorigins.win/raw?url=" +
+  encodeURIComponent("https://configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json");
+const xsollaBase =
+  "https://secure.xsolla.com/paystation3/desktop/list/?access_token=ryolz2LhiI7Zeb0G0BliTvHwx9Si0LiA_lc_en";
+
+let skins = [], selected = null;
+const grid = document.getElementById("grid");
+const status = document.getElementById("status");
+
+document.getElementById("load").onclick = async () => {
+  status.textContent = "Laden…";
+  grid.innerHTML = "";
+  try {
+    const r = await fetch(configUrl);
+    const j = await r.json();
+    skins = [];
+    (function find(o){
+      if(!o||typeof o!=="object")return;
+      if(o.productId&&o.image)skins.push(o);
+      for(const k in o)find(o[k]);
+    })(j);
+    render();
+    status.textContent = "Gevonden skins: " + skins.length;
+  } catch(e){
+    status.textContent = "Kon config niet laden: " + e.message;
+  }
+};
+
+function render(){
+  grid.innerHTML="";
+  skins.forEach((s,i)=>{
+    const d=document.createElement("div");
+    d.className="skin";
+    d.innerHTML=`<img src="${fixImg(s.image)}"><div>${s.productId||"?"}</div>`;
+    d.onclick=()=>{
+      document.querySelectorAll(".skin").forEach(el=>el.classList.remove("selected"));
+      d.classList.add("selected"); selected=s;
+      status.textContent="Geselecteerd: "+(s.productId||"?");
+    };
+    grid.appendChild(d);
+  });
+}
+
+function fixImg(src){
+  if(!src)return "";
+  if(src.startsWith("http"))return src;
+  return "https://configs-web.agario.miniclippt.com/live/v15/10850/"+src;
+}
+
+document.getElementById("pay").onclick=()=>{
+  const uid=document.getElementById("uid").value.trim();
+  if(!uid)return status.textContent="Vul eerst UID in.";
+  if(!selected)return status.textContent="Selecteer eerst een skin.";
+  const metadata=encodeURIComponent(JSON.stringify({uid,productId:selected.productId}));
+  const url=xsollaBase+"&metadata="+metadata;
+  window.open(url,"_blank");
+  status.textContent="Xsolla geopend (demo).";
+};
+</script>
 </body>
 </html>
