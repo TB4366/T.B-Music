@@ -2,62 +2,53 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8" />
-  <title>Agar.io Skins Shop (Demo)</title>
+  <title>Agar.io Skins Shop — Xsolla Demo</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root{
-      --bg:#0f1724; --card:#0b1220; --accent:#06b6d4; --muted:#94a3b8;
-      --glass: rgba(255,255,255,0.03);
-      color-scheme: dark;
-    }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial;color:#e6eef6;background:linear-gradient(180deg,#071021 0%, #081726 100%);-webkit-font-smoothing:antialiased}
-    .wrap{max-width:1100px;margin:28px auto;padding:18px;}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-    h1{font-size:20px;margin:0}
-    .controls{display:flex;gap:8px;align-items:center}
-    button, .btn{background:linear-gradient(180deg,var(--accent),#0ea5b6);border:0;padding:8px 12px;border-radius:10px;color:#022;cursor:pointer}
-    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:10px;color:var(--muted);cursor:pointer}
-    input[type="text"]{padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:var(--card);color:inherit}
-    .balance{background:var(--glass);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);font-weight:600}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:16px}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;border:1px solid rgba(255,255,255,0.03)}
-    .thumb{height:110px;border-radius:8px;background:#081826;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    /* (zelfde styling als eerder, compact gehouden) */
+    :root{--bg:#071021;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;color-scheme:dark}
+    body{background:linear-gradient(180deg,#071021,#081726);color:#e6eef6;font-family:Inter,Arial;margin:0;padding:18px}
+    .wrap{max-width:1100px;margin:0 auto}
+    header{display:flex;justify-content:space-between;align-items:center}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:14px}
+    .card{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:8px}
+    .thumb{height:120px;border-radius:8px;background:#061226;display:flex;align-items:center;justify-content:center;overflow:hidden}
     .thumb img{max-width:100%;max-height:100%;object-fit:contain}
-    .meta{display:flex;justify-content:space-between;align-items:center;font-size:13px}
-    .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .price{font-weight:700}
-    .owned{background:linear-gradient(90deg,#0ea5b6,#06b6d4);color:#022;padding:6px;border-radius:8px;text-align:center;font-weight:700}
-    footer{margin-top:20px;color:var(--muted);font-size:13px}
-    .loader{opacity:0.8}
-    .small{font-size:12px;color:var(--muted)}
+    .meta{display:flex;justify-content:space-between;align-items:center}
+    .name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .price{font-weight:800}
+    .orig{color:var(--muted);font-size:12px;text-decoration:line-through;margin-right:6px}
+    .controls{display:flex;gap:8px;align-items:center}
+    button{background:linear-gradient(180deg,var(--accent),#0ea5b6);border:0;padding:8px 10px;border-radius:8px;color:#022;cursor:pointer}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:7px;border-radius:8px}
+    .small{font-size:13px;color:var(--muted)}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <div>
-        <h1>Agar.io Skins — Demo Shop</h1>
-        <div class="small">JSON: <code>configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json</code></div>
+        <h1>Agar.io Skins — Shop (Xsolla demo)</h1>
+        <div class="small">JSON: <code>configs-web.agario.miniclippt.com/…/GameConfiguration.json</code></div>
       </div>
-
       <div class="controls">
-        <div class="balance" id="balance">Saldo: €0</div>
-        <button id="topUp" class="btn-ghost">+€100</button>
+        <div id="balance" class="small">Saldo: €0</div>
+        <button id="topUp" class="ghost">+€100 (demo)</button>
       </div>
     </header>
 
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="search" type="text" placeholder="Zoek skins (naam, id...)" style="flex:1" />
-      <button id="load" class="btn">Laad skins</button>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <input id="search" type="text" placeholder="Zoek skins..." style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#071426;color:inherit"/>
+      <button id="load">Laad skins</button>
     </div>
 
-    <div id="status" class="small" style="margin-top:8px;color:var(--muted)"></div>
+    <div id="status" class="small" style="margin-top:8px;color:var(--muted)">Klik 'Laad skins' om te beginnen.</div>
 
     <div class="grid" id="grid"></div>
 
-    <footer>
-      <div class="small">Opmerking: dit is een lokale simulatie. Er worden geen echte aankopen gedaan. Koopfunctionaliteit voor echte betalingen moet veilig via server-side integratie en officiële API's gebeuren.</div>
-    </footer>
+    <div style="margin-top:14px" class="small">
+      <strong>Let op:</strong> echte betalingen gaan via Xsolla. Tijdens testen wordt sandbox gebruikt. Bewaar je Xsolla‑sleutels alleen op de server.
+    </div>
   </div>
 
   <script>
@@ -69,191 +60,161 @@
     const searchInput = document.getElementById('search');
     const topUpBtn = document.getElementById('topUp');
 
-    // Simple persistent demo state (localStorage)
-    const LS = {
-      key: 'agar_demo_state_v1',
-      load() {
-        try { return JSON.parse(localStorage.getItem(this.key) || '{}') } catch(e){return {}}
-      },
-      save(state) { localStorage.setItem(this.key, JSON.stringify(state)) }
-    };
-    let state = LS.load();
-    if (!state.balance) state.balance = 50; // startbalance
+    // local demo state
+    const LS_KEY = 'agar_xsolla_demo_v1';
+    let state = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+    if (!state.balance) state.balance = 50;
     if (!state.owned) state.owned = {};
-
+    function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
     function renderBalance(){ balanceEl.textContent = 'Saldo: €' + state.balance.toFixed(2) }
+    renderBalance();
 
     function setStatus(msg, err=false){ statusEl.textContent = msg; statusEl.style.color = err ? '#ff9b9b' : 'var(--muted)' }
 
-    // Tries to extract skin list from JSON response, supports several shapes.
-    function extractSkins(data) {
-      // If data is array -> use it
+    function extractSkins(data){
       if (Array.isArray(data)) return data;
-      // Common property names that might hold skins
-      const candidates = ['skins','items','skinsList','itemsList','Skins','Items','skinsCollection','availableSkins'];
+      const candidates = ['skins','items','Skins','Items','skinsList','availableSkins'];
       for (const k of candidates) if (Array.isArray(data[k])) return data[k];
-      // If object with many nested arrays, pick first array of objects that look like skins
-      for (const k of Object.keys(data)) {
-        if (Array.isArray(data[k]) && data[k].length && typeof data[k][0] === 'object') {
-          // Heuristic: check if entries have name or id or image
-          const sample = data[k][0];
-          if ('name' in sample || 'id' in sample || 'image' in sample || 'icon' in sample) return data[k];
-        }
-      }
-      // As fallback, attempt to collect objects from deep properties
+      // fallback: gather plausible objects
       const found = [];
-      (function recurse(obj){
-        if (Array.isArray(obj)) {
-          for (const it of obj) if (it && typeof it === 'object') found.push(it);
-        } else if (obj && typeof obj === 'object') {
-          for (const v of Object.values(obj)) recurse(v);
-        }
-      })(data);
-      // Filter plausible skin objects
-      const plausible = found.filter(o => o && (o.name || o.id || o.icon || o.image));
-      return plausible.length ? plausible : found;
+      (function rec(o){ if (Array.isArray(o)) { for (const i of o) if (i && typeof i==='object') found.push(i) } else if (o && typeof o==='object'){ for (const v of Object.values(o)) rec(v) } })(data);
+      return found.filter(x => x && (x.name||x.id||x.icon||x.image));
     }
 
-    function getImageFromItem(item){
-      // try common fields
-      return item.image || item.icon || item.url || item.thumbnail || item.sprite || null;
-    }
-
-    function getName(item, idx){
-      return item.name || item.title || item.id || ('skin #' + (idx+1));
-    }
-
+    function getImage(item){ return item.image || item.icon || item.url || item.thumbnail || null }
+    function getName(item,idx){ return item.name || item.title || item.id || ('skin #'+(idx+1)) }
     function getPrice(item){
-      // if JSON has price fields try them
-      const candidates = ['price','cost','value','coins','credits','price_usd'];
-      for (const c of candidates) {
-        if (c in item && typeof item[c] === 'number') return Math.max(0, item[c]);
-        if (c in item && typeof item[c] === 'string') {
-          const n = parseFloat(item[c].replace(/[^0-9.\-]/g,'')); if (!isNaN(n)) return Math.max(0,n);
-        }
+      const cand = ['price','cost','value','credits','coins','price_usd'];
+      for (const c of cand) if (c in item) {
+        const v = item[c];
+        if (typeof v === 'number') return v;
+        if (typeof v === 'string'){ const n = parseFloat(v.replace(/[^0-9.\-]/g,'')); if (!isNaN(n)) return n }
       }
-      // fallback: derive price from id/hash to keep deterministic
-      const hash = (item.id||item.name||JSON.stringify(item)).toString();
-      let h=0; for (let i=0;i<hash.length;i++) h = ((h<<5)-h)+hash.charCodeAt(i);
-      const base = Math.abs(h) % 100 + 1; // 1..100
-      const price = Math.round((base/10)*10)/10; // e.g. 1..100 step 0.1
-      return parseFloat(price.toFixed(2));
+      // deterministic fallback
+      const id = (item.id||item.name||JSON.stringify(item)).toString();
+      let h=0; for (let i=0;i<id.length;i++) h = ((h<<5)-h)+id.charCodeAt(i);
+      const base = Math.abs(h)%100 + 1;
+      return parseFloat((base/10).toFixed(2));
+    }
+    function getOriginalPrice(item, price){ // if JSON contains original/orig_price etc
+      const cands = ['originalPrice','original_price','basePrice','msrp'];
+      for (const c of cands) if (c in item) {
+        const v = item[c];
+        if (typeof v === 'number') return v;
+        if (typeof v === 'string'){ const n = parseFloat(v.replace(/[^0-9.\-]/g,'')); if (!isNaN(n)) return n }
+      }
+      return price;
     }
 
-    function renderItems(items){
-      grid.innerHTML = '';
-      if (!items || !items.length){ setStatus('Geen skins gevonden in de JSON.'); return; }
-      setStatus('Aantal skins gevonden: ' + items.length);
-      const q = (searchInput.value||'').trim().toLowerCase();
-
-      items.forEach((it, idx) => {
-        const name = getName(it, idx);
-        if (q && !name.toLowerCase().includes(q) && !(it.id && String(it.id).toLowerCase().includes(q))) return;
-
-        const img = getImageFromItem(it);
-        const price = getPrice(it);
-        const owned = !!state.owned[name];
-
-        const card = document.createElement('div'); card.className = 'card';
-        const thumb = document.createElement('div'); thumb.className = 'thumb';
-        if (img){
-          const imgel = document.createElement('img'); imgel.src = img; imgel.alt = name;
-          imgel.onerror = ()=>{ imgel.style.display='none'; thumb.textContent = 'Geen afbeelding' };
-          thumb.appendChild(imgel);
-        } else {
-          thumb.textContent = 'Geen afbeelding';
-        }
-        const meta = document.createElement('div'); meta.className='meta';
-        const nm = document.createElement('div'); nm.className='name'; nm.title = name; nm.textContent = name;
-        const pr = document.createElement('div'); pr.className='price'; pr.textContent = '€' + price.toFixed(2);
-        meta.appendChild(nm); meta.appendChild(pr);
-
-        const btnArea = document.createElement('div'); btnArea.style.display='flex'; btnArea.style.gap='8px';
-        const buyBtn = document.createElement('button'); buyBtn.className='btn'; buyBtn.textContent = owned ? 'Gekocht' : 'Kopen';
-        buyBtn.disabled = owned || state.balance < price;
-        if (owned) buyBtn.classList.add('owned');
-        buyBtn.addEventListener('click', ()=> {
-          if (state.owned[name]) return;
-          if (state.balance < price) { alert('Onvoldoende saldo.'); return; }
-          // simulate purchase
-          state.balance = Math.round((state.balance - price)*100)/100;
-          state.owned[name] = { price, time: new Date().toISOString(), item: it };
-          LS.save(state);
-          renderBalance(); renderItems(items);
-          alert('Aangekocht: ' + name + ' voor €' + price.toFixed(2));
-        });
-
-        const infoBtn = document.createElement('button'); infoBtn.className='btn-ghost'; infoBtn.textContent='Details';
-        infoBtn.addEventListener('click', ()=> {
-          const details = { name, price, data: it };
-          // Show simple modal via alert (keeps demo minimal)
-          alert('Details:\n\n' + JSON.stringify(details, null, 2));
-        });
-
-        btnArea.appendChild(buyBtn); btnArea.appendChild(infoBtn);
-
-        card.appendChild(thumb);
-        card.appendChild(meta);
-        card.appendChild(btnArea);
-
-        grid.appendChild(card);
-      });
-    }
-
-    async function loadAndShow(){
-      setStatus('Laden van JSON…'); grid.innerHTML = '';
-      try {
+    async function loadAndRender(){
+      setStatus('Laden...');
+      try{
         const r = await fetch(JSON_URL, {cache:'no-store'});
         if (!r.ok) throw new Error('Netwerkfout ' + r.status);
         const data = await r.json();
         const items = extractSkins(data);
+        window._lastItems = items;
         renderItems(items);
-      } catch (e) {
-        setStatus('Fout bij laden: ' + e.message, true);
+      }catch(e){
+        setStatus('Fout bij laden: '+e.message, true);
         console.error(e);
       }
     }
 
-    // events
-    loadBtn.addEventListener('click', ()=> loadAndShow());
-    searchInput.addEventListener('input', ()=> {
-      // Re-run simple render (we stored last loaded items in closure? we'll fetch cached copy)
-      // For simplicity: re-load from network each time? Instead cache lastItems
-      if (window._lastItems) renderItems(window._lastItems);
-    });
-    topUpBtn.addEventListener('click', ()=> {
-      state.balance = Math.round((state.balance + 100)*100)/100;
-      LS.save(state);
-      renderBalance();
-      setStatus('Saldo opgehoogd met €100 (demo).');
-    });
+    function renderItems(items){
+      grid.innerHTML = '';
+      if (!items || !items.length){ setStatus('Geen skins gevonden.'); return; }
+      setStatus('Skins gevonden: ' + items.length);
+      const q = (searchInput.value||'').toLowerCase();
+      items.forEach((it, idx) => {
+        const name = getName(it, idx);
+        if (q && !name.toLowerCase().includes(q) && !(it.id && String(it.id).toLowerCase().includes(q))) return;
+        const img = getImage(it);
+        const price = getPrice(it);
+        const orig = getOriginalPrice(it, price);
+        const owned = !!state.owned[name];
 
-    // caching last items to allow search without re-fetch
-    (function init(){
-      renderBalance();
-      setStatus('Klik "Laad skins" om te beginnen.');
-      window._lastItems = [];
-      // override extract to keep cache when loading:
-      const origLoad = loadAndShow;
-      loadAndShow = async function(){
-        setStatus('Laden van JSON…'); grid.innerHTML='';
-        try {
-          const r = await fetch(JSON_URL, {cache:'no-store'});
-          if (!r.ok) throw new Error('Netwerkfout ' + r.status);
-          const data = await r.json();
-          const items = extractSkins(data);
-          window._lastItems = items || [];
-          renderItems(window._lastItems);
-        } catch (e) {
-          setStatus('Fout bij laden: ' + e.message, true);
-          console.error(e);
+        const card = document.createElement('div'); card.className='card';
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        const imgEl = document.createElement('img');
+        if (img){
+          imgEl.src = img; imgEl.alt = name;
+          imgEl.onerror = ()=>{ imgEl.style.display='none'; thumb.textContent='Geen afbeelding' }
+          thumb.appendChild(imgEl);
+        } else {
+          thumb.textContent = 'Geen afbeelding';
         }
+
+        const meta = document.createElement('div'); meta.className='meta';
+        const nm = document.createElement('div'); nm.className='name'; nm.title=name; nm.textContent = name;
+        const pr = document.createElement('div');
+        if (orig !== price) pr.innerHTML = `<span class="orig">€${orig.toFixed(2)}</span><span class="price">€${price.toFixed(2)}</span>`;
+        else pr.innerHTML = `<span class="price">€${price.toFixed(2)}</span>`;
+        meta.appendChild(nm); meta.appendChild(pr);
+
+        const btnArea = document.createElement('div'); btnArea.style.display='flex'; btnArea.style.gap='8px';
+        const buyBtn = document.createElement('button'); buyBtn.textContent = owned ? 'Gekocht' : 'Betaal (Xsolla)';
+        buyBtn.disabled = owned;
+        buyBtn.addEventListener('click', ()=> buyWithXsolla(it, name, price));
+        const demoBtn = document.createElement('button'); demoBtn.className='ghost'; demoBtn.textContent='Mock koop'; demoBtn.onclick = ()=> mockBuy(name, price, orig, it);
+
+        btnArea.appendChild(buyBtn); btnArea.appendChild(demoBtn);
+
+        card.appendChild(thumb); card.appendChild(meta); card.appendChild(btnArea);
+        grid.appendChild(card);
+      });
+    }
+
+    // Mock local purchase (demo only)
+    function mockBuy(name, price, orig, item){
+      if (state.balance < price){ alert('Onvoldoende saldo (demo).'); return;}
+      state.balance = Math.round((state.balance - price)*100)/100;
+      state.owned[name] = {price, originalPrice: orig, time: new Date().toISOString(), item};
+      saveState(); renderBalance(); renderItems(window._lastItems);
+      alert('Mock aankoop voltooid: ' + name);
+    }
+
+    // Real flow -> ask server to create Xsolla payment token, then open Pay Station
+    // Server endpoint must exist: POST /create_payment_token { user_id, items: [{sku, quantity, name, price}], sandbox: true }
+    async function buyWithXsolla(item, name, price){
+      // Build minimal purchase data
+      const sku = item.sku || item.id || name.replace(/\s+/g,'_').toLowerCase();
+      const userId = 'demo_user_1'; // in real app: current authenticated user id
+      const payload = {
+        user: { id: { value: userId }, name: { value: userId } },
+        purchase: { items: [{ sku: String(sku), quantity: 1 }] },
+        sandbox: true
       };
-    })();
+      setStatus('Aanmaken betaling (server)...');
+      try{
+        const res = await fetch('/create_payment_token', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) { const text = await res.text(); throw new Error('Server fout: '+ res.status + ' — ' + text) }
+        const data = await res.json();
+        if (!data.token) throw new Error('Geen token ontvangen van server');
+        const token = data.token;
+        // open Pay Station (sandbox URL used by server if sandbox)
+        // open in new window/tab
+        const payUrl = data.sandbox ? `https://sandbox-secure.xsolla.com/paystation4/?token=${token}` : `https://secure.xsolla.com/paystation4/?token=${token}`;
+        window.open(payUrl, '_blank', 'noopener');
+        setStatus('Betalingsvenster geopend (nieuw tabblad). Voltooi betaling in Pay Station.');
+      }catch(e){
+        console.error(e);
+        setStatus('Fout bij aanmaken betaling: ' + e.message, true);
+        alert('Fout: ' + e.message);
+      }
+    }
 
-    // Convenience: auto-load once on open
-    loadAndShow();
+    // events
+    loadBtn.addEventListener('click', loadAndRender);
+    searchInput.addEventListener('input', ()=> { if (window._lastItems) renderItems(window._lastItems) });
+    topUpBtn.addEventListener('click', ()=> { state.balance += 100; saveState(); renderBalance(); setStatus('Saldo verhoogd (demo)') });
 
+    // autoload on open
+    loadAndRender();
   </script>
 </body>
 </html>
