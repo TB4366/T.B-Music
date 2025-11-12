@@ -1,70 +1,81 @@
-// server.js — voorbeeldserver voor token-aanmaak (DEMO)
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 app.use(bodyParser.json());
 
-// ENV: XSOLLA_MERCHANT_ID, XSOLLA_API_KEY, XSOLLA_PROJECT_ID
-const MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
-const API_KEY = process.env.XSOLLA_API_KEY;
-const PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
-if (!MERCHANT_ID || !API_KEY || !PROJECT_ID) {
-  console.error('Stel XSOLLA_MERCHANT_ID, XSOLLA_API_KEY en XSOLLA_PROJECT_ID in je environment.');
+// --- Environment variables ---
+const FB_APP_ID = process.env.FB_APP_ID;
+const FB_APP_SECRET = process.env.FB_APP_SECRET;
+const XSOLLA_MERCHANT_ID = process.env.XSOLLA_MERCHANT_ID;
+const XSOLLA_API_KEY = process.env.XSOLLA_API_KEY;
+const XSOLLA_PROJECT_ID = process.env.XSOLLA_PROJECT_ID;
+
+if(!FB_APP_ID || !FB_APP_SECRET || !XSOLLA_MERCHANT_ID || !XSOLLA_API_KEY || !XSOLLA_PROJECT_ID){
+  console.error('Zorg dat FB_APP_ID, FB_APP_SECRET, XSOLLA_MERCHANT_ID, XSOLLA_API_KEY en XSOLLA_PROJECT_ID in env staan.');
   process.exit(1);
 }
 
-// helper: basic auth header
-function authHeader() {
-  const token = Buffer.from(`${MERCHANT_ID}:${API_KEY}`).toString('base64');
+// --- Helper: Xsolla auth header ---
+function xsollaAuthHeader(){
+  const token = Buffer.from(`${XSOLLA_MERCHANT_ID}:${XSOLLA_API_KEY}`).toString('base64');
   return `Basic ${token}`;
 }
 
-/*
-  Endpoint verwacht body: {
-    user: { id: { value: "demo_user" }, name: { value: "Demo" }, email: { value: "x@x" }, country: { value: "NL" } },
-    purchase: { items: [{ sku: "skin_001", quantity: 1 }] },
-    sandbox: true
-  }
-*/
-app.post('/create_payment_token', async (req, res) => {
-  try {
-    const body = req.body || {};
-    // make sure required fields present; Xsolla requires user + purchase.items
-    if (!body.user || !body.purchase || !Array.isArray(body.purchase.items) || body.purchase.items.length === 0) {
-      return res.status(400).send('Invalid payload: user and purchase.items required');
+// --- Verifieer Facebook token server-side ---
+async function verifyFacebookToken(userAccessToken){
+  const appAccessToken = `${FB_APP_ID}|${FB_APP_SECRET}`;
+  const debugUrl = `https://graph.facebook.com/debug_token?input_token=${encodeURIComponent(userAccessToken)}&access_token=${encodeURIComponent(appAccessToken)}`;
+  const resp = await axios.get(debugUrl, {timeout:10000});
+  return resp.data && resp.data.data;
+}
+
+// --- Endpoint: create Xsolla payment token ---
+app.post('/create_payment_token', async (req,res)=>{
+  try{
+    const { fb_user_id, fb_access_token, purchase, sandbox } = req.body;
+    if(!fb_user_id || !fb_access_token || !purchase || !Array.isArray(purchase.items) || purchase.items.length===0){
+      return res.status(400).send('fb_user_id, fb_access_token en purchase.items vereist');
     }
 
-    // forward to Xsolla Create payment token for purchase (server-side)
-    const xsollaUrl = `https://api.xsolla.com/v3/project/${PROJECT_ID}/admin/payment/token`;
-    // Note: docs indicate Basic Auth; we pass it via axios auth or header
-    const headers = {
-      'Authorization': authHeader(),
-      'Content-Type': 'application/json'
+    // 1) Verifieer Facebook token
+    const fbDebug = await verifyFacebookToken(fb_access_token);
+    if(!fbDebug || !fbDebug.is_valid) return res.status(401).send('Facebook token ongeldig');
+    if(String(fbDebug.user_id)!==String(fb_user_id)) return res.status(401).send('FB user_id komt niet overeen met token');
+    if(String(fbDebug.app_id)!==String(FB_APP_ID)) return res.status(401).send('FB token is niet voor deze app');
+
+    // 2) Bouw Xsolla request body
+    const xsollaBody = {
+      user: { id: { value: String(fb_user_id) } },
+      purchase: { items: purchase.items.map(it=>({sku:String(it.sku), quantity: it.quantity||1})) }
     };
+    if(sandbox) xsollaBody.sandbox = true;
 
-    // include sandbox flag if provided
-    const reqBody = {
-      ...body
-    };
+    // 3) Maak token bij Xsolla
+    const xsollaUrl = `https://api.xsolla.com/v3/project/${XSOLLA_PROJECT_ID}/admin/payment/token`;
+    const xsollaResp = await axios.post(xsollaUrl, xsollaBody, {
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization': xsollaAuthHeader()
+      },
+      timeout:15000
+    });
 
-    // POST to Xsolla
-    const resp = await axios.post(xsollaUrl, reqBody, { headers, timeout: 15000 });
+    return res.json({ token: xsollaResp.data.token, sandbox: !!sandbox, raw: xsollaResp.data });
 
-    // resp.data should contain token
-    // return { token: <token>, sandbox: true/false }
-    return res.json({ token: resp.data.token, sandbox: !!body.sandbox, raw: resp.data });
-  } catch (err) {
-    console.error('Xsolla token error', err.response ? err.response.data : err.message);
-    const message = err.response && err.response.data ? JSON.stringify(err.response.data) : err.message;
-    return res.status(500).send('Fout bij maken token: ' + message);
+  }catch(err){
+    console.error('create_payment_token error', err.response?err.response.data:err.message);
+    const msg = err.response && err.response.data ? JSON.stringify(err.response.data) : err.message;
+    return res.status(500).send('Server error: '+msg);
   }
 });
 
-// Serve static client files if you want (optional)
-app.use(express.static('public')); // zet index.html in /public
+// --- Serve static frontend files ---
+app.use(express.static(path.join(__dirname,'public'))); // zet index.html in /public
 
-const port = process.env.PORT || 3000;
-app.listen(port, ()=> console.log('Server draait op port', port));
+// --- Start server ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT,()=>console.log(`Server draait op port ${PORT}`));
