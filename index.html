@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <title>Muziekspeler</title>
+  <title>Muziekspeler Pro</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -15,21 +15,16 @@
       background: #1db954;
       color: white;
       border: none;
-      padding: 12px 18px;
-      margin: 6px;
-      font-size: 15px;
+      padding: 10px 16px;
+      margin: 4px;
+      font-size: 14px;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s;
     }
-    button:hover {
-      background: #1ed760;
-    }
-    input[type="file"] {
-      margin: 15px;
-    }
-    #playlist {
-      margin-top: 25px;
+    button:hover { background: #1ed760; }
+    input[type="file"], input[type="text"] { margin: 10px; }
+    #playlist, #searchResults {
+      margin-top: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -38,30 +33,26 @@
     .track {
       background: #222;
       padding: 10px;
-      width: 60%;
+      width: 70%;
       border-radius: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: background 0.2s;
     }
-    .track.playing {
-      background: #1db954;
-    }
-    .controls {
-      display: flex;
-      gap: 6px;
-    }
-    .track-name {
-      flex: 1;
-      text-align: left;
-    }
+    .track.playing { background: #1db954; }
+    .controls { display: flex; gap: 4px; }
+    iframe { margin-top: 15px; display: none; }
   </style>
 </head>
 <body>
-  <h1>🎵 Muziekspeler</h1>
+  <h1>🎵 Muziekspeler Pro</h1>
 
-  <input type="file" id="fileInput" accept="audio/*" multiple>
+  <div>
+    <input type="file" id="fileInput" accept="audio/*" multiple>
+    <input type="file" id="adInput" accept="audio/*" multiple>
+    <label for="adInput">📢 Upload reclame-deuntjes</label>
+  </div>
+
   <div>
     <button id="prevButton">⏮️ Vorige</button>
     <button id="playButton">▶️ Afspelen</button>
@@ -69,136 +60,180 @@
     <button id="stopButton">⏹️ Stop</button>
   </div>
 
+  <h3>🔍 Zoek YouTube:</h3>
+  <input type="text" id="searchInput" placeholder="Zoek nummer...">
+  <button id="searchButton">Zoek</button>
+
+  <div id="searchResults"></div>
+
+  <h3>📜 Playlist</h3>
   <div id="playlist"></div>
+
+  <iframe id="youtubePlayer" width="0" height="0"></iframe>
 
   <script>
     const fileInput = document.getElementById('fileInput');
+    const adInput = document.getElementById('adInput');
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const searchResults = document.getElementById('searchResults');
     const playButton = document.getElementById('playButton');
     const stopButton = document.getElementById('stopButton');
     const nextButton = document.getElementById('nextButton');
     const prevButton = document.getElementById('prevButton');
     const playlistDiv = document.getElementById('playlist');
+    const youtubeFrame = document.getElementById('youtubePlayer');
 
-    let playlist = [];
+    let playlist = JSON.parse(localStorage.getItem('playlist')) || [];
+    let ads = JSON.parse(localStorage.getItem('ads')) || [];
     let currentIndex = 0;
-    let audio = new Audio();
     let isPlaying = false;
+    let trackCount = 0;
+    let audio = new Audio();
 
-    // Upload bestanden
-    fileInput.addEventListener('change', (e) => {
-      for (let file of e.target.files) {
-        const url = URL.createObjectURL(file);
-        playlist.push({ name: file.name, url });
-      }
-      renderPlaylist();
-    });
+    function saveData() {
+      localStorage.setItem('playlist', JSON.stringify(playlist));
+      localStorage.setItem('ads', JSON.stringify(ads));
+    }
 
     function renderPlaylist() {
       playlistDiv.innerHTML = '';
       playlist.forEach((track, i) => {
         const div = document.createElement('div');
         div.className = 'track' + (i === currentIndex && isPlaying ? ' playing' : '');
-        
         const name = document.createElement('div');
-        name.className = 'track-name';
         name.textContent = `${i + 1}. ${track.name}`;
-
         const controls = document.createElement('div');
         controls.className = 'controls';
 
-        // Verwijder knop
-        const delBtn = document.createElement('button');
-        delBtn.textContent = '🗑️';
-        delBtn.onclick = () => {
-          if (i === currentIndex && isPlaying) {
-            audio.pause();
-          }
+        const up = document.createElement('button');
+        up.textContent = '⬆️';
+        up.onclick = () => {
+          if (i > 0) [playlist[i], playlist[i - 1]] = [playlist[i - 1], playlist[i]];
+          saveData(); renderPlaylist();
+        };
+
+        const down = document.createElement('button');
+        down.textContent = '⬇️';
+        down.onclick = () => {
+          if (i < playlist.length - 1) [playlist[i], playlist[i + 1]] = [playlist[i + 1], playlist[i]];
+          saveData(); renderPlaylist();
+        };
+
+        const del = document.createElement('button');
+        del.textContent = '🗑️';
+        del.onclick = () => {
           playlist.splice(i, 1);
-          if (currentIndex >= playlist.length) currentIndex = 0;
-          renderPlaylist();
+          saveData(); renderPlaylist();
         };
 
-        // Omhoog knop
-        const upBtn = document.createElement('button');
-        upBtn.textContent = '⬆️';
-        upBtn.onclick = () => {
-          if (i > 0) {
-            [playlist[i], playlist[i - 1]] = [playlist[i - 1], playlist[i]];
-            if (currentIndex === i) currentIndex--;
-            else if (currentIndex === i - 1) currentIndex++;
-            renderPlaylist();
-          }
-        };
-
-        // Omlaag knop
-        const downBtn = document.createElement('button');
-        downBtn.textContent = '⬇️';
-        downBtn.onclick = () => {
-          if (i < playlist.length - 1) {
-            [playlist[i], playlist[i + 1]] = [playlist[i + 1], playlist[i]];
-            if (currentIndex === i) currentIndex++;
-            else if (currentIndex === i + 1) currentIndex--;
-            renderPlaylist();
-          }
-        };
-
-        controls.appendChild(upBtn);
-        controls.appendChild(downBtn);
-        controls.appendChild(delBtn);
-
+        controls.appendChild(up);
+        controls.appendChild(down);
+        controls.appendChild(del);
         div.appendChild(name);
         div.appendChild(controls);
         playlistDiv.appendChild(div);
       });
     }
 
+    // --- Upload lokale bestanden ---
+    fileInput.addEventListener('change', e => {
+      for (let file of e.target.files) {
+        const url = URL.createObjectURL(file);
+        playlist.push({ type: 'local', name: file.name, url });
+      }
+      saveData(); renderPlaylist();
+    });
+
+    // --- Upload reclames ---
+    adInput.addEventListener('change', e => {
+      for (let file of e.target.files) {
+        const url = URL.createObjectURL(file);
+        ads.push({ name: file.name, url });
+      }
+      saveData();
+      alert("Reclame toegevoegd!");
+    });
+
+    // --- YouTube zoeken ---
+    const YT_API_KEY = "YOUR_API_KEY_HERE"; // vervang door jouw echte YouTube Data API v3 sleutel
+    searchButton.onclick = async () => {
+      const query = searchInput.value.trim();
+      if (!query) return;
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=${encodeURIComponent(query)}&key=${YT_API_KEY}`);
+      const data = await res.json();
+      searchResults.innerHTML = '';
+      data.items.forEach(video => {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <img src="${video.snippet.thumbnails.default.url}" />
+          <strong>${video.snippet.title}</strong>
+          <button>➕ Voeg toe</button>
+        `;
+        div.querySelector('button').onclick = () => {
+          playlist.push({
+            type: 'youtube',
+            name: video.snippet.title,
+            videoId: video.id.videoId
+          });
+          saveData(); renderPlaylist();
+        };
+        searchResults.appendChild(div);
+      });
+    };
+
+    // --- Afspeelfuncties ---
     function playTrack(index) {
       if (playlist.length === 0) return;
-      currentIndex = index;
-      audio.src = playlist[index].url;
-      audio.play();
+      const track = playlist[index];
       isPlaying = true;
+      currentIndex = index;
+      youtubeFrame.style.display = 'none';
+      audio.pause();
+
+      if (track.type === 'local') {
+        audio.src = track.url;
+        audio.play();
+      } else if (track.type === 'youtube') {
+        youtubeFrame.src = `https://www.youtube.com/embed/${track.videoId}?autoplay=1`;
+        youtubeFrame.style.display = 'block';
+      }
       renderPlaylist();
     }
 
-    // Volgende track
     function nextTrack() {
-      if (playlist.length === 0) return;
+      trackCount++;
+      if (ads.length > 0 && trackCount % 3 === 0) {
+        const ad = ads[Math.floor(Math.random() * ads.length)];
+        audio.src = ad.url;
+        youtubeFrame.style.display = 'none';
+        audio.play();
+        audio.onended = () => {
+          currentIndex = (currentIndex + 1) % playlist.length;
+          playTrack(currentIndex);
+        };
+        return;
+      }
       currentIndex = (currentIndex + 1) % playlist.length;
       playTrack(currentIndex);
     }
 
-    // Vorige track
     function prevTrack() {
-      if (playlist.length === 0) return;
       currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
       playTrack(currentIndex);
     }
 
-    // Eventlisteners
-    playButton.addEventListener('click', () => {
-      if (!isPlaying) playTrack(currentIndex);
-      else audio.play(); // hervatten als gepauzeerd
-    });
-
-    stopButton.addEventListener('click', () => {
-      audio.pause();
-      isPlaying = false;
-      audio.currentTime = 0;
-      renderPlaylist();
-    });
-
-    nextButton.addEventListener('click', nextTrack);
-    prevButton.addEventListener('click', prevTrack);
+    playButton.onclick = () => { if (!isPlaying) playTrack(currentIndex); };
+    stopButton.onclick = () => { audio.pause(); isPlaying = false; youtubeFrame.src = ''; renderPlaylist(); };
+    nextButton.onclick = nextTrack;
+    prevButton.onclick = prevTrack;
 
     audio.addEventListener('ended', () => {
       if (isPlaying) nextTrack();
     });
 
-    // Muziek blijft spelen bij tab wissel (zolang tab niet gesloten wordt)
-    document.addEventListener('visibilitychange', () => {
-      // niets nodig, blijft vanzelf doorgaan
-    });
+    // --- Init ---
+    renderPlaylist();
   </script>
 </body>
 </html>
