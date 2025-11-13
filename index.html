@@ -15,27 +15,46 @@
       background: #1db954;
       color: white;
       border: none;
-      padding: 12px 20px;
-      margin: 8px;
-      font-size: 16px;
+      padding: 12px 18px;
+      margin: 6px;
+      font-size: 15px;
       border-radius: 8px;
       cursor: pointer;
+      transition: background 0.2s;
     }
     button:hover {
       background: #1ed760;
     }
     input[type="file"] {
-      margin: 20px;
+      margin: 15px;
     }
     #playlist {
-      margin-top: 20px;
+      margin-top: 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
     }
     .track {
       background: #222;
       padding: 10px;
-      margin: 5px auto;
       width: 60%;
       border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .track.playing {
+      background: #1db954;
+    }
+    .controls {
+      display: flex;
+      gap: 6px;
+    }
+    .track-name {
+      flex: 1;
+      text-align: left;
     }
   </style>
 </head>
@@ -44,7 +63,9 @@
 
   <input type="file" id="fileInput" accept="audio/*" multiple>
   <div>
+    <button id="prevButton">⏮️ Vorige</button>
     <button id="playButton">▶️ Afspelen</button>
+    <button id="nextButton">⏭️ Volgende</button>
     <button id="stopButton">⏹️ Stop</button>
   </div>
 
@@ -54,6 +75,8 @@
     const fileInput = document.getElementById('fileInput');
     const playButton = document.getElementById('playButton');
     const stopButton = document.getElementById('stopButton');
+    const nextButton = document.getElementById('nextButton');
+    const prevButton = document.getElementById('prevButton');
     const playlistDiv = document.getElementById('playlist');
 
     let playlist = [];
@@ -61,7 +84,7 @@
     let audio = new Audio();
     let isPlaying = false;
 
-    // Voeg geüploade bestanden toe aan playlist
+    // Upload bestanden
     fileInput.addEventListener('change', (e) => {
       for (let file of e.target.files) {
         const url = URL.createObjectURL(file);
@@ -74,44 +97,107 @@
       playlistDiv.innerHTML = '';
       playlist.forEach((track, i) => {
         const div = document.createElement('div');
-        div.className = 'track';
-        div.textContent = `${i + 1}. ${track.name}`;
+        div.className = 'track' + (i === currentIndex && isPlaying ? ' playing' : '');
+        
+        const name = document.createElement('div');
+        name.className = 'track-name';
+        name.textContent = `${i + 1}. ${track.name}`;
+
+        const controls = document.createElement('div');
+        controls.className = 'controls';
+
+        // Verwijder knop
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '🗑️';
+        delBtn.onclick = () => {
+          if (i === currentIndex && isPlaying) {
+            audio.pause();
+          }
+          playlist.splice(i, 1);
+          if (currentIndex >= playlist.length) currentIndex = 0;
+          renderPlaylist();
+        };
+
+        // Omhoog knop
+        const upBtn = document.createElement('button');
+        upBtn.textContent = '⬆️';
+        upBtn.onclick = () => {
+          if (i > 0) {
+            [playlist[i], playlist[i - 1]] = [playlist[i - 1], playlist[i]];
+            if (currentIndex === i) currentIndex--;
+            else if (currentIndex === i - 1) currentIndex++;
+            renderPlaylist();
+          }
+        };
+
+        // Omlaag knop
+        const downBtn = document.createElement('button');
+        downBtn.textContent = '⬇️';
+        downBtn.onclick = () => {
+          if (i < playlist.length - 1) {
+            [playlist[i], playlist[i + 1]] = [playlist[i + 1], playlist[i]];
+            if (currentIndex === i) currentIndex++;
+            else if (currentIndex === i + 1) currentIndex--;
+            renderPlaylist();
+          }
+        };
+
+        controls.appendChild(upBtn);
+        controls.appendChild(downBtn);
+        controls.appendChild(delBtn);
+
+        div.appendChild(name);
+        div.appendChild(controls);
         playlistDiv.appendChild(div);
       });
     }
 
-    // Afspelen van huidige track
     function playTrack(index) {
       if (playlist.length === 0) return;
+      currentIndex = index;
       audio.src = playlist[index].url;
       audio.play();
       isPlaying = true;
+      renderPlaylist();
     }
 
-    // Volgende track of terug naar 1
-    audio.addEventListener('ended', () => {
-      if (!isPlaying) return;
+    // Volgende track
+    function nextTrack() {
+      if (playlist.length === 0) return;
       currentIndex = (currentIndex + 1) % playlist.length;
       playTrack(currentIndex);
-    });
+    }
 
+    // Vorige track
+    function prevTrack() {
+      if (playlist.length === 0) return;
+      currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+      playTrack(currentIndex);
+    }
+
+    // Eventlisteners
     playButton.addEventListener('click', () => {
-      if (!isPlaying) {
-        playTrack(currentIndex);
-      }
+      if (!isPlaying) playTrack(currentIndex);
+      else audio.play(); // hervatten als gepauzeerd
     });
 
     stopButton.addEventListener('click', () => {
       audio.pause();
       isPlaying = false;
       audio.currentTime = 0;
+      renderPlaylist();
     });
 
-    // Blijven spelen bij tab wissel (browser doet dit standaard)
+    nextButton.addEventListener('click', nextTrack);
+    prevButton.addEventListener('click', prevTrack);
+
+    audio.addEventListener('ended', () => {
+      if (isPlaying) nextTrack();
+    });
+
+    // Muziek blijft spelen bij tab wissel (zolang tab niet gesloten wordt)
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && isPlaying) {
-        // niets doen: muziek blijft spelen zolang tab niet gesloten wordt
-      }
+      // niets nodig, blijft vanzelf doorgaan
     });
   </script>
 </body>
