@@ -1,243 +1,118 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agar.io Skins Shop — Facebook Login + Xsolla</title>
-<style>
-  :root{--bg:#071021;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;color-scheme:dark}
-  body{background:linear-gradient(180deg,#071021,#081726);color:#e6eef6;font-family:Inter,Arial;margin:0;padding:18px}
-  .wrap{max-width:1100px;margin:0 auto}
-  header{display:flex;justify-content:space-between;align-items:center}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:14px}
-  .card{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:8px}
-  .thumb{height:120px;border-radius:8px;background:#061226;display:flex;align-items:center;justify-content:center;overflow:hidden}
-  .thumb img{max-width:100%;max-height:100%;object-fit:contain}
-  .meta{display:flex;justify-content:space-between;align-items:center}
-  .name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .price{font-weight:800}
-  .orig{color:var(--muted);font-size:12px;text-decoration:line-through;margin-right:6px}
-  .controls{display:flex;gap:8px;align-items:center}
-  button{background:linear-gradient(180deg,var(--accent),#0ea5b6);border:0;padding:8px 10px;border-radius:8px;color:#022;cursor:pointer}
-  .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:7px;border-radius:8px}
-  .small{font-size:13px;color:var(--muted)}
-</style>
+  <meta charset="UTF-8">
+  <title>Muziekspeler</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 30px;
+    }
+    button {
+      background: #1db954;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      margin: 8px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1ed760;
+    }
+    input[type="file"] {
+      margin: 20px;
+    }
+    #playlist {
+      margin-top: 20px;
+    }
+    .track {
+      background: #222;
+      padding: 10px;
+      margin: 5px auto;
+      width: 60%;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1>Agar.io Skins — Shop (Facebook + Xsolla)</h1>
-      <div class="small">JSON: <code>configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json</code></div>
-    </div>
-    <div class="controls">
-      <div id="balance" class="small">Saldo: €0</div>
-      <button id="topUp" class="ghost">+€100 (demo)</button>
-    </div>
-  </header>
+  <h1>🎵 Muziekspeler</h1>
 
-  <div style="margin-top:12px;display:flex;gap:8px">
-    <input id="search" type="text" placeholder="Zoek skins..." style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#071426;color:inherit"/>
-    <button id="load">Laad skins</button>
+  <input type="file" id="fileInput" accept="audio/*" multiple>
+  <div>
+    <button id="playButton">▶️ Afspelen</button>
+    <button id="stopButton">⏹️ Stop</button>
   </div>
 
-  <div style="margin-top:8px">
-    <button id="fbLoginBtn">Inloggen met Facebook</button>
-    <span id="fbStatus" class="small"></span>
-  </div>
+  <div id="playlist"></div>
 
-  <div id="status" class="small" style="margin-top:8px;color:var(--muted)">Klik 'Laad skins' om te beginnen.</div>
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const playButton = document.getElementById('playButton');
+    const stopButton = document.getElementById('stopButton');
+    const playlistDiv = document.getElementById('playlist');
 
-  <div class="grid" id="grid"></div>
-</div>
+    let playlist = [];
+    let currentIndex = 0;
+    let audio = new Audio();
+    let isPlaying = false;
 
-<div id="fb-root"></div>
-<script>
-const JSON_URL = 'https://configs-web.agario.miniclippt.com/live/v15/10850/GameConfiguration.json';
-const grid = document.getElementById('grid');
-const statusEl = document.getElementById('status');
-const balanceEl = document.getElementById('balance');
-const loadBtn = document.getElementById('load');
-const searchInput = document.getElementById('search');
-const topUpBtn = document.getElementById('topUp');
-const fbLoginBtn = document.getElementById('fbLoginBtn');
-const fbStatus = document.getElementById('fbStatus');
+    // Voeg geüploade bestanden toe aan playlist
+    fileInput.addEventListener('change', (e) => {
+      for (let file of e.target.files) {
+        const url = URL.createObjectURL(file);
+        playlist.push({ name: file.name, url });
+      }
+      renderPlaylist();
+    });
 
-// --- Local demo state ---
-const LS_KEY = 'agar_xsolla_demo_v2';
-let state = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-if (!state.balance) state.balance = 50;
-if (!state.owned) state.owned = {};
-function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
-function renderBalance(){ balanceEl.textContent = 'Saldo: €' + state.balance.toFixed(2); }
-renderBalance();
-
-// --- Facebook login ---
-const FB_APP_ID = 'YOUR_FACEBOOK_APP_ID';
-let fbAccessToken = null;
-let fbUserId = null;
-
-window.fbAsyncInit = function() {
-  FB.init({appId: FB_APP_ID, cookie:true, xfbml:false, version:'v17.0'});
-  FB.getLoginStatus(updateFbStatus);
-};
-
-(function(d,s,id){
-  var js,fjs=d.getElementsByTagName(s)[0];
-  if(d.getElementById(id)) return;
-  js=d.createElement(s); js.id=id;
-  js.src="https://connect.facebook.net/en_US/sdk.js";
-  fjs.parentNode.insertBefore(js,fjs);
-}(document,'script','facebook-jssdk'));
-
-function updateFbStatus(response){
-  if(response && response.status==='connected'){
-    fbAccessToken=response.authResponse.accessToken;
-    fbUserId=response.authResponse.userID;
-    fbStatus.textContent='Ingelogd als FB ID: '+fbUserId;
-    fbLoginBtn.textContent='Uitloggen';
-  } else {
-    fbAccessToken=null;
-    fbUserId=null;
-    fbStatus.textContent='Niet ingelogd';
-    fbLoginBtn.textContent='Inloggen met Facebook';
-  }
-}
-
-fbLoginBtn.addEventListener('click', ()=>{
-  FB.getLoginStatus(response=>{
-    if(response && response.status==='connected'){
-      FB.logout(r=>{updateFbStatus(r)});
-    } else {
-      FB.login(resp=>{
-        if(resp.authResponse){ fbAccessToken=resp.authResponse.accessToken; fbUserId=resp.authResponse.userID; updateFbStatus(resp);}
-        else alert('Facebook login geweigerd');
-      },{scope:'public_profile,email'});
+    function renderPlaylist() {
+      playlistDiv.innerHTML = '';
+      playlist.forEach((track, i) => {
+        const div = document.createElement('div');
+        div.className = 'track';
+        div.textContent = `${i + 1}. ${track.name}`;
+        playlistDiv.appendChild(div);
+      });
     }
-  });
-});
 
-// --- Utility functions ---
-function setStatus(msg, err=false){ statusEl.textContent=msg; statusEl.style.color=err?'#ff9b9b':'var(--muted)'; }
-function extractSkins(data){
-  if(Array.isArray(data)) return data;
-  const candidates=['skins','items','Skins','Items','skinsList','availableSkins'];
-  for(const k of candidates) if(Array.isArray(data[k])) return data[k];
-  const found=[]; (function rec(o){ if(Array.isArray(o)){for(const i of o) if(i && typeof i==='object') found.push(i)}
-  else if(o && typeof o==='object'){for(const v of Object.values(o)) rec(v)}})(data);
-  return found.filter(x=>x && (x.name||x.id||x.icon||x.image));
-}
-function getImage(item){return item.image||item.icon||item.url||item.thumbnail||null;}
-function getName(item,idx){return item.name||item.title||item.id||('skin #'+(idx+1));}
-function getPrice(item){
-  const c=['price','cost','value','credits','coins','price_usd'];
-  for(const k of c) if(k in item){
-    const v=item[k]; if(typeof v==='number') return v;
-    if(typeof v==='string'){const n=parseFloat(v.replace(/[^0-9.\-]/g,'')); if(!isNaN(n)) return n;}
-  }
-  const id=(item.id||item.name||JSON.stringify(item)).toString();
-  let h=0; for(let i=0;i<id.length;i++) h=((h<<5)-h)+id.charCodeAt(i);
-  const base=Math.abs(h)%100+1; return parseFloat((base/10).toFixed(2));
-}
-function getOriginalPrice(item,price){
-  const c=['originalPrice','original_price','basePrice','msrp'];
-  for(const k of c) if(k in item){
-    const v=item[k]; if(typeof v==='number') return v;
-    if(typeof v==='string'){ const n=parseFloat(v.replace(/[^0-9.\-]/g,'')); if(!isNaN(n)) return n; }
-  }
-  return price;
-}
+    // Afspelen van huidige track
+    function playTrack(index) {
+      if (playlist.length === 0) return;
+      audio.src = playlist[index].url;
+      audio.play();
+      isPlaying = true;
+    }
 
-// --- Load skins ---
-async function loadAndRender(){
-  setStatus('Laden...');
-  try{
-    const r=await fetch(JSON_URL,{cache:'no-store'});
-    if(!r.ok) throw new Error('Netwerkfout '+r.status);
-    const data=await r.json();
-    const items=extractSkins(data);
-    window._lastItems=items;
-    renderItems(items);
-  }catch(e){ setStatus('Fout bij laden: '+e.message,true); console.error(e); }
-}
+    // Volgende track of terug naar 1
+    audio.addEventListener('ended', () => {
+      if (!isPlaying) return;
+      currentIndex = (currentIndex + 1) % playlist.length;
+      playTrack(currentIndex);
+    });
 
-function renderItems(items){
-  grid.innerHTML='';
-  if(!items||!items.length){setStatus('Geen skins gevonden.'); return;}
-  setStatus('Skins gevonden: '+items.length);
-  const q=(searchInput.value||'').toLowerCase();
-  items.forEach((it,idx)=>{
-    const name=getName(it,idx);
-    if(q && !name.toLowerCase().includes(q) && !(it.id && String(it.id).toLowerCase().includes(q))) return;
-    const img=getImage(it);
-    const price=getPrice(it);
-    const orig=getOriginalPrice(it,price);
-    const owned=!!state.owned[name];
+    playButton.addEventListener('click', () => {
+      if (!isPlaying) {
+        playTrack(currentIndex);
+      }
+    });
 
-    const card=document.createElement('div'); card.className='card';
-    const thumb=document.createElement('div'); thumb.className='thumb';
-    const imgEl=document.createElement('img');
-    if(img){imgEl.src=img; imgEl.alt=name; imgEl.onerror=()=>{imgEl.style.display='none'; thumb.textContent='Geen afbeelding'}; thumb.appendChild(imgEl);}
-    else thumb.textContent='Geen afbeelding';
+    stopButton.addEventListener('click', () => {
+      audio.pause();
+      isPlaying = false;
+      audio.currentTime = 0;
+    });
 
-    const meta=document.createElement('div'); meta.className='meta';
-    const nm=document.createElement('div'); nm.className='name'; nm.title=name; nm.textContent=name;
-    const pr=document.createElement('div');
-    if(orig!==price) pr.innerHTML=`<span class="orig">€${orig.toFixed(2)}</span><span class="price">€${price.toFixed(2)}</span>`;
-    else pr.innerHTML=`<span class="price">€${price.toFixed(2)}</span>`;
-    meta.appendChild(nm); meta.appendChild(pr);
-
-    const btnArea=document.createElement('div'); btnArea.style.display='flex'; btnArea.style.gap='8px';
-    const buyBtn=document.createElement('button'); buyBtn.textContent=owned?'Gekocht':'Betaal (Xsolla)';
-    buyBtn.disabled=owned;
-    buyBtn.addEventListener('click', ()=> buyWithXsolla(it,name,price));
-
-    const demoBtn=document.createElement('button'); demoBtn.className='ghost'; demoBtn.textContent='Mock koop';
-    demoBtn.onclick=()=> mockBuy(name,price,orig,it);
-
-    btnArea.appendChild(buyBtn); btnArea.appendChild(demoBtn);
-    card.appendChild(thumb); card.appendChild(meta); card.appendChild(btnArea);
-    grid.appendChild(card);
-  });
-}
-
-// --- Demo / mock koop ---
-function mockBuy(name,price,orig,item){
-  if(state.balance<price){ alert('Onvoldoende saldo (demo)'); return;}
-  state.balance=Math.round((state.balance-price)*100)/100;
-  state.owned[name]={price,originalPrice:orig,time:new Date().toISOString(),item};
-  saveState(); renderBalance(); renderItems(window._lastItems);
-  alert('Mock aankoop voltooid: '+name);
-}
-
-// --- Real Xsolla purchase ---
-async function buyWithXsolla(item,name,price){
-  if(!fbAccessToken || !fbUserId){alert('Je moet eerst inloggen met Facebook.'); return;}
-  const payload={
-    fb_user_id: fbUserId,
-    fb_access_token: fbAccessToken,
-    purchase:{ items:[{sku:item.sku||item.id||name,quantity:1}], amount:price },
-    sandbox:true
-  };
-  setStatus('Aanmaken betaling (server)...');
-  try{
-    const res=await fetch('/create_payment_token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if(!res.ok){ const t=await res.text(); throw new Error('Server fout: '+res.status+' — '+t);}
-    const data=await res.json();
-    if(!data.token) throw new Error('Geen token ontvangen');
-    const payUrl=data.sandbox?`https://sandbox-secure.xsolla.com/paystation4/?token=${data.token}`:`https://secure.xsolla.com/paystation4/?token=${data.token}`;
-    window.open(payUrl,'_blank','noopener');
-    setStatus('Betalingsvenster geopend. Voltooi betaling in Pay Station.');
-  }catch(e){ console.error(e); setStatus('Fout bij betaling: '+e.message,true); alert('Fout: '+e.message);}
-}
-
-// --- Events ---
-loadBtn.addEventListener('click', loadAndRender);
-searchInput.addEventListener('input', ()=>{if(window._lastItems) renderItems(window._lastItems)});
-topUpBtn.addEventListener('click', ()=>{ state.balance+=100; saveState(); renderBalance(); setStatus('Saldo verhoogd (demo)'); });
-
-// Auto-load
-loadAndRender();
-</script>
+    // Blijven spelen bij tab wissel (browser doet dit standaard)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && isPlaying) {
+        // niets doen: muziek blijft spelen zolang tab niet gesloten wordt
+      }
+    });
+  </script>
 </body>
 </html>
