@@ -11,78 +11,146 @@
 </style>
 </head>
 <body>
-<h2>📻 Bedrijfs Radio Station</h2>
-<p>Automatische muziek + reclames + non-stop afspeelmodus.</p>
+<header style="text-align:center;padding:20px;background:#0a0a0a;border-radius:10px;margin-bottom:15px;">
+ <img src="logo.png" alt="Bedrijfslogo" style="height:80px;">
+ <h1>📻 Bedrijfs Radio Station PRO</h1>
+ <p>Professionele radio voor bedrijven – volledig automatisch, met reclames, jingles en programmering.</p>
+</header>
 
-<div class="block">
- <h3>Muziek Uploaden</h3>
- <input type="file" id="musicUpload" accept="audio/*" multiple>
- <button onclick="uploadMusic()">Upload</button>
- <div id="musicList"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+ <div class="block">
+   <h3>Muziek Uploaden</h3>
+   <input type="file" id="musicUpload" accept="audio/*" multiple>
+   <button onclick="uploadMusic()">Upload</button>
+   <div id="musicList"></div>
+ </div>
+
+ <div class="block">
+   <h3>Reclames Uploaden</h3>
+   <input type="file" id="adUpload" accept="audio/*" multiple>
+   <button onclick="uploadAd()">Upload Reclame</button>
+   <p>Totaal reclames: <span id="adCount">0</span></p>
+   <div id="adList"></div>
+ </div>
+
+ <div class="block">
+   <h3>Jingles (Voice-overs)</h3>
+   <input type="file" id="jingleUpload" accept="audio/*" multiple>
+   <button onclick="uploadJingle()">Upload Jingle</button>
+   <div id="jingleList"></div>
+ </div>
+
+ <div class="block">
+   <h3>Programmering</h3>
+   <label>Reclameblok elke:</label>
+   <select id="schedule">
+     <option value="5">5 minuten</option>
+     <option value="10">10 minuten</option>
+     <option value="30">30 minuten</option>
+     <option value="60">60 minuten</option>
+   </select>
+   <br><br>
+   <label>Start automatisch bij openen:</label>
+   <input type="checkbox" id="autoStart">
+ </div>
+
+ <div class="block">
+   <h3>Radio Bediening</h3>
+   <button onclick="startRadio()">▶ Start Radio</button>
+   <button onclick="stopRadio()">⏹ Stop</button>
+   <button onclick="nextSong()">⏭ Volgende</button>
+   <button onclick="playRandom()">🔀 Shuffle</button>
+ </div>
 </div>
 
-<div class="block">
- <h3>Reclames Uploaden</h3>
- <input type="file" id="adUpload" accept="audio/*" multiple>
- <button onclick="uploadAd()">Upload Reclame</button>
- <p>Aantal reclames: <span id="adCount">0</span></p>
- <div id="adList"></div>
-</div>
-
-<div class="block">
- <h3>Instellingen</h3>
- <label>Nummers vóór een reclame:</label>
- <input type="number" id="interval" value="3" min="1" max="10"><br><br>
- <label>Reclames achter elkaar:</label>
- <input type="number" id="chain" value="1" min="1" max="5"><br><br>
- <button onclick="saveConfig()">Instellingen Opslaan</button>
-</div>
-
-<div class="block">
- <h3>Radio Bediening</h3>
- <button onclick="startRadio()">▶ Start Radio</button>
- <button onclick="stopRadio()">⏹ Stop</button>
- <button onclick="nextSong()">⏭ Volgende</button>
-</div>
-
-<audio id="player" controls style="width:100%;margin-top:20px;"></audio>
+<audio id="player" controls style="width:100%;margin-top:20px;"></audio id="player" controls style="width:100%;margin-top:20px;"></audio>
 
 <script>
-let music = JSON.parse(localStorage.getItem('radio_music')||'[]');
-let ads = JSON.parse(localStorage.getItem('radio_ads')||'[]');
-let interval = Number(localStorage.getItem('radio_interval')||3);
-let chain = Number(localStorage.getItem('radio_chain')||1);
-let index = 0;
-let playCount = 0;
-let playingAds = false;
-let adQueue = [];
-const player = document.getElementById('player');
-
-function refresh(){
- musicList.innerHTML = music.map((m,i)=>`<div class='list-item'>${i+1}. ${m.name}</div>`).join('');
- adList.innerHTML = ads.map((a,i)=>`<div class='list-item'>${i+1}. ${a.name}</div>`).join('');
- adCount.innerText = ads.length;
- interval.value = interval;
- chain.value = chain;
+// --- FIX: bestanden worden nu opgeslagen in IndexedDB zodat ze blijven werken na refresh ---
+// IndexedDB helper
+function saveFileToDB(store, fileObj) {
+ return new Promise((resolve)=>{
+   const req = indexedDB.open('RadioDB',1);
+   req.onupgradeneeded = ()=>{
+     const db=req.result;
+     if(!db.objectStoreNames.contains('music')) db.createObjectStore('music');
+     if(!db.objectStoreNames.contains('ads')) db.createObjectStore('ads');
+   };
+   req.onsuccess = ()=>{
+     const db=req.result;
+     const tx=db.transaction(store,'readwrite');
+     tx.objectStore(store).put(fileObj.file, fileObj.name);
+     tx.oncomplete=()=>resolve();
+   };
+ });
 }
 
-function uploadMusic(){
- const files = musicUpload.files;
- for(let f of files){ music.push({name:f.name,url:URL.createObjectURL(f)}); }
- localStorage.setItem('radio_music',JSON.stringify(music));
+function loadFilesFromDB(store){
+ return new Promise((resolve)=>{
+   const req=indexedDB.open('RadioDB',1);
+   req.onsuccess=()=>{
+     const db=req.result;
+     const tx=db.transaction(store,'readonly');
+     const storeObj=tx.objectStore(store);
+     const result=[];
+     storeObj.openCursor().onsuccess=(ev)=>{
+       const cursor=ev.target.result;
+       if(cursor){
+         result.push({ name: cursor.key, blob: cursor.value });
+         cursor.continue();
+       } else resolve(result);
+     };
+   };
+ });
+}
+
+let music=[];
+let ads=[];
+let interval=3;
+let chain=1;
+let index=0;
+let playCount=0;
+let playingAds=false;
+let adQueue=[];
+const player=document.getElementById('player');
+
+async function init(){
+ const savedMusic=await loadFilesFromDB('music');
+ const savedAds=await loadFilesFromDB('ads');
+ music=savedMusic.map(f=>({ name:f.name, url:URL.createObjectURL(f.blob) }));
+ ads=savedAds.map(f=>({ name:f.name, url:URL.createObjectURL(f.blob) }));
  refresh();
 }
 
-function uploadAd(){
- const files = adUpload.files;
- for(let f of files){ ads.push({name:f.name,url:URL.createObjectURL(f)}); }
- localStorage.setItem('radio_ads',JSON.stringify(ads));
+function refresh(){
+ musicList.innerHTML=music.map((m,i)=>`<div class='list-item'>${i+1}. ${m.name}</div>`).join('');
+ adList.innerHTML=ads.map((a,i)=>`<div class='list-item'>${i+1}. ${a.name}</div>`).join('');
+ adCount.innerText=ads.length;
+ interval.value=interval;
+ chain.value=chain;
+}
+
+async function uploadMusic(){
+ const files=musicUpload.files;
+ for(let f of files){
+   music.push({name:f.name, url:URL.createObjectURL(f)});
+   await saveFileToDB('music',{name:f.name,file:f});
+ }
+ refresh();
+}
+
+async function uploadAd(){
+ const files=adUpload.files;
+ for(let f of files){
+   ads.push({name:f.name, url:URL.createObjectURL(f)});
+   await saveFileToDB('ads',{name:f.name,file:f});
+ }
  refresh();
 }
 
 function saveConfig(){
- interval = Number(document.getElementById('interval').value);
- chain = Number(document.getElementById('chain').value);
+ interval=Number(document.getElementById('interval').value);
+ chain=Number(document.getElementById('chain').value);
  localStorage.setItem('radio_interval',interval);
  localStorage.setItem('radio_chain',chain);
  alert("Instellingen opgeslagen!");
@@ -91,36 +159,36 @@ function saveConfig(){
 function startRadio(){ if(!music.length){alert('Geen muziek!');return;} playSong(); }
 
 function playSong(){
- if(playingAds) return;
+ if(playingAds)return;
  if(playCount>=interval){ playAds(); return; }
- player.src = music[index].url;
+ player.src=music[index].url;
  player.play();
 }
 
 function playAds(){
- playingAds = true;
- adQueue = [];
+ playingAds=true;
+ adQueue=[];
  for(let i=0;i<chain;i++){
-  let r = ads[Math.floor(Math.random()*ads.length)];
-  if(r) adQueue.push(r.url);
+   let r=ads[Math.floor(Math.random()*ads.length)];
+   if(r) adQueue.push(r.url);
  }
- let first = adQueue.shift();
- if(first){ player.src = first; player.play(); }
+ let first=adQueue.shift();
+ if(first){ player.src=first; player.play(); }
 }
 
-player.onended = ()=>{
+player.onended=()=>{
  if(playingAds){
-  if(adQueue.length>0){ player.src = adQueue.shift(); player.play(); }
-  else{ playingAds=false; playCount=0; nextSong(); }
+   if(adQueue.length>0){ player.src=adQueue.shift(); player.play(); }
+   else{ playingAds=false; playCount=0; nextSong(); }
  } else {
-  playCount++; nextSong();
+   playCount++; nextSong();
  }
 };
 
 function nextSong(){ index=(index+1)%music.length; playSong(); }
 function stopRadio(){ player.pause(); }
 
-refresh();
+init();
 </script>
 </body>
 </html>
