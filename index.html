@@ -2,193 +2,411 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Bedrijfs Radio Station</title>
+<title>Bedrijfs Radio Station PRO</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
- body { font-family: Arial; padding: 20px; background:#111; color:#fff; }
- h2{color:#4ff;} button{padding:10px;margin:5px;border:0;background:#4ff;color:#000;font-weight:bold;cursor:pointer;border-radius:8px;} 
- .block{background:#222;padding:15px;border-radius:10px;margin:15px 0;}
- .list-item{background:#333;padding:8px;border-radius:6px;margin:6px 0;}
+ body { font-family: Inter, Arial, sans-serif; background:#0b0f13; color:#e6eef3; margin:0; padding:20px; }
+ header{ text-align:center; padding:18px; background:linear-gradient(90deg,#06202a,#0b1220); border-radius:10px; }
+ h1{ margin:6px 0; }
+ .grid{ display:grid; grid-template-columns:1fr 420px; gap:18px; margin-top:18px; }
+ .card{ background:#071216; padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(2,6,8,.6); }
+ .controls button{ margin:6px; padding:10px 12px; border-radius:8px; border:none; cursor:pointer; background:#12b886; color:#061018; font-weight:600; }
+ .list{ max-height:240px; overflow:auto; margin-top:8px; }
+ .list-item{ display:flex; justify-content:space-between; padding:8px; border-radius:8px; background:#021216; margin-bottom:6px; align-items:center; }
+ .small{ font-size:13px; color:#9fb4bd }
+ label{ display:block; margin-top:8px; }
+ footer{ margin-top:18px; text-align:center; color:#9fb4bd }
+ .btn-danger{ background:#ff6b6b; color:#fff }
+ .btn-ghost{ background:transparent; border:1px solid #1f3336; color:#9fb4bd }
+ .row{ display:flex; gap:8px; align-items:center; }
+ .top-row{ display:flex; justify-content:space-between; align-items:center }
 </style>
 </head>
 <body>
-<header style="text-align:center;padding:20px;background:#0a0a0a;border-radius:10px;margin-bottom:15px;">
- <img src="logo.png" alt="Bedrijfslogo" style="height:80px;">
- <h1>📻 Bedrijfs Radio Station PRO</h1>
- <p>Professionele radio voor bedrijven – volledig automatisch, met reclames, jingles en programmering.</p>
+<header>
+  <img src="" alt="Logo" style="height:60px;opacity:.9;display:block;margin:0 auto 8px;">
+  <h1>📻 Bedrijfs Radio Station PRO</h1>
+  <div class="small">Full-featured in-browser radio: autosave, jingles, scheduled ad-blocks, crossfades, fullscreen, dashboard</div>
 </header>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
- <div class="block">
-   <h3>Muziek Uploaden</h3>
-   <input type="file" id="musicUpload" accept="audio/*" multiple>
-   <button onclick="uploadMusic()">Upload</button>
-   <div id="musicList"></div>
- </div>
+<div class="grid">
+  <div>
+    <div class="card">
+      <div class="top-row">
+        <div>
+          <strong>Muziek & Media</strong>
+          <div class="small">Upload tracks, reclames en jingles. Alles wordt bewaard (IndexedDB).</div>
+        </div>
+        <div class="row">
+          <button onclick="enterFullscreen()">⤢ Fullscreen</button>
+          <button class="btn-ghost" onclick="clearAll()">Reset</button>
+        </div>
+      </div>
 
- <div class="block">
-   <h3>Reclames Uploaden</h3>
-   <input type="file" id="adUpload" accept="audio/*" multiple>
-   <button onclick="uploadAd()">Upload Reclame</button>
-   <p>Totaal reclames: <span id="adCount">0</span></p>
-   <div id="adList"></div>
- </div>
+      <label>🎶 Upload muziek</label>
+      <input type="file" id="musicUpload" accept="audio/*" multiple>
+      <label>📢 Upload reclames</label>
+      <input type="file" id="adUpload" accept="audio/*" multiple>
+      <label>🎙 Upload jingles (voiceovers)</label>
+      <input type="file" id="jingleUpload" accept="audio/*" multiple>
 
- <div class="block">
-   <h3>Jingles (Voice-overs)</h3>
-   <input type="file" id="jingleUpload" accept="audio/*" multiple>
-   <button onclick="uploadJingle()">Upload Jingle</button>
-   <div id="jingleList"></div>
- </div>
+      <div style="margin-top:12px;" class="row controls">
+        <button onclick="startRadio()">▶ Start</button>
+        <button onclick="stopRadio()">⏹ Stop</button>
+        <button onclick="nextSong()">⏭ Volgende</button>
+        <button onclick="playRandom()">🔀 Shuffle</button>
+      </div>
 
- <div class="block">
-   <h3>Programmering</h3>
-   <label>Reclameblok elke:</label>
-   <select id="schedule">
-     <option value="5">5 minuten</option>
-     <option value="10">10 minuten</option>
-     <option value="30">30 minuten</option>
-     <option value="60">60 minuten</option>
-   </select>
-   <br><br>
-   <label>Start automatisch bij openen:</label>
-   <input type="checkbox" id="autoStart">
- </div>
+      <div style="margin-top:12px">
+        <label>Volume</label>
+        <input id="volume" type="range" min="0" max="1" step="0.01" value="0.9" onchange="setMasterVolume(this.value)">
+      </div>
 
- <div class="block">
-   <h3>Radio Bediening</h3>
-   <button onclick="startRadio()">▶ Start Radio</button>
-   <button onclick="stopRadio()">⏹ Stop</button>
-   <button onclick="nextSong()">⏭ Volgende</button>
-   <button onclick="playRandom()">🔀 Shuffle</button>
- </div>
+      <div style="margin-top:12px">
+        <strong>Player</strong>
+        <div id="playerDisplay" class="small">Staat stil</div>
+        <audio id="hiddenMain" preload="auto" style="display:none"></audio>
+        <audio id="hiddenSecondary" preload="auto" style="display:none"></audio>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <strong>Dashboard / Programmering</strong>
+      <div class="small">Stel reclameblokken in (tijdsinterval of elk X nummers). Je kunt geplande blokken handmatig toevoegen.</div>
+      <label>Reclameblok elke (minuten):</label>
+      <input type="number" id="scheduleMinutes" value="30" min="1">
+      <label>Aantal reclames per blok:</label>
+      <input type="number" id="adsPerBlock" value="1" min="1">
+      <label>Autostart bij openen</label>
+      <input type="checkbox" id="autoStart">
+      <div style="margin-top:8px" class="row">
+        <button onclick="saveSchedule()">💾 Opslaan schema</button>
+        <button onclick="addScheduleBlock()">+ Plan direct reclameblok (nu +)</button>
+      </div>
+
+      <h4 style="margin-top:12px">Geplande blokken</h4>
+      <div id="scheduleList" class="list"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <strong>Playlists & Lijsten</strong>
+      <div class="small">Sleep om volgorde te veranderen, klik om te verwijderen.</div>
+      <h4>Muziek</h4>
+      <div id="musicList" class="list"></div>
+      <h4 style="margin-top:8px">Reclames (<span id="adCount">0</span>)</h4>
+      <div id="adList" class="list"></div>
+      <h4 style="margin-top:8px">Jingles (<span id="jingleCount">0</span>)</h4>
+      <div id="jingleList" class="list"></div>
+
+      <div style="margin-top:12px">
+        <button onclick="downloadConfig()">Export Config</button>
+        <button onclick="importConfig()">Import Config</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <strong>Logs & Status</strong>
+      <div id="log" class="small" style="max-height:220px;overflow:auto"></div>
+    </div>
+  </div>
 </div>
 
-<audio id="player" controls style="width:100%;margin-top:20px;"></audio id="player" controls style="width:100%;margin-top:20px;"></audio>
+<footer>
+  <small>Bedrijfsradio — lokaal in je browser. Voor persistente server-side streaming heb je een backend nodig.</small>
+</footer>
 
 <script>
-// --- FIX: bestanden worden nu opgeslagen in IndexedDB zodat ze blijven werken na refresh ---
-// IndexedDB helper
-function saveFileToDB(store, fileObj) {
- return new Promise((resolve)=>{
-   const req = indexedDB.open('RadioDB',1);
-   req.onupgradeneeded = ()=>{
-     const db=req.result;
-     if(!db.objectStoreNames.contains('music')) db.createObjectStore('music');
-     if(!db.objectStoreNames.contains('ads')) db.createObjectStore('ads');
-   };
-   req.onsuccess = ()=>{
-     const db=req.result;
-     const tx=db.transaction(store,'readwrite');
-     tx.objectStore(store).put(fileObj.file, fileObj.name);
-     tx.oncomplete=()=>resolve();
-   };
- });
+// ----------------------- IndexedDB helpers -----------------------
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open('CompanyRadioDB',1);
+    req.onupgradeneeded = ()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains('music')) db.createObjectStore('music');
+      if(!db.objectStoreNames.contains('ads')) db.createObjectStore('ads');
+      if(!db.objectStoreNames.contains('jingles')) db.createObjectStore('jingles');
+      if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta');
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
 }
 
-function loadFilesFromDB(store){
- return new Promise((resolve)=>{
-   const req=indexedDB.open('RadioDB',1);
-   req.onsuccess=()=>{
-     const db=req.result;
-     const tx=db.transaction(store,'readonly');
-     const storeObj=tx.objectStore(store);
-     const result=[];
-     storeObj.openCursor().onsuccess=(ev)=>{
-       const cursor=ev.target.result;
-       if(cursor){
-         result.push({ name: cursor.key, blob: cursor.value });
-         cursor.continue();
-       } else resolve(result);
-     };
-   };
- });
+async function putFile(storeName, key, file){
+  const db=await openDB();
+  return new Promise((resolve)=>{
+    const tx=db.transaction(storeName,'readwrite');
+    tx.objectStore(storeName).put(file,key);
+    tx.oncomplete=()=>resolve();
+  });
 }
 
-let music=[];
-let ads=[];
-let interval=3;
-let chain=1;
-let index=0;
-let playCount=0;
-let playingAds=false;
-let adQueue=[];
-const player=document.getElementById('player');
+async function getAllFiles(storeName){
+  const db=await openDB();
+  return new Promise((resolve)=>{
+    const tx=db.transaction(storeName,'readonly');
+    const store=tx.objectStore(storeName);
+    const out=[];
+    store.openCursor().onsuccess=(e)=>{
+      const cur=e.target.result;
+      if(cur){ out.push({name:cur.key, blob:cur.value}); cur.continue(); }
+      else resolve(out);
+    };
+  });
+}
 
+async function deleteFile(storeName, key){
+  const db=await openDB();
+  return new Promise((resolve)=>{
+    const tx=db.transaction(storeName,'readwrite');
+    tx.objectStore(storeName).delete(key);
+    tx.oncomplete=()=>resolve();
+  });
+}
+
+// ----------------------- State -----------------------
+let music = []; // {name,url,blobKey}
+let ads = [];
+let jingles = [];
+let scheduleBlocks = []; // list of timestamps
+let audioCtx, mainSource, secondarySource, masterGain, mainGain, secondaryGain;
+let mainAudio = document.getElementById('hiddenMain');
+let secondaryAudio = document.getElementById('hiddenSecondary');
+let playing = false;
+let queueIndex = 0;
+let lastPlayedTimestamp = 0;
+let scheduleTimer = null;
+let logEl = document.getElementById('log');
+
+function log(msg){
+  const t=new Date().toLocaleTimeString();
+  logEl.innerHTML = `<div>[${t}] ${msg}</div>` + logEl.innerHTML;
+}
+
+// ----------------------- Audio graph -----------------------
+function setupAudioContext(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  masterGain = audioCtx.createGain(); masterGain.gain.value = Number(document.getElementById('volume').value) || 0.9;
+  mainGain = audioCtx.createGain(); mainGain.gain.value = 1.0;
+  secondaryGain = audioCtx.createGain(); secondaryGain.gain.value = 0.0;
+
+  const mainSourceNode = audioCtx.createMediaElementSource(mainAudio);
+  const secondarySourceNode = audioCtx.createMediaElementSource(secondaryAudio);
+
+  mainSourceNode.connect(mainGain);
+  secondarySourceNode.connect(secondaryGain);
+  mainGain.connect(masterGain);
+  secondaryGain.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+}
+
+function setMasterVolume(v){ if(masterGain) masterGain.gain.value = v; }
+
+// ----------------------- Init/load -----------------------
 async function init(){
- const savedMusic=await loadFilesFromDB('music');
- const savedAds=await loadFilesFromDB('ads');
- music=savedMusic.map(f=>({ name:f.name, url:URL.createObjectURL(f.blob) }));
- ads=savedAds.map(f=>({ name:f.name, url:URL.createObjectURL(f.blob) }));
- refresh();
+  setupAudioContext();
+  // load files from IDB
+  const m = await getAllFiles('music');
+  const a = await getAllFiles('ads');
+  const j = await getAllFiles('jingles');
+  music = m.map(x=>({name:x.name, url:URL.createObjectURL(x.blob), key:x.name}));
+  ads = a.map(x=>({name:x.name, url:URL.createObjectURL(x.blob), key:x.name}));
+  jingles = j.map(x=>({name:x.name, url:URL.createObjectURL(x.blob), key:x.name}));
+  // load meta
+  const db=await openDB();
+  const tx=db.transaction('meta','readonly');
+  const metaStore=tx.objectStore('meta');
+  metaStore.get('schedule').onsuccess = (e)=>{ if(e.target.result) scheduleBlocks = e.target.result; renderSchedule(); };
+  metaStore.get('autoStart').onsuccess = (e)=>{ if(e.target.result) document.getElementById('autoStart').checked = e.target.result; };
+  tx.oncomplete = ()=>{ renderAll(); if(document.getElementById('autoStart').checked) startRadio(); };
 }
 
-function refresh(){
- musicList.innerHTML=music.map((m,i)=>`<div class='list-item'>${i+1}. ${m.name}</div>`).join('');
- adList.innerHTML=ads.map((a,i)=>`<div class='list-item'>${i+1}. ${a.name}</div>`).join('');
- adCount.innerText=ads.length;
- interval.value=interval;
- chain.value=chain;
+function renderAll(){ renderLists(); renderSchedule(); }
+function renderLists(){
+  const musicList = document.getElementById('musicList');
+  musicList.innerHTML = music.map((m,i)=>`<div class='list-item'>
+    <div style='flex:1'><strong>${m.name}</strong><div class='small'>#${i+1}</div></div>
+    <div style='display:flex;gap:6px'>
+      <button onclick="removeMusic('${encodeURIComponent(m.key)}')">✖</button>
+      <button onclick="playIndex(${i})">▶</button>
+    </div>
+  </div>`).join('');
+
+  document.getElementById('adList').innerHTML = ads.map((a,i)=>`<div class='list-item'><div style='flex:1'><strong>${a.name}</strong></div>
+    <div style='display:flex;gap:6px'><button onclick="removeAd('${encodeURIComponent(a.key)}')">✖</button></div></div>`).join('');
+
+  document.getElementById('jingleList').innerHTML = jingles.map((j,i)=>`<div class='list-item'><div style='flex:1'><strong>${j.name}</strong></div>
+    <div style='display:flex;gap:6px'><button onclick="removeJingle('${encodeURIComponent(j.key)}')">✖</button></div></div>`).join('');
+
+  document.getElementById('adCount').innerText = ads.length;
+  document.getElementById('jingleCount').innerText = jingles.length;
 }
 
-async function uploadMusic(){
- const files=musicUpload.files;
- for(let f of files){
-   music.push({name:f.name, url:URL.createObjectURL(f)});
-   await saveFileToDB('music',{name:f.name,file:f});
- }
- refresh();
+function renderSchedule(){
+  const el=document.getElementById('scheduleList');
+  el.innerHTML = scheduleBlocks.map(ts=>`<div class='list-item'>${new Date(ts).toLocaleString()} <button onclick="removeSchedule(${ts})">X</button></div>`).join('');
 }
 
-async function uploadAd(){
- const files=adUpload.files;
- for(let f of files){
-   ads.push({name:f.name, url:URL.createObjectURL(f)});
-   await saveFileToDB('ads',{name:f.name,file:f});
- }
- refresh();
+// ----------------------- Upload handlers -----------------------
+document.getElementById('musicUpload').addEventListener('change', async (e)=>{
+  for(const f of e.target.files){ await putFile('music', f.name, f); music.push({name:f.name, url:URL.createObjectURL(f), key:f.name}); }
+  renderLists(); log('Muziek geüpload');
+});
+
+document.getElementById('adUpload').addEventListener('change', async (e)=>{
+  for(const f of e.target.files){ await putFile('ads', f.name, f); ads.push({name:f.name, url:URL.createObjectURL(f), key:f.name}); }
+  renderLists(); log('Reclames geüpload');
+});
+
+document.getElementById('jingleUpload').addEventListener('change', async (e)=>{
+  for(const f of e.target.files){ await putFile('jingles', f.name, f); jingles.push({name:f.name, url:URL.createObjectURL(f), key:f.name}); }
+  renderLists(); log('Jingles geüpload');
+});
+
+// ----------------------- Remove handlers -----------------------
+async function removeMusic(key){ await deleteFile('music', decodeURIComponent(key)); music = music.filter(m=>m.key!==decodeURIComponent(key)); renderLists(); }
+async function removeAd(key){ await deleteFile('ads', decodeURIComponent(key)); ads = ads.filter(a=>a.key!==decodeURIComponent(key)); renderLists(); }
+async function removeJingle(key){ await deleteFile('jingles', decodeURIComponent(key)); jingles = jingles.filter(j=>j.key!==decodeURIComponent(key)); renderLists(); }
+
+// ----------------------- Playback logic -----------------------
+function playIndex(i){ queueIndex = i; playCurrent(); }
+
+function playCurrent(){
+  if(!music.length){ log('Geen muziek om te spelen'); return; }
+  const item = music[queueIndex];
+  mainAudio.src = item.url; // mainAudio is hiddenMain element
+  // fade in main
+  crossfadeToMain(0.6);
+  mainAudio.play();
+  playing = true;
+  lastPlayedTimestamp = Date.now();
+  document.getElementById('playerDisplay').innerText = `Spelen: ${item.name}`;
+  log('Speelt: '+item.name);
 }
 
-function saveConfig(){
- interval=Number(document.getElementById('interval').value);
- chain=Number(document.getElementById('chain').value);
- localStorage.setItem('radio_interval',interval);
- localStorage.setItem('radio_chain',chain);
- alert("Instellingen opgeslagen!");
+function crossfadeToMain(targetGain=1.0){
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  mainGain.gain.cancelScheduledValues(now);
+  secondaryGain.gain.cancelScheduledValues(now);
+  mainGain.gain.setValueAtTime(0.0, now);
+  mainGain.gain.linearRampToValueAtTime(targetGain, now + 1.0);
+  secondaryGain.gain.linearRampToValueAtTime(0.0, now + 1.0);
 }
 
-function startRadio(){ if(!music.length){alert('Geen muziek!');return;} playSong(); }
-
-function playSong(){
- if(playingAds)return;
- if(playCount>=interval){ playAds(); return; }
- player.src=music[index].url;
- player.play();
+function crossfadeToSecondary(){
+  if(!audioCtx) return;
+  const now=audioCtx.currentTime;
+  secondaryGain.gain.cancelScheduledValues(now);
+  mainGain.gain.cancelScheduledValues(now);
+  secondaryGain.gain.setValueAtTime(0.0, now);
+  secondaryGain.gain.linearRampToValueAtTime(1.0, now + 0.8);
+  mainGain.gain.linearRampToValueAtTime(0.0, now + 0.8);
 }
 
-function playAds(){
- playingAds=true;
- adQueue=[];
- for(let i=0;i<chain;i++){
-   let r=ads[Math.floor(Math.random()*ads.length)];
-   if(r) adQueue.push(r.url);
- }
- let first=adQueue.shift();
- if(first){ player.src=first; player.play(); }
-}
-
-player.onended=()=>{
- if(playingAds){
-   if(adQueue.length>0){ player.src=adQueue.shift(); player.play(); }
-   else{ playingAds=false; playCount=0; nextSong(); }
- } else {
-   playCount++; nextSong();
- }
+mainAudio.onended = async ()=>{
+  // after a track ends, possibly play a jingle then next, or go direct to next
+  // insert jingle randomly (25% chance)
+  if(jingles.length && Math.random() < 0.25){
+    const j = jingles[Math.floor(Math.random()*jingles.length)];
+    secondaryAudio.src = j.url;
+    secondaryAudio.play();
+    crossfadeToSecondary();
+    log('Jingle: '+j.name);
+    secondaryAudio.onended = ()=>{ crossfadeToMain(); queueNext(); };
+  } else {
+    queueNext();
+  }
 };
 
-function nextSong(){ index=(index+1)%music.length; playSong(); }
-function stopRadio(){ player.pause(); }
+async function queueNext(){
+  // check schedule blocks: if there is a scheduled block due (timestamp <= now), play ads first
+  const now = Date.now();
+  const due = scheduleBlocks.find(ts=>ts <= now);
+  if(due && ads.length){
+    // remove scheduled block
+    scheduleBlocks = scheduleBlocks.filter(ts=>ts>now);
+    await saveMeta(); renderSchedule();
+    await playAdBlock();
+    return;
+  }
+  // otherwise normal next
+  queueIndex = (queueIndex + 1) % music.length;
+  playCurrent();
+}
 
-init();
+async function playAdBlock(){
+  if(!ads.length){ log('Geen reclames beschikbaar'); queueNext(); return; }
+  log('Start reclameblok');
+  // play number of ads = value of adsPerBlock
+  const count = Number(document.getElementById('adsPerBlock').value || 1);
+  for(let i=0;i<count;i++){
+    const a = ads[Math.floor(Math.random()*ads.length)];
+    mainAudio.src = a.url; // use main slot for ads
+    mainAudio.play();
+    await waitUntilEnded(mainAudio);
+    log('Reclame afgespeeld: '+a.name);
+  }
+  log('Einde reclameblok');
+  queueCurrentAfterAds();
+}
+
+function waitUntilEnded(el){
+  return new Promise(resolve=>{ el.onended = ()=>resolve(); });
+}
+
+function queueCurrentAfterAds(){
+  // continue with next music
+  queueIndex = (queueIndex + 1) % music.length;
+  playCurrent();
+}
+
+function nextSong(){
+  queueIndex = (queueIndex + 1) % music.length; playCurrent(); }
+function stopRadio(){ mainAudio.pause(); secondaryAudio.pause(); playing = false; document.getElementById('playerDisplay').innerText = 'Gestopt'; }
+
+function playRandom(){ shuffleArray(music); renderLists(); queueIndex = 0; playCurrent(); }
+function shuffleArray(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
+
+// ----------------------- Scheduling -----------------------
+function saveSchedule(){
+  const minutes = Number(document.getElementById('scheduleMinutes').value || 30);
+  const ms = minutes * 60 * 1000;
+  // clear existing interval
+  if(scheduleTimer) clearInterval(scheduleTimer);
+  scheduleTimer = setInterval(()=>{ scheduleBlocks.push(Date.now()); saveMeta(); renderSchedule(); log('Automatisch reclameblok toegevoegd'); }, ms);
+  // save meta
+  saveMeta();
+  document.getElementById('autoStart').checked ? putMeta('autoStart', true) : putMeta('autoStart', false);
+  log('Schema opgeslagen: elke '+minutes+' minuten');
+}
+
+function addScheduleBlock(){ scheduleBlocks.push(Date.now()); saveMeta(); renderSchedule(); log('Handmatig reclameblok ingepland'); }
+function removeSchedule(ts){ scheduleBlocks = scheduleBlocks.filter(t=>t!==ts); saveMeta(); renderSchedule(); }
+
+async function saveMeta(){ const db=await openDB(); const tx=db.transaction('meta','readwrite'); tx.objectStore('meta').put(scheduleBlocks,'schedule'); tx.objectStore('meta').put(document.getElementById('autoStart').checked,'autoStart'); }
+async function putMeta(key,val){ const db=await openDB(); const tx=db.transaction('meta','readwrite'); tx.objectStore('meta').put(val,key); }
+
+// ----------------------- Config import/export & reset -----------------------
+function downloadConfig(){ const cfg = { music: music.map(m=>m.name), ads: ads.map(a=>a.name), jingles: jingles.map(j=>j.name), schedule: scheduleBlocks}; const blob=new Blob([JSON.stringify(cfg, null, 2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='radio-config.json'; a.click(); }
+
+function importConfig(){ alert('Import ondersteunt alleen het bestand in dezelfde IndexedDB; om media te importeren, upload dezelfde bestanden opnieuw.'); }
+
+async function clearAll(){ if(confirm('Weet je zeker dat je alle data wilt verwijderen?')){
+  const db=await openDB(); db.close(); indexedDB.deleteDatabase('CompanyRadioDB'); music=[]; ads=[]; jingles=[]; scheduleBlocks=[]; renderAll(); log('Alle data verwijderd'); }
+}
+
+function enterFullscreen(){ document.documentElement.requestFullscreen?.(); }
+
+// ----------------------- Utilities -----------------------
+function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+// ----------------------- Start -----------------------
+setupAudioContext(); init();
+
 </script>
 </body>
 </html>
