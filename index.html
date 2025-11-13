@@ -2,175 +2,125 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Advanced Music Player</title>
+<title>Bedrijfs Radio Station</title>
 <style>
- body { font-family: Arial; padding: 20px; }
- button { padding: 10px; margin: 5px; }
- .block { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
- .list-item { padding: 5px; margin: 4px 0; background: #f2f2f2; }
+ body { font-family: Arial; padding: 20px; background:#111; color:#fff; }
+ h2{color:#4ff;} button{padding:10px;margin:5px;border:0;background:#4ff;color:#000;font-weight:bold;cursor:pointer;border-radius:8px;} 
+ .block{background:#222;padding:15px;border-radius:10px;margin:15px 0;}
+ .list-item{background:#333;padding:8px;border-radius:6px;margin:6px 0;}
 </style>
 </head>
 <body>
-<h2>Muziekspeler met Playlist + Reclames + Opslag</h2>
+<h2>📻 Bedrijfs Radio Station</h2>
+<p>Automatische muziek + reclames + non-stop afspeelmodus.</p>
 
 <div class="block">
- <h3>Muziek uploaden</h3>
- <input type="file" id="audioUpload" accept="audio/*" multiple>
- <button onclick="uploadAudio()">Upload audio</button>
+ <h3>Muziek Uploaden</h3>
+ <input type="file" id="musicUpload" accept="audio/*" multiple>
+ <button onclick="uploadMusic()">Upload</button>
+ <div id="musicList"></div>
 </div>
 
 <div class="block">
- <h3>Reclames uploaden</h3>
+ <h3>Reclames Uploaden</h3>
  <input type="file" id="adUpload" accept="audio/*" multiple>
- <button onclick="uploadAds()">Upload reclame(s)</button>
- <p>Reclames in systeem: <span id="adCount">0</span></p>
-</div>
-
-<div class="block">
- <h3>Instellingen reclame</h3>
- <label>Aantal normale nummers voordat een reclame begint: </label>
- <input type="number" id="adInterval" value="2" min="1" max="10">
- <br><br>
- <label>Aantal reclames achter elkaar: </label>
- <input type="number" id="adChain" value="1" min="1" max="5">
-</div>
-
-<div class="block">
- <h3>Playlist</h3>
- <div id="playlist"></div>
-</div>
-
-<div class="block">
- <h3>Reclamelijst</h3>
+ <button onclick="uploadAd()">Upload Reclame</button>
+ <p>Aantal reclames: <span id="adCount">0</span></p>
  <div id="adList"></div>
 </div>
 
 <div class="block">
- <h3>Bediening</h3>
- <button onclick="playMusic()">▶ afspelen</button>
- <button onclick="stopMusic()">⏹ stop</button>
- <button onclick="nextTrack()">⏭ volgende</button>
- <button onclick="prevTrack()">⏮ vorige</button>
- <button onclick="saveAll()">💾 Opslaan</button>
+ <h3>Instellingen</h3>
+ <label>Nummers vóór een reclame:</label>
+ <input type="number" id="interval" value="3" min="1" max="10"><br><br>
+ <label>Reclames achter elkaar:</label>
+ <input type="number" id="chain" value="1" min="1" max="5"><br><br>
+ <button onclick="saveConfig()">Instellingen Opslaan</button>
 </div>
 
-<audio id="player" controls style="width:100%; margin-top:20px;"></audio>
+<div class="block">
+ <h3>Radio Bediening</h3>
+ <button onclick="startRadio()">▶ Start Radio</button>
+ <button onclick="stopRadio()">⏹ Stop</button>
+ <button onclick="nextSong()">⏭ Volgende</button>
+</div>
+
+<audio id="player" controls style="width:100%;margin-top:20px;"></audio>
 
 <script>
-let playlist = JSON.parse(localStorage.getItem('playlist') || '[]');
-let ads = JSON.parse(localStorage.getItem('ads') || '[]');
-let currentIndex = 0;
-let adCounter = 0;
+let music = JSON.parse(localStorage.getItem('radio_music')||'[]');
+let ads = JSON.parse(localStorage.getItem('radio_ads')||'[]');
+let interval = Number(localStorage.getItem('radio_interval')||3);
+let chain = Number(localStorage.getItem('radio_chain')||1);
+let index = 0;
+let playCount = 0;
 let playingAds = false;
 let adQueue = [];
-const player = document.getElementById("player");
+const player = document.getElementById('player');
 
-function refreshUI() {
- document.getElementById("playlist").innerHTML = playlist.map((p,i)=>`
-  <div class='list-item'>${i+1}. ${p.name}
-   <button onclick='removeTrack(${i})'>X</button>
-  </div>`).join('');
- document.getElementById("adList").innerHTML = ads.map((p,i)=>`
-  <div class='list-item'>${i+1}. ${p.name}
-   <button onclick='removeAd(${i})'>X</button>
-  </div>`).join('');
- document.getElementById("adCount").innerText = ads.length;
+function refresh(){
+ musicList.innerHTML = music.map((m,i)=>`<div class='list-item'>${i+1}. ${m.name}</div>`).join('');
+ adList.innerHTML = ads.map((a,i)=>`<div class='list-item'>${i+1}. ${a.name}</div>`).join('');
+ adCount.innerText = ads.length;
+ interval.value = interval;
+ chain.value = chain;
 }
 
-function uploadAudio() {
- const files = document.getElementById("audioUpload").files;
- for (let f of files) {
-  let url = URL.createObjectURL(f);
-  playlist.push({name: f.name, url});
- }
- refreshUI();
+function uploadMusic(){
+ const files = musicUpload.files;
+ for(let f of files){ music.push({name:f.name,url:URL.createObjectURL(f)}); }
+ localStorage.setItem('radio_music',JSON.stringify(music));
+ refresh();
 }
 
-function uploadAds() {
- const files = document.getElementById("adUpload").files;
- for (let f of files) {
-  let url = URL.createObjectURL(f);
-  ads.push({name: f.name, url});
- }
- refreshUI();
+function uploadAd(){
+ const files = adUpload.files;
+ for(let f of files){ ads.push({name:f.name,url:URL.createObjectURL(f)}); }
+ localStorage.setItem('radio_ads',JSON.stringify(ads));
+ refresh();
 }
 
-function playMusic() {
- if (!playlist.length) return alert("Geen nummers in playlist!");
- playTrack();
+function saveConfig(){
+ interval = Number(document.getElementById('interval').value);
+ chain = Number(document.getElementById('chain').value);
+ localStorage.setItem('radio_interval',interval);
+ localStorage.setItem('radio_chain',chain);
+ alert("Instellingen opgeslagen!");
 }
 
-function playTrack() {
- if (playingAds) return;
- if (adCounter >= Number(document.getElementById("adInterval").value)) {
-  queueAds();
-  return;
- }
- player.src = playlist[currentIndex].url;
+function startRadio(){ if(!music.length){alert('Geen muziek!');return;} playSong(); }
+
+function playSong(){
+ if(playingAds) return;
+ if(playCount>=interval){ playAds(); return; }
+ player.src = music[index].url;
  player.play();
 }
 
-player.onended = () => {
- if (playingAds) {
-  if (adQueue.length > 0) {
-   let nextAd = adQueue.shift();
-   player.src = nextAd;
-   player.play();
-  } else {
-   playingAds = false;
-   adCounter = 0;
-   nextTrack();
-  }
+function playAds(){
+ playingAds = true;
+ adQueue = [];
+ for(let i=0;i<chain;i++){
+  let r = ads[Math.floor(Math.random()*ads.length)];
+  if(r) adQueue.push(r.url);
+ }
+ let first = adQueue.shift();
+ if(first){ player.src = first; player.play(); }
+}
+
+player.onended = ()=>{
+ if(playingAds){
+  if(adQueue.length>0){ player.src = adQueue.shift(); player.play(); }
+  else{ playingAds=false; playCount=0; nextSong(); }
  } else {
-  adCounter++;
-  nextTrack();
+  playCount++; nextSong();
  }
 };
 
-function queueAds() {
- playingAds = true;
- adQueue = [];
- let count = Number(document.getElementById("adChain").value);
- for (let i = 0; i < count; i++) {
-  let randomAd = ads[Math.floor(Math.random() * ads.length)];
-  if (randomAd) adQueue.push(randomAd.url);
- }
- let firstAd = adQueue.shift();
- player.src = firstAd;
- player.play();
-}
+function nextSong(){ index=(index+1)%music.length; playSong(); }
+function stopRadio(){ player.pause(); }
 
-function nextTrack() {
- currentIndex = (currentIndex + 1) % playlist.length;
- playTrack();
-}
-
-function prevTrack() {
- currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
- playTrack();
-}
-
-function stopMusic() {
- player.pause();
-}
-
-function removeTrack(i) {
- playlist.splice(i,1);
- refreshUI();
-}
-
-function removeAd(i) {
- ads.splice(i,1);
- refreshUI();
-}
-
-function saveAll() {
- localStorage.setItem('playlist', JSON.stringify(playlist));
- localStorage.setItem('ads', JSON.stringify(ads));
- alert("Alles opgeslagen!");
-}
-
-refreshUI();
+refresh();
 </script>
 </body>
 </html>
