@@ -1,638 +1,480 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Studio Radio — Bedrijfsstation (SkyRadio style)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mijn Radio Studio — Webapp</title>
 <style>
-  :root{
-    --bg:#071217; --card:#0b1b22; --accent:#1fb98a; --muted:#8fb1b0; --text:#e6f2f1;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#041014 0%, #071217 100%);color:var(--text)}
-  header{padding:18px;text-align:center}
-  h1{margin:6px 0;font-size:20px}
-  .app{display:grid;grid-template-columns:420px 1fr;gap:14px;padding:14px}
-  .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,.6)}
-  .small{color:var(--muted);font-size:13px}
-  label{display:block;margin-top:8px;color:var(--muted);font-size:13px}
-  input[type=file], input[type=text], input[type=number], select{width:100%;padding:8px;margin-top:6px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:transparent;color:var(--text)}
-  button{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:#042425;font-weight:700;cursor:pointer}
-  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:var(--text)}
-  .row{display:flex;gap:8px;align-items:center}
-  .controls{display:flex;gap:8px;flex-wrap:wrap}
-  .list{max-height:360px;overflow:auto;margin-top:10px;border-radius:8px;padding:6px;background:linear-gradient(180deg,#051416,#06171a)}
-  .list-item{display:flex;justify-content:space-between;padding:8px;border-radius:6px;margin-bottom:6px;background:rgba(255,255,255,.02);align-items:center}
-  .fader{width:100%}
-  .studio-meters{display:flex;gap:8px;align-items:flex-end;height:60px}
-  .meter{width:8px;background:rgba(255,255,255,.06);border-radius:4px;position:relative;overflow:hidden}
-  .meter .lvl{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,#2ee6b9,#0fa37f);height:0%}
-  .now{margin-top:10px;padding:10px;border-radius:8px;background:linear-gradient(90deg, rgba(24,63,52,.2), rgba(7,20,24,.2));}
-  footer{padding:18px;text-align:center;color:var(--muted)}
-  .search-result{display:flex;gap:8px;align-items:center}
-  .thumbnail{width:72px;height:40px;object-fit:cover;border-radius:6px}
-  .danger{background:#ff6b6b;color:white}
-  @media(max-width:980px){.app{grid-template-columns:1fr;}}
+  :root{--bg:#0f1720;--panel:#111827;--muted:#9ca3af;--accent:#06b6d4}
+  body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#071021 0%, #08121a 100%);color:#e6eef6}
+  header{padding:18px 24px;display:flex;align-items:center;gap:16px}
+  header h1{margin:0;font-size:18px}
+  .container{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px}
+  .panel{background:var(--panel);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,.6)}
+  .small{font-size:13px;color:var(--muted)}
+  button{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:#022;cursor:pointer}
+  button.secondary{background:#1f2937;color:var(--muted)}
+  input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #253042;background:#0b1220;color:#e6eef6}
+  .playlist-item{padding:8px;border-radius:6px;background:linear-gradient(90deg,#071827, #081827);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .controls{display:flex;gap:8px;align-items:center}
+  video{width:100%;border-radius:8px;background:black}
+  .nowplaying{font-weight:600;font-size:16px}
+  footer{padding:12px 18px;color:var(--muted);font-size:13px}
+  .kbd{background:#0f1720;padding:4px 6px;border-radius:4px;border:1px solid #1f2a37}
+  .row{display:flex;gap:8px}
+  label{font-size:13px;color:var(--muted);}
 </style>
 </head>
 <body>
 <header>
-  <h1>Studio Radio • Bedrijfszender (SkyRadio-style studio)</h1>
-  <div class="small">Professionele studio UI: mix, mic talkover, jingles, schedules, YouTube-zoek, persistent opslag (IndexedDB).</div>
+  <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect rx='6' width='36' height='36' fill='%2306b6d4'/><text x='50%' y='54%' font-size='18' font-family='Arial' text-anchor='middle' fill='%23000'>R</text></svg>" alt="logo" style="width:42px;height:42px;border-radius:8px">
+  <div>
+    <h1>Mijn Radio Studio — Webapp</h1>
+    <div class="small">Chromebook friendly — lokaal draaien. Klaar voor streaming met een gateway/server (instructies onderaan).</div>
+  </div>
 </header>
 
-<div class="app">
-  <!-- LINKS: Studio controls, uploads, scheduling -->
+<div class="container">
+  <!-- LEFT: Controls & Playlist -->
   <div>
-    <div class="card">
-      <strong>Studio Controls</strong>
-      <div class="small">Master, main & talkover faders, mute & crossfade.</div>
-
-      <label>Master volume</label>
-      <input id="masterVol" class="fader" type="range" min="0" max="1" step="0.01" value="0.92">
-
-      <label>Main volume</label>
-      <input id="mainVol" class="fader" type="range" min="0" max="1" step="0.01" value="1">
-
-      <label>Talkover (microfoon) volume</label>
-      <input id="micVol" class="fader" type="range" min="0" max="1" step="0.01" value="0.9">
-
-      <div style="margin-top:10px" class="row">
-        <button id="startBtn">▶ Start Studio</button>
-        <button id="stopBtn" class="btn-ghost">⏹ Stop</button>
-        <button id="snapBtn" class="btn-ghost">🎧 Cue</button>
-      </div>
-
-      <label style="margin-top:12px">Mic talkover</label>
-      <div class="row">
-        <button id="micOnBtn" class="btn-ghost">🎙 Mic On</button>
-        <button id="micOffBtn" class="btn-ghost">🎙 Mic Off</button>
-      </div>
-
+    <div class="panel">
+      <h3>Studio Controls</h3>
+      <div class="small">Microfoon & camera, mix en uitzending-ready.</div>
       <div style="margin-top:12px">
-        <div class="small">VU-meters</div>
-        <div class="studio-meters">
-          <div style="width:30%" >
-            <div class="small">Main</div>
-            <div class="meter" id="meterMain"><div class="lvl" style="height:0%"></div></div>
-          </div>
-          <div style="width:30%">
-            <div class="small">Mic</div>
-            <div class="meter" id="meterMic"><div class="lvl" style="height:0%"></div></div>
-          </div>
-          <div style="width:30%">
-            <div class="small">Ads/Jingle</div>
-            <div class="meter" id="meterAd"><div class="lvl" style="height:0%"></div></div>
+        <label>Camera</label>
+        <video id="videoPreview" autoplay playsinline muted></video>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button id="startCamBtn">Start Camera</button>
+          <button id="stopCamBtn" class="secondary">Stop Camera</button>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid #16202b">
+
+      <label>Microfoon</label>
+      <div class="row" style="margin-top:8px">
+        <button id="toggleMicBtn">Microfoon AAN</button>
+        <button id="muteMicBtn" class="secondary">Mute</button>
+      </div>
+      <div class="small" style="margin-top:8px">Mic status: <span id="micStatus">uit</span></div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid #16202b">
+
+      <h4>Output / Broadcast</h4>
+      <div class="small">Kies één van de volgende opties om je gemixte stream lokaal te bewaren of naar een server te sturen.</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="startRecordBtn">Start Opname (WebM)</button>
+        <button id="stopRecordBtn" class="secondary">Stop & Download</button>
+      </div>
+      <div style="margin-top:8px">
+        <label>WebRTC / Server URL (optioneel)</label>
+        <input id="serverUrl" placeholder="wss://mijn-server.example/ws (optioneel)"> 
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="startLiveBtn">Start Live (WebRTC)</button>
+          <button id="stopLiveBtn" class="secondary">Stop Live</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h3>Auto-Duck & Mixing</h3>
+      <label>Autoduck (music gain when mic active)</label>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="duckAmount" type="range" min="0" max="1" step="0.05" value="0.25">
+        <div class="small" id="duckVal">0.25</div>
+      </div>
+      <div style="margin-top:8px">
+        <label>Master volume</label>
+        <input id="masterVol" type="range" min="0" max="1" step="0.01" value="0.9">
+      </div>
+      <div style="margin-top:8px" class="small">Tip: zet autoduck laag (0.2-0.4) voor gespreksoulouding tijdens jingles of talkover.</div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h3>Uurklok + Scheduler (eenvoudig)</h3>
+      <div class="small">Maak blokken die op bepaalde tijden nummers of playlists starten. (Eenvoudige lokale scheduler op browser-tijd.)</div>
+      <div style="margin-top:8px">
+        <label>Voeg blok toe (HH:MM - playlist start)</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <input id="schedTime" placeholder="09:00">
+          <select id="schedPlaylist"></select>
+          <button id="addSchedBtn">Voeg toe</button>
+        </div>
+        <div id="schedList" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Player, Playlist, Nowplaying -->
+  <div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="nowplaying">Now playing:</div>
+          <div id="nowPlayingText" style="font-size:15px;color:var(--muted);margin-top:6px">— niets</div>
+        </div>
+        <div>
+          <div class="small">Master metering</div>
+          <div id="meter" style="width:180px;height:10px;background:#071827;border-radius:6px;overflow:hidden;margin-top:8px">
+            <div id="meterBar" style="height:100%;width:0%;background:linear-gradient(90deg,#06b6d4,#0ea5a3)"></div>
           </div>
         </div>
       </div>
 
-      <div class="now" id="nowPlaying">Now playing: —</div>
-    </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid #16202b">
 
-    <div style="margin-top:12px" class="card">
-      <strong>Uploads & Jingles</strong>
-      <div class="small">Upload tracks, jingles of reclames. Bestanden worden opgeslagen lokaal.</div>
+      <audio id="player" controls style="width:100%;"></audio>
 
-      <label>Upload tracks (muziek)</label>
-      <input id="fileMusic" type="file" accept="audio/*" multiple>
-
-      <label>Upload jingles (voice overs)</label>
-      <input id="fileJingle" type="file" accept="audio/*" multiple>
-
-      <label>Upload reclames</label>
-      <input id="fileAd" type="file" accept="audio/*" multiple>
-
-      <div style="margin-top:12px" class="row">
-        <button id="saveBtn" class="btn-ghost">💾 Save to DB</button>
-        <button id="exportBtn" class="btn-ghost">⬇ Export config</button>
-      </div>
-    </div>
-
-    <div style="margin-top:12px" class="card">
-      <strong>Scheduler / Blocks</strong>
-      <div class="small">Automatische reclameblokken en programmablokken (op tijd of interval).</div>
-
-      <label>Reclameblok interval (minuten)</label>
-      <input id="adInterval" type="number" min="1" value="30">
-
-      <label>Aantal reclames per blok</label>
-      <input id="adsPerBlock" type="number" min="1" value="1">
-
-      <div style="margin-top:8px" class="row">
-        <button id="startScheduler" class="btn-ghost">Start scheduler</button>
-        <button id="stopScheduler" class="btn-ghost">Stop scheduler</button>
-        <button id="forceAd" class="">Play ad block now</button>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input type="file" id="filePicker" accept="audio/*" multiple>
+        <button id="addFromFilesBtn" class="secondary">Voeg toe</button>
+        <button id="clearPlaylistBtn" class="secondary">Clear</button>
       </div>
 
-      <div class="small" style="margin-top:8px">Planned blocks</div>
-      <div id="plannedBlocks" class="list"></div>
+      <h4 style="margin-top:14px">Playlist</h4>
+      <div id="playlist" style="max-height:360px;overflow:auto;margin-top:6px"></div>
+
     </div>
-  </div>
 
-  <!-- RECHTS: Playlist, Youtube search, queue -->
-  <div>
-    <div class="card">
-      <strong>Playlist & Queue</strong>
-      <div class="small">Sleep items in de lijst om volgorde te veranderen. Klik om te spelen/verwijderen.</div>
-
+    <div class="panel" style="margin-top:12px">
+      <h3>Templates & Jingles</h3>
+      <div class="small">Je kunt hier pre-recorded jingles toevoegen en 'cues' maken om snel te spelen.</div>
       <div style="margin-top:8px;display:flex;gap:8px">
-        <input id="searchTerm" type="text" placeholder="Zoek op titel of YouTube (API key nodig)"/>
-        <button id="searchBtn" class="btn-ghost">🔎 Zoek</button>
+        <input type="file" id="jinglePicker" accept="audio/*">
+        <button id="addJingleBtn">Voeg jingle</button>
       </div>
-
-      <div style="margin-top:8px" class="row controls">
-        <button id="btnPrev" class="btn-ghost">⏮ Vorige</button>
-        <button id="btnPlay" class="">▶ Play</button>
-        <button id="btnNext" class="btn-ghost">⏭ Volgende</button>
-        <button id="btnStop" class="btn-ghost">⏹ Stop</button>
-      </div>
-
-      <h4 style="margin-top:10px">Zoekresultaten (YouTube)</h4>
-      <div id="searchResults" class="list"></div>
-
-      <h4 style="margin-top:10px">Queue / Playlist</h4>
-      <div id="playlist" class="list"></div>
-
-      <h4 style="margin-top:10px">History</h4>
-      <div id="history" class="list" style="max-height:120px"></div>
+      <div id="jinglesList" style="margin-top:8px"></div>
     </div>
 
-    <div style="margin-top:12px" class="card">
-      <strong>Studio Dashboard</strong>
-      <div class="small">Snel info en logs</div>
-      <div id="studioLogs" class="list" style="max-height:220px"></div>
+    <div class="panel" style="margin-top:12px">
+      <h3>Tips voor uitzend-klaar</h3>
+      <ol style="color:var(--muted);font-size:14px">
+        <li>Zorg voor licenties voor commerciële muziek (Buma/Sena of rechtenvrije muziek).</li>
+        <li>Gebruik een WebRTC → RTMP gateway (Ant Media, Janus, mediasoup of een eenvoudige Node app) om browserstreams naar YouTube te sturen.</li>
+        <li>Test eerst met "Unlisted" YouTube stream key en controleer audio levels.</li>
+      </ol>
     </div>
   </div>
 </div>
 
 <footer>
-  <small>Opmerkingen: Deze studio werkt lokaal in de browser. Voor publieke streaming heb je een streamingserver nodig (Icecast/Shoutcast of een hostingdienst).</small>
+  Deze applicatie draait volledig in je browser en slaat playlists/schedules lokaal (LocalStorage). Voor live naar YouTube/website streamen heb je een server-gateway nodig — instructies staan in het bestand.
 </footer>
 
 <script>
-/* ============================
-   Studio Radio — single page
-   Features:
-   - IndexedDB storage for media
-   - WebAudio mixing (main + mic talkover + ads)
-   - YouTube search (requires API key) and embed playback option
-   - Scheduler for ad blocks or timed program blocks
-   - Crossfade, faders, VU meters, queue, history
-   - Export/import config (media names only)
-   ============================ */
+// -----------------------------
+// Simple Radio Studio Webapp
+// - Playlist via local files
+// - WebAudio mixing (music + mic)
+// - Camera preview
+// - Local recording (MediaRecorder)
+// - Basic scheduler (local time)
+// -----------------------------
 
-/* ========== CONFIG ========== */
-const YT_API_KEY = "YOUR_API_KEY_HERE"; // zet hier je YouTube Data API v3 key
-const MAX_SEARCH=6;
-
-/* ========== IndexedDB helpers ========== */
-function openDB(name='StudioDB',version=1){
-  return new Promise((res,rej)=>{
-    const r = indexedDB.open(name,version);
-    r.onupgradeneeded = ()=>{
-      const db = r.result;
-      if(!db.objectStoreNames.contains('music')) db.createObjectStore('music');
-      if(!db.objectStoreNames.contains('ads')) db.createObjectStore('ads');
-      if(!db.objectStoreNames.contains('jingles')) db.createObjectStore('jingles');
-      if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta');
-    };
-    r.onsuccess = ()=>res(r.result);
-    r.onerror = ()=>rej(r.error);
-  });
-}
-async function putFile(store,key,file){
-  const db = await openDB();
-  return new Promise(resolve=>{
-    const tx = db.transaction(store,'readwrite');
-    tx.objectStore(store).put(file,key);
-    tx.oncomplete = ()=>resolve();
-  });
-}
-async function getAll(store){
-  const db = await openDB();
-  return new Promise(resolve=>{
-    const tx = db.transaction(store,'readonly');
-    const out=[];
-    const cur = tx.objectStore(store).openCursor();
-    cur.onsuccess = e=>{
-      const c = e.target.result;
-      if(c){ out.push({name:c.key,blob:c.value}); c.continue(); }
-      else resolve(out);
-    };
-  });
-}
-async function deleteKey(store,key){
-  const db = await openDB();
-  return new Promise(resolve=>{
-    const tx = db.transaction(store,'readwrite');
-    tx.objectStore(store).delete(key);
-    tx.oncomplete = ()=>resolve();
-  });
-}
-
-/* ========== UI elements ========== */
-const fileMusic = document.getElementById('fileMusic');
-const fileAd = document.getElementById('fileAd');
-const fileJingle = document.getElementById('fileJingle');
-const playlistEl = document.getElementById('playlist');
-const searchBtn = document.getElementById('searchBtn');
-const searchTerm = document.getElementById('searchTerm');
-const searchResults = document.getElementById('searchResults');
-const nowPlayingEl = document.getElementById('nowPlaying');
-const studioLogs = document.getElementById('studioLogs');
-const plannedBlocksEl = document.getElementById('plannedBlocks');
-const plannedBlocks = []; // timestamps
-const historyEl = document.getElementById('history');
-
-function logStudio(msg){
-  const t = new Date().toLocaleTimeString();
-  studioLogs.innerHTML = `<div>[${t}] ${msg}</div>` + studioLogs.innerHTML;
-}
-
-/* ========== State ========== */
-let music = []; // {name,url,key}
-let ads = [];
+// State
+let audioContext, masterGain, musicGain, micGain, destinationNode, micSourceNode;
+let playlist = []; // {id, name, blob, url, duration}
 let jingles = [];
-let queue = []; // {type:'local'|'youtube', name, url?, videoId?}
-let history = [];
 let currentIndex = -1;
-let audioCtx, masterGain, mainGain, micGain, adGain;
-let mainAudio = new Audio(); mainAudio.crossOrigin="anonymous";
-let adAudio = new Audio(); adAudio.crossOrigin="anonymous";
-let micStreamNode = null, mediaStream=null;
-let metersInterval = null;
-let schedulerInterval = null;
+let isMicOn = false;
+let micStream = null;
+let camStream = null;
+let recorder = null;
+let recordedChunks = [];
+let liveSocket = null;
+let scheduler = [];
 
-/* ========== Audio graph ========== */
-function setupAudio(){
-  if(audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain(); masterGain.gain.value = Number(document.getElementById('masterVol').value);
-  mainGain = audioCtx.createGain(); mainGain.gain.value = Number(document.getElementById('mainVol').value);
-  micGain = audioCtx.createGain(); micGain.gain.value = Number(document.getElementById('micVol').value);
-  adGain = audioCtx.createGain(); adGain.gain.value = 1.0;
+// UI
+const videoPreview = document.getElementById('videoPreview');
+const startCamBtn = document.getElementById('startCamBtn');
+const stopCamBtn = document.getElementById('stopCamBtn');
+const toggleMicBtn = document.getElementById('toggleMicBtn');
+const muteMicBtn = document.getElementById('muteMicBtn');
+const micStatus = document.getElementById('micStatus');
+const filePicker = document.getElementById('filePicker');
+const addFromFilesBtn = document.getElementById('addFromFilesBtn');
+const playlistDiv = document.getElementById('playlist');
+const player = document.getElementById('player');
+const nowPlayingText = document.getElementById('nowPlayingText');
+const meterBar = document.getElementById('meterBar');
+const startRecordBtn = document.getElementById('startRecordBtn');
+const stopRecordBtn = document.getElementById('stopRecordBtn');
+const serverUrlInput = document.getElementById('serverUrl');
+const startLiveBtn = document.getElementById('startLiveBtn');
+const stopLiveBtn = document.getElementById('stopLiveBtn');
+const duckAmount = document.getElementById('duckAmount');
+const duckVal = document.getElementById('duckVal');
+const masterVol = document.getElementById('masterVol');
+const addJingleBtn = document.getElementById('addJingleBtn');
+const jinglePicker = document.getElementById('jinglePicker');
+const jinglesList = document.getElementById('jinglesList');
+const schedPlaylist = document.getElementById('schedPlaylist');
+const schedTime = document.getElementById('schedTime');
+const addSchedBtn = document.getElementById('addSchedBtn');
+const schedList = document.getElementById('schedList');
+const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
 
-  const mainSrc = audioCtx.createMediaElementSource(mainAudio);
-  const adSrc = audioCtx.createMediaElementSource(adAudio);
+// Init AudioContext and graph
+function initAudio() {
+  if (audioContext) return;
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioContext.createGain();
+  musicGain = audioContext.createGain();
+  micGain = audioContext.createGain();
+  destinationNode = audioContext.createMediaStreamDestination();
 
-  mainSrc.connect(mainGain);
-  adSrc.connect(adGain);
+  masterGain.gain.value = parseFloat(masterVol.value);
+  musicGain.gain.value = 1.0;
+  micGain.gain.value = 1.0;
 
-  // mic node will be connected when mic is on
-  mainGain.connect(masterGain);
-  adGain.connect(masterGain);
+  // music -> musicGain -> master
+  musicGain.connect(masterGain);
+  // mic -> micGain -> master
   micGain.connect(masterGain);
+  // master -> destination (MediaStream)
+  masterGain.connect(destinationNode);
+  // and to audioContext.destination for local monitoring
+  masterGain.connect(audioContext.destination);
 
-  masterGain.connect(audioCtx.destination);
-
-  // meter monitoring
-  startMeters();
-  logStudio('AudioContext gestart');
+  // meter updater
+  requestAnimationFrame(updateMeter);
 }
 
-function setMasterVolume(v){ if(masterGain) masterGain.gain.value = v; }
-function setMainVolume(v){ if(mainGain) mainGain.gain.value = v; }
-function setMicVolume(v){ if(micGain) micGain.gain.value = v; }
-
-/* ========== Meters (simple) ========== */
-function meterUpdate(elId, level){
-  const el = document.querySelector(elId + ' .lvl');
-  if(el) el.style.height = `${Math.min(100, Math.round(level*100))}%`;
-}
-function startMeters(){
-  if(metersInterval) clearInterval(metersInterval);
-  // simple fake meters using volume properties and random small values; real RMS analysis can be added later
-  metersInterval = setInterval(()=>{
-    // approximate main level while playing
-    let mainLevel = mainAudio && !mainAudio.paused ? Math.random()*0.5 + 0.2 : 0.02;
-    let micLevel = mediaStream ? Math.random()*0.6 + 0.25 : 0.02;
-    let adLevel = adAudio && !adAudio.paused ? Math.random()*0.45 + 0.15 : 0.02;
-    meterUpdate('#meterMain', mainLevel);
-    meterUpdate('#meterMic', micLevel);
-    meterUpdate('#meterAd', adLevel);
-  },120);
+function updateMeter(){
+  if (!audioContext) return requestAnimationFrame(updateMeter);
+  // naive meter: use masterGain.gain and mic activity
+  const val = Math.min(1, masterGain.gain.value * (1 + Math.random()*0.2));
+  meterBar.style.width = (val*100) + '%';
+  requestAnimationFrame(updateMeter);
 }
 
-/* ========== Load saved media from DB ========== */
-async function loadAll(){
-  const m = await getAll('music');
-  const a = await getAll('ads');
-  const j = await getAll('jingles');
-  music = m.map(x=>({name:x.name,url:URL.createObjectURL(x.blob),key:x.name}));
-  ads = a.map(x=>({name:x.name,url:URL.createObjectURL(x.blob),key:x.name}));
-  jingles = j.map(x=>({name:x.name,url:URL.createObjectURL(x.blob),key:x.name}));
-  renderLists();
-  logStudio('Media geladen uit database');
+// Add files from <input>
+addFromFilesBtn.onclick = ()=> filePicker.click();
+filePicker.onchange = async (e)=>{
+  const files = Array.from(e.target.files);
+  for (const f of files) await addAudioFile(f);
+  filePicker.value = '';
+};
+
+async function addAudioFile(file){
+  const url = URL.createObjectURL(file);
+  const id = 't_' + Date.now() + Math.random().toString(36).slice(2,8);
+  const meta = {id, name: file.name, blob: file, url, duration: 0};
+  playlist.push(meta);
+  renderPlaylist();
+  // populate scheduler playlist options
+  updateSchedOptions();
 }
 
-/* ========== Render lists ========== */
-function renderLists(){
-  playlistEl.innerHTML = queue.map((q,i)=>`<div class="list-item">
-    <div style="flex:1">
-      <div><strong>${q.name}</strong></div>
-      <div class="small">${q.type}</div>
-    </div>
-    <div style="display:flex;gap:6px">
-      <button onclick="playQueueIndex(${i})">▶</button>
-      <button onclick="removeQueueItem(${i})" class="btn-ghost">✖</button>
-    </div>
-  </div>`).join('');
-
-  document.getElementById('plannedBlocks').innerHTML = plannedBlocks.map(ts=>`<div class="list-item">
-    <div style="flex:1">${new Date(ts).toLocaleString()}</div><div><button onclick="removePlanned(${ts})">X</button></div>
-  </div>`).join('');
-
-  document.getElementById('adCount')?.innerText = ads.length || 0;
-  document.getElementById('jingleCount')?.innerText = jingles.length || 0;
-
-  // music / ad / jingle lists
-  const musicList = document.getElementById('musicList');
-  if(musicList) musicList.innerHTML = music.map((m,i)=>`<div class="list-item"><div style="flex:1">${m.name}</div>
-    <div style="display:flex;gap:6px"><button onclick="playLocal(${i})">▶</button></div></div>`).join('');
-  const adList = document.getElementById('adList');
-  if(adList) adList.innerHTML = ads.map((a,i)=>`<div class="list-item"><div style="flex:1">${a.name}</div>
-    <div style="display:flex;gap:6px"><button onclick="removeAd(${i})">✖</button></div></div>`).join('');
-  const jList = document.getElementById('jingleList');
-  if(jList) jList.innerHTML = jingles.map((j,i)=>`<div class="list-item"><div style="flex:1">${j.name}</div><div><button onclick="removeJingle(${i})">✖</button></div></div>`).join('');
+function renderPlaylist(){
+  playlistDiv.innerHTML = '';
+  playlist.forEach((t,i)=>{
+    const el = document.createElement('div');
+    el.className = 'playlist-item';
+    el.innerHTML = `<div style="flex:1"><strong>${t.name}</strong><div class=\"small\">#${i+1}</div></div>
+      <div style=\"display:flex;gap:6px\"> <button data-i=\"${i}\">Play</button> <button data-rem=\"${i}\" class=\"secondary\">Remove</button></div>`;
+    playlistDiv.appendChild(el);
+  });
+  // wire buttons
+  playlistDiv.querySelectorAll('button[data-i]').forEach(b=> b.onclick = ()=> playIndex(parseInt(b.dataset.i)));
+  playlistDiv.querySelectorAll('button[data-rem]').forEach(b=> b.onclick = ()=> {playlist.splice(parseInt(b.dataset.rem),1); renderPlaylist(); updateSchedOptions();});
 }
 
-/* ========== File upload handlers ========== */
-fileMusic.addEventListener('change', async (e)=>{
-  for(const f of e.target.files){
-    await putFile('music', f.name, f);
-    music.push({name:f.name, url:URL.createObjectURL(f), key:f.name});
-  }
-  renderLists();
-  logStudio('Tracks geüpload');
-});
-fileAd.addEventListener('change', async (e)=>{
-  for(const f of e.target.files){
-    await putFile('ads', f.name, f);
-    ads.push({name:f.name, url:URL.createObjectURL(f), key:f.name});
-  }
-  renderLists();
-  logStudio('Reclames geüpload');
-});
-fileJingle.addEventListener('change', async (e)=>{
-  for(const f of e.target.files){
-    await putFile('jingles', f.name, f);
-    jingles.push({name:f.name, url:URL.createObjectURL(f), key:f.name});
-  }
-  renderLists();
-  logStudio('Jingles geüpload');
-});
-
-/* ========== Queue / playback control ========== */
-function addToQueue(item){ queue.push(item); renderLists(); logStudio('Toegevoegd aan queue: '+item.name); }
-function removeQueueItem(i){ queue.splice(i,1); renderLists(); }
-
-async function playQueueIndex(i){
-  if(i<0 || i>=queue.length) return;
+function playIndex(i){
+  initAudio();
+  if (i<0 || i>=playlist.length) return;
   currentIndex = i;
-  const item = queue[i];
-  await playItem(item);
+  const item = playlist[i];
+  nowPlayingText.textContent = item.name;
+
+  // load into <audio> element then connect to audio graph
+  player.src = item.url;
+  player.play();
+  // connect to WebAudio only after element created
+  // create source and connect to musicGain
+  setTimeout(()=>{
+    try{
+      if (player._webaudioSource) player._webaudioSource.disconnect();
+    }catch(e){}
+    try{
+      const src = audioContext.createMediaElementSource(player);
+      player._webaudioSource = src;
+      src.connect(musicGain);
+    }catch(e){console.warn('could not connect element source',e)}
+  },200);
 }
 
-async function playItem(item){
-  setupAudio();
-  if(item.type==='local'){
-    // local file url in item.url
-    adAudio.pause(); mainAudio.pause();
-    mainAudio.src = item.url;
-    mainAudio.play();
-    nowPlayingEl.innerText = 'Now playing: ' + item.name;
-    history.unshift({name:item.name, ts:Date.now()});
-    renderHistory();
-    logStudio('Speelt: '+item.name);
-    // when main ends -> next or ad
-    mainAudio.onended = async ()=>{
-      // randomly insert jingle 20% chance
-      if(jingles.length && Math.random()<0.2){
-        await playJingleThenNext();
-      } else {
-        nextInQueue();
-      }
-    };
-  } else if(item.type==='youtube'){
-    // open embedded player in a new window/tab or play in iframe? to keep simple, open a small popup
-    const url = 'https://www.youtube.com/embed/'+item.videoId+'?autoplay=1';
-    window.open(url, '_blank', 'width=700,height=460');
-    nowPlayingEl.innerText = 'Now playing (YouTube): ' + item.name;
-    history.unshift({name:item.name, ts:Date.now()});
-    renderHistory();
-    logStudio('YouTube geopend: '+item.name);
-    // can't reliably detect end from popup; just proceed after estimated length if provided (not available here)
-    setTimeout(nextInQueue, 1000*60*3); // fallback next after 3 min
-  }
-}
-
-function nextInQueue(){
-  if(queue.length===0) return;
-  currentIndex = (currentIndex + 1) % queue.length;
-  playQueueIndex(currentIndex);
-}
-function prevInQueue(){
-  if(queue.length===0) return;
-  currentIndex = (currentIndex - 1 + queue.length) % queue.length;
-  playQueueIndex(currentIndex);
-}
-
-/* jingles/ad helpers */
-async function playJingleThenNext(){
-  if(jingles.length===0){ nextInQueue(); return; }
-  const j = jingles[Math.floor(Math.random()*jingles.length)];
-  adAudio.pause(); mainAudio.pause();
-  adAudio.src = j.url;
-  adAudio.play();
-  nowPlayingEl.innerText = 'Jingle: ' + j.name;
-  history.unshift({name:'Jingle: '+j.name, ts:Date.now()});
-  renderHistory();
-  logStudio('Jingle speelt: '+j.name);
-  await waitUntilEnd(adAudio);
-  nextInQueue();
-}
-
-async function playAdBlock(){
-  if(ads.length===0){ logStudio('Geen reclames beschikbaar'); nextInQueue(); return; }
-  const count = Number(document.getElementById('adsPerBlock').value || 1);
-  for(let i=0;i<count;i++){
-    const a = ads[Math.floor(Math.random()*ads.length)];
-    adAudio.src = a.url;
-    mainAudio.pause();
-    adAudio.play();
-    nowPlayingEl.innerText = 'Reclame: ' + a.name;
-    history.unshift({name:'Reclame: '+a.name, ts:Date.now()});
-    renderHistory();
-    logStudio('Reclame speelt: '+a.name);
-    await waitUntilEnd(adAudio);
-  }
-  logStudio('Einde reclameblok');
-  nextInQueue();
-}
-
-/* ========== Utility to wait until audio element ends ========== */
-function waitUntilEnd(el){
-  return new Promise(res=>{
-    const handler = ()=>{ el.removeEventListener('ended',handler); res(); };
-    el.addEventListener('ended', handler);
-  });
-}
-
-/* ========== YouTube search ========== */
-searchBtn.addEventListener('click', async ()=>{
-  const q = searchTerm.value.trim();
-  if(!q) return alert('Voer zoekterm in');
-  if(!YT_API_KEY || YT_API_KEY==='YOUR_API_KEY_HERE') return alert('Vul je YouTube API key in de scriptconfig (YT_API_KEY).');
-  searchResults.innerHTML = 'Zoekt...';
-  try{
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${MAX_SEARCH}&q=${encodeURIComponent(q)}&key=${YT_API_KEY}`;
-    const r = await fetch(url);
-    const js = await r.json();
-    if(js.error){ searchResults.innerHTML = 'Fout bij zoeken: '+js.error.message; return; }
-    searchResults.innerHTML = js.items.map(it=>{
-      const title = it.snippet.title;
-      const thumb = it.snippet.thumbnails && it.snippet.thumbnails.default ? it.snippet.thumbnails.default.url : '';
-      const vid = it.id.videoId;
-      return `<div class="list-item search-result">
-        <img class="thumbnail" src="${thumb}" alt="">
-        <div style="flex:1"><strong>${title}</strong><div class="small">YouTube</div></div>
-        <div style="display:flex;gap:6px">
-          <button onclick="addYoutubeToQueue('${vid}','${escapeToJs(title)}')">➕ Voeg toe</button>
-          <button onclick="openYoutube('${vid}')">▶ Open</button>
-        </div>
-      </div>`;
-    }).join('');
-  }catch(e){ searchResults.innerHTML = 'Zoekfout'; console.error(e); }
-});
-
-function escapeToJs(s){ return s.replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
-window.addYoutubeToQueue = function(videoId,title){
-  addToQueue({type:'youtube',name:title,videoId:videoId});
-};
-window.openYoutube = function(videoId){
-  const url = 'https://www.youtube.com/watch?v='+videoId;
-  window.open(url,'_blank');
+// autoplay next
+player.onended = ()=>{
+  const next = (currentIndex+1) % playlist.length;
+  if (playlist.length>0) playIndex(next);
 };
 
-/* ========== Mic/talkover (getUserMedia) ========== */
-document.getElementById('micOnBtn').addEventListener('click', async ()=>{
+// Camera controls
+startCamBtn.onclick = async ()=>{
   try{
-    if(!audioCtx) setupAudio();
-    mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    micStreamNode = audioCtx.createMediaStreamSource(mediaStream);
-    micStreamNode.connect(micGain);
-    micGain.gain.value = Number(document.getElementById('micVol').value || 0.9);
-    logStudio('Microfoon ingeschakeld');
-  }catch(e){ alert('Kon mic niet openen: '+e.message); }
-});
-document.getElementById('micOffBtn').addEventListener('click', ()=>{
-  if(mediaStream){
-    mediaStream.getTracks().forEach(t=>t.stop());
-    micStreamNode && micStreamNode.disconnect();
-    mediaStream = null;
-    logStudio('Microfoon uit');
+    camStream = await navigator.mediaDevices.getUserMedia({video:{width:640}, audio:false});
+    videoPreview.srcObject = camStream;
+  }catch(e){alert('Camera error: '+e.message)}
+}
+stopCamBtn.onclick = ()=>{ if (camStream){ camStream.getTracks().forEach(t=>t.stop()); videoPreview.srcObject=null; camStream=null;} }
+
+// Microphone controls & routing
+toggleMicBtn.onclick = async ()=>{
+  if (!isMicOn){
+    try{
+      micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      initAudio();
+      micSourceNode = audioContext.createMediaStreamSource(micStream);
+      micSourceNode.connect(micGain);
+      micStatus.textContent = 'aan';
+      toggleMicBtn.textContent = 'Microfoon UIT';
+      toggleMicBtn.classList.add('secondary');
+      isMicOn = true;
+      // apply ducking when mic active
+      applyDucking();
+    }catch(e){alert('Mic error: '+e.message)}
+  } else {
+    if (micStream){ micStream.getTracks().forEach(t=>t.stop()); }
+    if (micSourceNode) micSourceNode.disconnect();
+    micStatus.textContent = 'uit';
+    toggleMicBtn.textContent = 'Microfoon AAN';
+    toggleMicBtn.classList.remove('secondary');
+    isMicOn = false;
+    musicGain.gain.value = 1.0;
   }
-});
-
-/* ========== Buttons / shortcuts ========== */
-document.getElementById('startBtn').addEventListener('click', ()=>{
-  setupAudio();
-  if(queue.length===0 && music.length>0){
-    // if queue empty, auto fill queue from music
-    music.forEach(m=>queue.push({type:'local',name:m.name,url:m.url}));
-    renderLists();
-  }
-  if(!audioCtx) setupAudio();
-  if(queue.length>0){ playQueueIndex(0); logStudio('Studio gestart'); }
-});
-document.getElementById('stopBtn').addEventListener('click', ()=>{ mainAudio.pause(); adAudio.pause(); logStudio('Stop'); nowPlayingEl.innerText='Now playing: —'; });
-document.getElementById('btnPlay').addEventListener('click', ()=>{ if(currentIndex<0 && queue.length>0) playQueueIndex(0); else if(!mainAudio.paused) mainAudio.play(); else mainAudio.play(); });
-document.getElementById('btnNext').addEventListener('click', ()=>nextInQueue());
-document.getElementById('btnPrev').addEventListener('click', ()=>prevInQueue());
-document.getElementById('btnStop').addEventListener('click', ()=>{ mainAudio.pause(); adAudio.pause(); });
-
-document.getElementById('masterVol').addEventListener('input', e=>setMasterVolume(e.target.value));
-document.getElementById('mainVol').addEventListener('input', e=>setMainVolume(e.target.value));
-document.getElementById('micVol').addEventListener('input', e=>setMicVolume(e.target.value));
-
-document.getElementById('saveBtn').addEventListener('click', async ()=>{
-  logStudio('Opslaan gevraagd — media is al persistent in DB bij upload. Gebruik Export voor config.');
-  alert('Media wordt automatisch opgeslagen in DB bij upload. Gebruik Export om config te downloaden (namen only).');
-});
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const cfg = {music:music.map(m=>m.name), ads:ads.map(a=>a.name), jingles:jingles.map(j=>j.name), queue:queue.map(q=>q.name)};
-  const blob = new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'studio-config.json';
-  a.click();
-});
-
-/* ========== Scheduler ========== */
-document.getElementById('startScheduler').addEventListener('click', ()=>{
-  const mins = Number(document.getElementById('adInterval').value || 30);
-  if(schedulerInterval) clearInterval(schedulerInterval);
-  schedulerInterval = setInterval(()=>{ plannedBlocks.push(Date.now()); renderLists(); logStudio('Automatisch reclameblok gepland'); }, mins*60*1000);
-  logStudio('Scheduler gestart: elk '+mins+' minuten');
-});
-document.getElementById('stopScheduler').addEventListener('click', ()=>{
-  if(schedulerInterval) clearInterval(schedulerInterval); schedulerInterval=null; logStudio('Scheduler gestopt');
-});
-document.getElementById('forceAd').addEventListener('click', ()=>playAdBlock());
-
-function removePlanned(ts){ const i = plannedBlocks.indexOf(ts); if(i>=0){ plannedBlocks.splice(i,1); renderLists(); } }
-
-/* ========== Helpers: play local directly, remove media ========== */
-function playLocal(i){ addToQueue({type:'local',name:music[i].name,url:music[i].url}); playQueueIndex(queue.length-1); }
-
-async function removeAd(i){
-  await deleteKey('ads', ads[i].key);
-  ads.splice(i,1); renderLists();
-}
-async function removeJingle(i){
-  await deleteKey('jingles', jingles[i].key);
-  jingles.splice(i,1); renderLists();
 }
 
-/* ========== History ========== */
-function renderHistory(){ historyEl.innerHTML = history.slice(0,30).map(h=>`<div class="list-item"><div style="flex:1">${h.name}<div class="small">${new Date(h.ts).toLocaleString()}</div></div></div>`).join(''); }
-
-/* ========== Utility functions ========== */
-function addToQueueAndMaybePlay(item){
-  addToQueue(item);
-  if(currentIndex<0) playQueueIndex(0);
+muteMicBtn.onclick = ()=>{
+  if (!micStream) return;
+  const tracks = micStream.getAudioTracks();
+  if (!tracks.length) return;
+  tracks[0].enabled = !tracks[0].enabled;
+  muteMicBtn.textContent = tracks[0].enabled ? 'Mute' : 'Unmute';
 }
-function addToQueue(item){ queue.push(item); renderLists(); }
-function removeQueue(i){ queue.splice(i,1); renderLists(); }
-window.removeQueueItem = removeQueueItem;
-function removeQueueItem(i){ queue.splice(i,1); renderLists(); }
-window.playQueueIndex = playQueueIndex;
 
-/* ========== small helpers ========== */
-function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
+// Ducking control
+duckAmount.oninput = ()=>{ duckVal.textContent = duckAmount.value; }
+function applyDucking(){
+  // reduce musicGain when mic is active
+  if (!isMicOn) { musicGain.gain.setValueAtTime(1.0, audioContext.currentTime); return; }
+  const target = parseFloat(duckAmount.value);
+  musicGain.gain.cancelScheduledValues(audioContext.currentTime);
+  musicGain.gain.linearRampToValueAtTime(target, audioContext.currentTime + 0.05);
+}
 
-/* ========== Startup: load DB and attach some helpers ========== */
-(async function(){
-  await loadAll();
-  setupAudio();
-  renderLists();
-  logStudio('Studio ready');
-  // quick-hotkeys
-  window.addEventListener('keydown',(e)=>{
-    if(e.key===' '){ e.preventDefault(); if(mainAudio.paused) mainAudio.play(); else mainAudio.pause(); }
-    if(e.key==='n') nextInQueue();
-    if(e.key==='p') prevInQueue();
-  });
-})();
+// Periodically monitor mic state for ducking (simple)
+setInterval(()=>{ if (!audioContext) return; if (isMicOn){ applyDucking(); } else { if (musicGain) musicGain.gain.setValueAtTime(1.0, audioContext.currentTime); } }, 250);
 
-/* ========== Notes for you ==========
- - Vul YT_API_KEY in de script header als je YouTube-zoek wilt gebruiken.
- - Om publiek te streamen: zet Icecast/SHOUTcast op en stuur audio daarheen (server-side). Ik kan je een Node.js voorbeeld geven.
- - Deze app bewaart geüploade audio lokaal in de browser (IndexedDB) — geen server nodig.
- - Als je wilt, voeg ik een admin-login, multi-user vs live broadcast, of server-side scheduler toe.
-==================================== */
+// Master volume control
+masterVol.oninput = ()=>{ if (!masterGain) initAudio(); masterGain.gain.value = parseFloat(masterVol.value); }
+
+// Jingles
+addJingleBtn.onclick = ()=> jinglePicker.click();
+jinglePicker.onchange = async (e)=>{
+  const f = e.target.files[0]; if (!f) return; const url = URL.createObjectURL(f); const id = 'j_'+Date.now(); jingles.push({id,name:f.name,blob:f,url}); renderJingles(); e.target.value='';
+}
+function renderJingles(){ jinglesList.innerHTML=''; jingles.forEach((j,i)=>{
+  const d = document.createElement('div'); d.className='playlist-item'; d.innerHTML=`<div>${j.name}</div><div style='display:flex;gap:8px'><button data-i='${i}'>Play</button><button data-rem='${i}' class='secondary'>Remove</button></div>`; jinglesList.appendChild(d);
+}); jinglesList.querySelectorAll('button[data-i]').forEach(b=> b.onclick = ()=> playJingle(parseInt(b.dataset.i)));
+  jinglesList.querySelectorAll('button[data-rem]').forEach(b=> b.onclick = ()=> {jingles.splice(parseInt(b.dataset.rem),1); renderJingles();});
+}
+function playJingle(i){
+  const j = jingles[i];
+  const a = new Audio(j.url);
+  a.crossOrigin='anonymous';
+  a.play();
+  // connect to audio graph
+  setTimeout(()=>{ try{ const src = audioContext.createMediaElementSource(a); src.connect(musicGain); }catch(e){ } },150);
+}
+
+// Scheduler (simple local scheduler that starts playlists at given HH:MM)
+addSchedBtn.onclick = ()=>{
+  const time = schedTime.value.trim(); if (!time) return alert('Voer tijd in zoals 09:00');
+  const playlistIdx = schedPlaylist.selectedIndex; if (playlistIdx<0) return alert('Selecteer playlist (voor nu: de full playlist)');
+  scheduler.push({time, playlist: 'default'});
+  renderSchedule();
+};
+function renderSchedule(){ schedList.innerHTML=''; scheduler.forEach((s,i)=>{ const el = document.createElement('div'); el.className='small'; el.textContent = `${s.time} — ${s.playlist}`; const b = document.createElement('button'); b.textContent='Rem'; b.className='secondary'; b.style.marginLeft='8px'; b.onclick=()=>{ scheduler.splice(i,1); renderSchedule(); }; el.appendChild(b); schedList.appendChild(el); }); }
+function updateSchedOptions(){ schedPlaylist.innerHTML = '<option>Default (complete playlist)</option>'; }
+updateSchedOptions();
+
+// Scheduler runner (checks every 20s)
+setInterval(()=>{
+  const now = new Date(); const hh = now.getHours().toString().padStart(2,'0'); const mm = now.getMinutes().toString().padStart(2,'0'); const cur = hh+':'+mm;
+  scheduler.forEach(s=>{ if (s.time===cur){ if (playlist.length>0) playIndex(0); } });
+},20000);
+
+// Recording (MediaRecorder of combined stream)
+startRecordBtn.onclick = ()=>{
+  initAudio();
+  // combine audio destination stream and camera video (if any)
+  const audioStream = destinationNode.stream;
+  let finalStream = new MediaStream();
+  audioStream.getAudioTracks().forEach(t=> finalStream.addTrack(t));
+  if (camStream){ camStream.getVideoTracks().forEach(t=> finalStream.addTrack(t)); }
+  // start MediaRecorder
+  recordedChunks = [];
+  recorder = new MediaRecorder(finalStream, {mimeType:'video/webm;codecs=vp8,opus'});
+  recorder.ondataavailable = e=>{ if (e.data.size>0) recordedChunks.push(e.data); };
+  recorder.onstop = ()=>{
+    const blob = new Blob(recordedChunks, {type:'video/webm'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download = 'mijn-radio-'+Date.now()+'.webm'; a.click();
+  };
+  recorder.start(1000);
+  startRecordBtn.disabled = true; stopRecordBtn.disabled = false;
+}
+stopRecordBtn.onclick = ()=>{ if (recorder && recorder.state!=='inactive') recorder.stop(); startRecordBtn.disabled=false; stopRecordBtn.disabled=true; }
+stopRecordBtn.disabled=true;
+
+// Live (very minimal WebRTC client — expects a signaling websocket and server that accepts offer and returns answer and publishes to RTMP)
+startLiveBtn.onclick = async ()=>{
+  const url = serverUrlInput.value.trim(); if (!url) return alert('Voer WebSocket signaling URL in, bv wss://mijnserver.example/ws');
+  initAudio();
+  // build local stream
+  const audioStream = destinationNode.stream;
+  const pc = new RTCPeerConnection();
+  // add audio track
+  audioStream.getAudioTracks().forEach(t=> pc.addTrack(t, audioStream));
+  // add video if cam
+  if (camStream) camStream.getVideoTracks().forEach(t=> pc.addTrack(t, camStream));
+
+  // simple ICE logging
+  pc.onicecandidate = e=>{ if (e.candidate && liveSocket) liveSocket.send(JSON.stringify({type:'ice',candidate:e.candidate})); };
+
+  liveSocket = new WebSocket(url);
+  liveSocket.onopen = async ()=>{
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    liveSocket.send(JSON.stringify({type:'offer',sdp:offer.sdp}));
+  };
+  liveSocket.onmessage = async (evt)=>{
+    const msg = JSON.parse(evt.data);
+    if (msg.type==='answer'){ await pc.setRemoteDescription({type:'answer',sdp:msg.sdp}); }
+    if (msg.type==='ice') await pc.addIceCandidate(msg.candidate);
+  };
+  startLiveBtn.disabled = true; stopLiveBtn.disabled=false;
+  // keep reference
+  window._pc = pc;
+}
+stopLiveBtn.onclick = ()=>{
+  if (liveSocket) liveSocket.close(); liveSocket = null; startLiveBtn.disabled=false; stopLiveBtn.disabled=true; if (window._pc){ window._pc.close(); window._pc=null; }
+}
+stopLiveBtn.disabled=true;
+
+// Clear playlist
+clearPlaylistBtn.onclick = ()=>{ playlist=[]; renderPlaylist(); updateSchedOptions(); }
+
+// Save/Load from localStorage
+function saveState(){ localStorage.setItem('radio_state_v1', JSON.stringify({playlist: playlist.map(p=>({name:p.name})), jingles:jingles.map(j=>({name:j.name})), scheduler})); }
+function loadState(){ const s = localStorage.getItem('radio_state_v1'); if (!s) return; try{ const obj = JSON.parse(s); /* we don't recreate blobs (files) automatically */ scheduler = obj.scheduler||[]; renderSchedule(); }catch(e){} }
+loadState();
+
+// Warn on unload
+window.addEventListener('beforeunload', (e)=>{ if (recorder && recorder.state==='recording') e.returnValue = 'Opname loopt nog, zeker stoppen?'; });
 
 </script>
+
 </body>
 </html>
