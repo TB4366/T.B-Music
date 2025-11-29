@@ -1,480 +1,388 @@
 <!doctype html>
 <html lang="nl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mijn Radio Studio — Webapp</title>
-<style>
-  :root{--bg:#0f1720;--panel:#111827;--muted:#9ca3af;--accent:#06b6d4}
-  body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#071021 0%, #08121a 100%);color:#e6eef6}
-  header{padding:18px 24px;display:flex;align-items:center;gap:16px}
-  header h1{margin:0;font-size:18px}
-  .container{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px}
-  .panel{background:var(--panel);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,.6)}
-  .small{font-size:13px;color:var(--muted)}
-  button{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:#022;cursor:pointer}
-  button.secondary{background:#1f2937;color:var(--muted)}
-  input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #253042;background:#0b1220;color:#e6eef6}
-  .playlist-item{padding:8px;border-radius:6px;background:linear-gradient(90deg,#071827, #081827);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .controls{display:flex;gap:8px;align-items:center}
-  video{width:100%;border-radius:8px;background:black}
-  .nowplaying{font-weight:600;font-size:16px}
-  footer{padding:12px 18px;color:var(--muted);font-size:13px}
-  .kbd{background:#0f1720;padding:4px 6px;border-radius:4px;border:1px solid #1f2a37}
-  .row{display:flex;gap:8px}
-  label{font-size:13px;color:var(--muted);}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kassa Demo</title>
+  <style>
+    :root{
+      --bg:#0f1724; --panel:#0b1220; --accent:#0ea5a3; --muted:#94a3b8; --card:#071028;
+      --success:#16a34a; --danger:#ef4444; --glass: rgba(255,255,255,0.03);
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071021 0%, #041023 100%);color:#e6eef8}
+    .app{display:grid;grid-template-columns:360px 1fr 360px;gap:18px;padding:18px;height:100vh}
+
+    /* LOGIN */
+    .login-screen{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    .brand{font-size:20px;font-weight:700;margin-bottom:10px;color:var(--accent)}
+    .login-panel{width:100%;}
+    .display{background:var(--glass);padding:14px;border-radius:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+    .display .left{font-size:14px;color:var(--muted)}
+    .display .value{font-size:22px;letter-spacing:4px}
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    button.key{padding:16px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.04);font-size:18px;color:inherit}
+    .key.orange{background:linear-gradient(90deg,#ef9a9a33,#ef444422)}
+
+    /* MAIN POS */
+    .panel{border-radius:12px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 30px rgba(2,6,23,0.6);height:100%;display:flex;flex-direction:column}
+    .search{display:flex;gap:8px;margin-bottom:12px}
+    .search input{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .catalog{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;overflow:auto;padding-right:6px}
+    .product{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+    .product:hover{transform:translateY(-3px)}
+
+    .cart{flex:1;overflow:auto;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg,#021827, #001421)}
+    .cart-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.03)}
+    .totals{padding:10px;border-radius:8px;margin-top:8px;background:#031824}
+
+    .right-area{display:flex;flex-direction:column;gap:12px}
+    .num-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .btn-pay{padding:12px;border-radius:10px;border:0;background:linear-gradient(90deg,#06b6d4,#0891b2);cursor:pointer;font-weight:700}
+
+    .small{font-size:13px;color:var(--muted)}
+    footer{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+
+    /* sim drawer */
+    .drawer{height:6px;border-radius:6px;background:linear-gradient(90deg,#20344a,#071223);position:relative;overflow:hidden}
+    .drawer.open::after{content:'';position:absolute;left:0;top:0;bottom:0;width:60%;background:linear-gradient(90deg,#ffd800,#ff7b00);}
+
+    @media(max-width:1000px){.app{grid-template-columns:1fr;grid-auto-rows:min-content;height:auto;padding:12px}}
+  </style>
 </head>
 <body>
-<header>
-  <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect rx='6' width='36' height='36' fill='%2306b6d4'/><text x='50%' y='54%' font-size='18' font-family='Arial' text-anchor='middle' fill='%23000'>R</text></svg>" alt="logo" style="width:42px;height:42px;border-radius:8px">
-  <div>
-    <h1>Mijn Radio Studio — Webapp</h1>
-    <div class="small">Chromebook friendly — lokaal draaien. Klaar voor streaming met een gateway/server (instructies onderaan).</div>
-  </div>
-</header>
-
-<div class="container">
-  <!-- LEFT: Controls & Playlist -->
-  <div>
-    <div class="panel">
-      <h3>Studio Controls</h3>
-      <div class="small">Microfoon & camera, mix en uitzending-ready.</div>
-      <div style="margin-top:12px">
-        <label>Camera</label>
-        <video id="videoPreview" autoplay playsinline muted></video>
-        <div style="margin-top:8px;display:flex;gap:8px">
-          <button id="startCamBtn">Start Camera</button>
-          <button id="stopCamBtn" class="secondary">Stop Camera</button>
-        </div>
-      </div>
-
-      <hr style="margin:12px 0;border:none;border-top:1px solid #16202b">
-
-      <label>Microfoon</label>
-      <div class="row" style="margin-top:8px">
-        <button id="toggleMicBtn">Microfoon AAN</button>
-        <button id="muteMicBtn" class="secondary">Mute</button>
-      </div>
-      <div class="small" style="margin-top:8px">Mic status: <span id="micStatus">uit</span></div>
-
-      <hr style="margin:12px 0;border:none;border-top:1px solid #16202b">
-
-      <h4>Output / Broadcast</h4>
-      <div class="small">Kies één van de volgende opties om je gemixte stream lokaal te bewaren of naar een server te sturen.</div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button id="startRecordBtn">Start Opname (WebM)</button>
-        <button id="stopRecordBtn" class="secondary">Stop & Download</button>
-      </div>
-      <div style="margin-top:8px">
-        <label>WebRTC / Server URL (optioneel)</label>
-        <input id="serverUrl" placeholder="wss://mijn-server.example/ws (optioneel)"> 
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="startLiveBtn">Start Live (WebRTC)</button>
-          <button id="stopLiveBtn" class="secondary">Stop Live</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel" style="margin-top:12px">
-      <h3>Auto-Duck & Mixing</h3>
-      <label>Autoduck (music gain when mic active)</label>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="duckAmount" type="range" min="0" max="1" step="0.05" value="0.25">
-        <div class="small" id="duckVal">0.25</div>
-      </div>
-      <div style="margin-top:8px">
-        <label>Master volume</label>
-        <input id="masterVol" type="range" min="0" max="1" step="0.01" value="0.9">
-      </div>
-      <div style="margin-top:8px" class="small">Tip: zet autoduck laag (0.2-0.4) voor gespreksoulouding tijdens jingles of talkover.</div>
-    </div>
-
-    <div class="panel" style="margin-top:12px">
-      <h3>Uurklok + Scheduler (eenvoudig)</h3>
-      <div class="small">Maak blokken die op bepaalde tijden nummers of playlists starten. (Eenvoudige lokale scheduler op browser-tijd.)</div>
-      <div style="margin-top:8px">
-        <label>Voeg blok toe (HH:MM - playlist start)</label>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <input id="schedTime" placeholder="09:00">
-          <select id="schedPlaylist"></select>
-          <button id="addSchedBtn">Voeg toe</button>
-        </div>
-        <div id="schedList" style="margin-top:8px"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT: Player, Playlist, Nowplaying -->
-  <div>
-    <div class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div class="nowplaying">Now playing:</div>
-          <div id="nowPlayingText" style="font-size:15px;color:var(--muted);margin-top:6px">— niets</div>
-        </div>
-        <div>
-          <div class="small">Master metering</div>
-          <div id="meter" style="width:180px;height:10px;background:#071827;border-radius:6px;overflow:hidden;margin-top:8px">
-            <div id="meterBar" style="height:100%;width:0%;background:linear-gradient(90deg,#06b6d4,#0ea5a3)"></div>
+  <div class="app" id="app">
+    <!-- LEFT: LOGIN / CATALOG -->
+    <div class="panel" id="left">
+      <div id="loginArea" class="login-screen">
+        <div class="brand">Kassa Demo</div>
+        <div class="login-panel" style="width:100%">
+          <div class="display">
+            <div class="left">Medewerker</div>
+            <div class="value" id="empDisplay">----</div>
           </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <input id="empNumberInput" type="text" inputmode="numeric" placeholder="Voer werknr" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+            <button id="toPass" class="key">OK</button>
+          </div>
+
+          <div id="passwordBlock" style="display:none">
+            <div class="display">
+              <div class="left">Wachtwoord</div>
+              <div class="value" id="passDisplay">••••</div>
+            </div>
+            <div class="keypad" style="margin-top:8px">
+              <button class="key num">1</button>
+              <button class="key num">2</button>
+              <button class="key num">3</button>
+              <button class="key num">4</button>
+              <button class="key num">5</button>
+              <button class="key num">6</button>
+              <button class="key num">7</button>
+              <button class="key num">8</button>
+              <button class="key num">9</button>
+              <button class="key orange" id="backspace">←</button>
+              <button class="key num">0</button>
+              <button class="key" id="loginBtn">Inloggen</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px" class="small">(Demo: medewerkers: 1001 / PIN 1234 , 1002 / PIN 4321)</div>
         </div>
       </div>
 
-      <hr style="margin:12px 0;border:none;border-top:1px solid #16202b">
-
-      <audio id="player" controls style="width:100%;"></audio>
-
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input type="file" id="filePicker" accept="audio/*" multiple>
-        <button id="addFromFilesBtn" class="secondary">Voeg toe</button>
-        <button id="clearPlaylistBtn" class="secondary">Clear</button>
+      <div id="catalogArea" style="display:none;flex-direction:column;height:100%">
+        <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          <div><strong>Producten</strong></div>
+          <div class="small">Snel scannen of klik op een product</div>
+        </div>
+        <div class="search">
+          <input id="search" placeholder="Zoek op naam of barcode...">
+          <button id="clearSearch" class="key">✕</button>
+        </div>
+        <div class="catalog" id="catalog"></div>
       </div>
-
-      <h4 style="margin-top:14px">Playlist</h4>
-      <div id="playlist" style="max-height:360px;overflow:auto;margin-top:6px"></div>
-
     </div>
 
-    <div class="panel" style="margin-top:12px">
-      <h3>Templates & Jingles</h3>
-      <div class="small">Je kunt hier pre-recorded jingles toevoegen en 'cues' maken om snel te spelen.</div>
-      <div style="margin-top:8px;display:flex;gap:8px">
-        <input type="file" id="jinglePicker" accept="audio/*">
-        <button id="addJingleBtn">Voeg jingle</button>
+    <!-- CENTER: CART -->
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><strong>Winkelwagen</strong></div>
+        <div class="small">Medewerker: <span id="loggedEmp">-</span></div>
       </div>
-      <div id="jinglesList" style="margin-top:8px"></div>
+
+      <div class="cart" id="cart"></div>
+
+      <div class="totals">
+        <div style="display:flex;justify-content:space-between"><div>Subtotaal</div><div id="subtotal">€0.00</div></div>
+        <div style="display:flex;justify-content:space-between"><div>Btw (21%)</div><div id="tax">€0.00</div></div>
+        <div style="display:flex;justify-content:space-between;font-weight:800;font-size:18px;margin-top:8px"><div>Totaal</div><div id="total">€0.00</div></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <input id="barcodeInput" placeholder="Barcode / Zoek " style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+        <button id="addManual" class="key">Voeg toe</button>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <div class="small">Kaslade:</div>
+        <div class="drawer" id="drawer"></div>
+      </div>
     </div>
 
-    <div class="panel" style="margin-top:12px">
-      <h3>Tips voor uitzend-klaar</h3>
-      <ol style="color:var(--muted);font-size:14px">
-        <li>Zorg voor licenties voor commerciële muziek (Buma/Sena of rechtenvrije muziek).</li>
-        <li>Gebruik een WebRTC → RTMP gateway (Ant Media, Janus, mediasoup of een eenvoudige Node app) om browserstreams naar YouTube te sturen.</li>
-        <li>Test eerst met "Unlisted" YouTube stream key en controleer audio levels.</li>
-      </ol>
+    <!-- RIGHT: PAY PAD -->
+    <div class="panel" id="right">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Betalen</strong><div class="small">Snelbedragen</div></div>
+
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button class="key" data-amt="5">€5</button>
+        <button class="key" data-amt="10">€10</button>
+        <button class="key" data-amt="20">€20</button>
+        <button class="key" data-amt="50">€50</button>
+      </div>
+
+      <div class="num-pad">
+        <button class="key numpad">1</button>
+        <button class="key numpad">2</button>
+        <button class="key numpad">3</button>
+        <button class="key numpad">4</button>
+        <button class="key numpad">5</button>
+        <button class="key numpad">6</button>
+        <button class="key numpad">7</button>
+        <button class="key numpad">8</button>
+        <button class="key numpad">9</button>
+        <button class="key orange" id="nClear">C</button>
+        <button class="key numpad">0</button>
+        <button class="key" id="nEnter">OK</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="tenderInput" placeholder="Bedrag ontvangen" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+          <button id="payCash" class="btn-pay">Contant</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button id="payCard" class="btn-pay">Pin/Kaart</button>
+          <button id="refund" class="key" style="background:#2a2542">Retour</button>
+        </div>
+
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <button id="shiftReport" class="key">Shift rapport</button>
+          <button id="logout" class="key">Uitloggen</button>
+        </div>
+
+        <div style="margin-top:12px;font-size:13px;color:var(--muted)">Ontvangen: <span id="received">—</span>  Teruggave: <span id="change">—</span></div>
+      </div>
+
+      <footer>Demo kassasysteem — alleen lokaal</footer>
     </div>
   </div>
-</div>
 
-<footer>
-  Deze applicatie draait volledig in je browser en slaat playlists/schedules lokaal (LocalStorage). Voor live naar YouTube/website streamen heb je een server-gateway nodig — instructies staan in het bestand.
-</footer>
+  <script>
+    /************************************************
+     * Simpele client-side kassa demo
+     * - Werkt volledig in de browser (localStorage)
+     * - Niet veilig voor productie (authentificatie client-side)
+     ************************************************/
 
-<script>
-// -----------------------------
-// Simple Radio Studio Webapp
-// - Playlist via local files
-// - WebAudio mixing (music + mic)
-// - Camera preview
-// - Local recording (MediaRecorder)
-// - Basic scheduler (local time)
-// -----------------------------
+    // --- voorbeeld medewerkers (in realiteit server-side) ---
+    const employees = {
+      '1001': {name: 'Jan', pin: '1234'},
+      '1002': {name: 'Sanne', pin: '4321'}
+    };
 
-// State
-let audioContext, masterGain, musicGain, micGain, destinationNode, micSourceNode;
-let playlist = []; // {id, name, blob, url, duration}
-let jingles = [];
-let currentIndex = -1;
-let isMicOn = false;
-let micStream = null;
-let camStream = null;
-let recorder = null;
-let recordedChunks = [];
-let liveSocket = null;
-let scheduler = [];
+    // --- productcatalogus ---
+    const products = [
+      {id:'0001', name:'Koffie', price:2.50, vat:21},
+      {id:'0002', name:'Broodje Kaas', price:3.75, vat:21},
+      {id:'0003', name:'Cola 330ml', price:2.00, vat:21},
+      {id:'0004', name:'Appel', price:0.70, vat:9},
+      {id:'0005', name:'Water 500ml', price:1.50, vat:21}
+    ];
 
-// UI
-const videoPreview = document.getElementById('videoPreview');
-const startCamBtn = document.getElementById('startCamBtn');
-const stopCamBtn = document.getElementById('stopCamBtn');
-const toggleMicBtn = document.getElementById('toggleMicBtn');
-const muteMicBtn = document.getElementById('muteMicBtn');
-const micStatus = document.getElementById('micStatus');
-const filePicker = document.getElementById('filePicker');
-const addFromFilesBtn = document.getElementById('addFromFilesBtn');
-const playlistDiv = document.getElementById('playlist');
-const player = document.getElementById('player');
-const nowPlayingText = document.getElementById('nowPlayingText');
-const meterBar = document.getElementById('meterBar');
-const startRecordBtn = document.getElementById('startRecordBtn');
-const stopRecordBtn = document.getElementById('stopRecordBtn');
-const serverUrlInput = document.getElementById('serverUrl');
-const startLiveBtn = document.getElementById('startLiveBtn');
-const stopLiveBtn = document.getElementById('stopLiveBtn');
-const duckAmount = document.getElementById('duckAmount');
-const duckVal = document.getElementById('duckVal');
-const masterVol = document.getElementById('masterVol');
-const addJingleBtn = document.getElementById('addJingleBtn');
-const jinglePicker = document.getElementById('jinglePicker');
-const jinglesList = document.getElementById('jinglesList');
-const schedPlaylist = document.getElementById('schedPlaylist');
-const schedTime = document.getElementById('schedTime');
-const addSchedBtn = document.getElementById('addSchedBtn');
-const schedList = document.getElementById('schedList');
-const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
+    // state
+    let state = {logged:null, cart:[], currentInput:'', tenderInput:'', focused:'tender'};
 
-// Init AudioContext and graph
-function initAudio() {
-  if (audioContext) return;
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioContext.createGain();
-  musicGain = audioContext.createGain();
-  micGain = audioContext.createGain();
-  destinationNode = audioContext.createMediaStreamDestination();
+    // helpers
+    const q = s => document.querySelector(s);
+    const fmt = n => '€'+n.toFixed(2).replace('.',',');
 
-  masterGain.gain.value = parseFloat(masterVol.value);
-  musicGain.gain.value = 1.0;
-  micGain.gain.value = 1.0;
+    // render catalog
+    function renderCatalog(list){
+      const el = q('#catalog'); el.innerHTML='';
+      list.forEach(p=>{
+        const d = document.createElement('div'); d.className='product';
+        d.innerHTML = `<div style="font-weight:700">${p.name}</div><div class="small">${p.id} — ${fmt(p.price)}</div>`;
+        d.addEventListener('click', ()=> addToCart(p.id));
+        el.appendChild(d);
+      });
+    }
 
-  // music -> musicGain -> master
-  musicGain.connect(masterGain);
-  // mic -> micGain -> master
-  micGain.connect(masterGain);
-  // master -> destination (MediaStream)
-  masterGain.connect(destinationNode);
-  // and to audioContext.destination for local monitoring
-  masterGain.connect(audioContext.destination);
+    // cart ops
+    function addToCart(id, qty=1){
+      const prod = products.find(p=>p.id===id) || products.find(p=>p.name.toLowerCase()===(id+'').toLowerCase());
+      if(!prod){alert('Product niet gevonden'); return}
+      const found = state.cart.find(c=>c.id===prod.id);
+      if(found) found.qty += qty; else state.cart.push({id:prod.id,name:prod.name,price:prod.price,vat:prod.vat,qty:qty});
+      renderCart();
+    }
+    function changeQty(id,delta){
+      const c = state.cart.find(x=>x.id===id); if(!c) return; c.qty += delta; if(c.qty<=0) state.cart = state.cart.filter(x=>x.id!==id); renderCart();
+    }
+    function removeItem(id){ state.cart = state.cart.filter(x=>x.id!==id); renderCart(); }
 
-  // meter updater
-  requestAnimationFrame(updateMeter);
-}
+    function renderCart(){
+      const el = q('#cart'); el.innerHTML='';
+      let subtotal=0; let tax=0;
+      state.cart.forEach(item=>{
+        const row = document.createElement('div'); row.className='cart-row';
+        const lineTotal = item.price*item.qty; subtotal += lineTotal;
+        const vatAmount = lineTotal * (item.vat/100); tax += vatAmount;
+        row.innerHTML = `<div><strong>${item.name}</strong><div class='small'>${item.id}</div></div><div style='text-align:right'><div>${fmt(lineTotal)}</div><div class='small'>x${item.qty}</div><div style='margin-top:6px'><button class='key' data-rm='${item.id}'>-</button> <button class='key' data-add='${item.id}'>+</button> <button class='key' data-del='${item.id}'>Verwijder</button></div></div>`;
+        el.appendChild(row);
+      });
+      q('#subtotal').textContent = fmt(subtotal);
+      q('#tax').textContent = fmt(subtotal*0.21); // simpele 21% als voorbeeld
+      q('#total').textContent = fmt(subtotal + subtotal*0.21);
 
-function updateMeter(){
-  if (!audioContext) return requestAnimationFrame(updateMeter);
-  // naive meter: use masterGain.gain and mic activity
-  const val = Math.min(1, masterGain.gain.value * (1 + Math.random()*0.2));
-  meterBar.style.width = (val*100) + '%';
-  requestAnimationFrame(updateMeter);
-}
+      // bind row buttons
+      el.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click', e=>changeQty(e.target.dataset.add,1)));
+      el.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click', e=>changeQty(e.target.dataset.rm,-1)));
+      el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', e=>removeItem(e.target.dataset.del)));
+    }
 
-// Add files from <input>
-addFromFilesBtn.onclick = ()=> filePicker.click();
-filePicker.onchange = async (e)=>{
-  const files = Array.from(e.target.files);
-  for (const f of files) await addAudioFile(f);
-  filePicker.value = '';
-};
+    // LOGIN UI
+    const empDisplay = q('#empDisplay');
+    const passDisplay = q('#passDisplay');
+    let currentEmp=''; let currentPin='';
 
-async function addAudioFile(file){
-  const url = URL.createObjectURL(file);
-  const id = 't_' + Date.now() + Math.random().toString(36).slice(2,8);
-  const meta = {id, name: file.name, blob: file, url, duration: 0};
-  playlist.push(meta);
-  renderPlaylist();
-  // populate scheduler playlist options
-  updateSchedOptions();
-}
+    q('#toPass').addEventListener('click', ()=>{
+      const v = q('#empNumberInput').value.trim();
+      if(!v){alert('Vul werknr in');return}
+      currentEmp = v; empDisplay.textContent = v; q('#passwordBlock').style.display='block'; q('#empNumberInput').blur();
+    });
 
-function renderPlaylist(){
-  playlistDiv.innerHTML = '';
-  playlist.forEach((t,i)=>{
-    const el = document.createElement('div');
-    el.className = 'playlist-item';
-    el.innerHTML = `<div style="flex:1"><strong>${t.name}</strong><div class=\"small\">#${i+1}</div></div>
-      <div style=\"display:flex;gap:6px\"> <button data-i=\"${i}\">Play</button> <button data-rem=\"${i}\" class=\"secondary\">Remove</button></div>`;
-    playlistDiv.appendChild(el);
-  });
-  // wire buttons
-  playlistDiv.querySelectorAll('button[data-i]').forEach(b=> b.onclick = ()=> playIndex(parseInt(b.dataset.i)));
-  playlistDiv.querySelectorAll('button[data-rem]').forEach(b=> b.onclick = ()=> {playlist.splice(parseInt(b.dataset.rem),1); renderPlaylist(); updateSchedOptions();});
-}
+    // numeric keypad for PIN
+    document.querySelectorAll('.key.num').forEach(btn=>btn.addEventListener('click', ()=>{
+      currentPin += btn.textContent.trim(); passDisplay.textContent = '•'.repeat(currentPin.length);
+    }));
+    q('#backspace').addEventListener('click', ()=>{ currentPin = currentPin.slice(0,-1); passDisplay.textContent = '•'.repeat(currentPin.length); });
+    q('#loginBtn').addEventListener('click', ()=>{
+      if(!currentEmp){alert('Geen werknr');return}
+      const emp = employees[currentEmp];
+      if(!emp){alert('Onbekend werknr'); return}
+      if(currentPin === emp.pin){
+        state.logged = {id:currentEmp, name:emp.name};
+        q('#loginArea').style.display='none'; q('#catalogArea').style.display='flex'; q('#loggedEmp').textContent = emp.name + ' ('+currentEmp+')';
+        q('#left').classList.remove('login-screen');
+        renderCatalog(products);
+        // greet
+        alert('Welkom, '+emp.name);
+      } else { alert('Onjuist PIN'); currentPin=''; passDisplay.textContent=''; }
+    });
 
-function playIndex(i){
-  initAudio();
-  if (i<0 || i>=playlist.length) return;
-  currentIndex = i;
-  const item = playlist[i];
-  nowPlayingText.textContent = item.name;
+    // search
+    q('#search').addEventListener('input', e=>{
+      const s = e.target.value.trim().toLowerCase();
+      const filtered = products.filter(p=>p.name.toLowerCase().includes(s) || p.id.includes(s));
+      renderCatalog(filtered);
+    });
+    q('#clearSearch').addEventListener('click', ()=>{q('#search').value=''; renderCatalog(products)});
 
-  // load into <audio> element then connect to audio graph
-  player.src = item.url;
-  player.play();
-  // connect to WebAudio only after element created
-  // create source and connect to musicGain
-  setTimeout(()=>{
-    try{
-      if (player._webaudioSource) player._webaudioSource.disconnect();
-    }catch(e){}
-    try{
-      const src = audioContext.createMediaElementSource(player);
-      player._webaudioSource = src;
-      src.connect(musicGain);
-    }catch(e){console.warn('could not connect element source',e)}
-  },200);
-}
+    // barcode input
+    q('#addManual').addEventListener('click', ()=>{
+      const v = q('#barcodeInput').value.trim(); if(!v) return; addToCart(v); q('#barcodeInput').value='';
+    });
+    q('#barcodeInput').addEventListener('keypress', e=>{ if(e.key==='Enter'){ q('#addManual').click(); }});
 
-// autoplay next
-player.onended = ()=>{
-  const next = (currentIndex+1) % playlist.length;
-  if (playlist.length>0) playIndex(next);
-};
+    // pay controls
+    q('#payCash').addEventListener('click', ()=>{
+      if(state.cart.length===0){alert('Winkelwagen leeg');return}
+      const total = parseFloat(q('#total').textContent.replace('€','').replace(',','.'));
+      const received = parseFloat((q('#tenderInput').value || '').replace(',','.'))||0;
+      if(received < total){ alert('Ontvangen bedrag is te laag'); return }
+      const change = received - total;
+      q('#received').textContent = fmt(received);
+      q('#change').textContent = fmt(change);
+      // record sale
+      recordSale({type:'cash', amount:total, received, change, items:state.cart.slice(), emp:state.logged});
+      // open drawer
+      q('#drawer').classList.add('open'); setTimeout(()=>q('#drawer').classList.remove('open'),1200);
+      // print receipt
+      printReceipt({emp:state.logged, items:state.cart, total, received, change});
+      state.cart=[]; renderCart(); q('#tenderInput').value='';
+    });
 
-// Camera controls
-startCamBtn.onclick = async ()=>{
-  try{
-    camStream = await navigator.mediaDevices.getUserMedia({video:{width:640}, audio:false});
-    videoPreview.srcObject = camStream;
-  }catch(e){alert('Camera error: '+e.message)}
-}
-stopCamBtn.onclick = ()=>{ if (camStream){ camStream.getTracks().forEach(t=>t.stop()); videoPreview.srcObject=null; camStream=null;} }
+    q('#payCard').addEventListener('click', ()=>{
+      if(state.cart.length===0){alert('Winkelwagen leeg');return}
+      const total = parseFloat(q('#total').textContent.replace('€','').replace(',','.'));
+      if(!confirm('Simuleer pinbetaling voor '+fmt(total)+'?')) return;
+      recordSale({type:'card', amount:total, emp:state.logged, items:state.cart.slice()});
+      printReceipt({emp:state.logged, items:state.cart, total, method:'card'});
+      state.cart=[]; renderCart();
+    });
 
-// Microphone controls & routing
-toggleMicBtn.onclick = async ()=>{
-  if (!isMicOn){
-    try{
-      micStream = await navigator.mediaDevices.getUserMedia({audio:true});
-      initAudio();
-      micSourceNode = audioContext.createMediaStreamSource(micStream);
-      micSourceNode.connect(micGain);
-      micStatus.textContent = 'aan';
-      toggleMicBtn.textContent = 'Microfoon UIT';
-      toggleMicBtn.classList.add('secondary');
-      isMicOn = true;
-      // apply ducking when mic active
-      applyDucking();
-    }catch(e){alert('Mic error: '+e.message)}
-  } else {
-    if (micStream){ micStream.getTracks().forEach(t=>t.stop()); }
-    if (micSourceNode) micSourceNode.disconnect();
-    micStatus.textContent = 'uit';
-    toggleMicBtn.textContent = 'Microfoon AAN';
-    toggleMicBtn.classList.remove('secondary');
-    isMicOn = false;
-    musicGain.gain.value = 1.0;
-  }
-}
+    // record sale to localStorage
+    function recordSale(sale){
+      const key = 'kassa_sales_v1';
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      sale.time = new Date().toISOString(); arr.push(sale); localStorage.setItem(key, JSON.stringify(arr));
+    }
 
-muteMicBtn.onclick = ()=>{
-  if (!micStream) return;
-  const tracks = micStream.getAudioTracks();
-  if (!tracks.length) return;
-  tracks[0].enabled = !tracks[0].enabled;
-  muteMicBtn.textContent = tracks[0].enabled ? 'Mute' : 'Unmute';
-}
+    // print receipt (opens new window)
+    function printReceipt({emp, items, total, received=0, change=0, method='cash'}){
+      const w = window.open('','receipt','width=320,height=480');
+      const now = new Date();
+      let html = `<html><head><title>Bon</title><style>body{font-family:monospace;padding:10px}h3{text-align:center}</style></head><body>`;
+      html += `<h3>Winkel Demo</h3><div>${now.toLocaleString()}</div><div>Medewerker: ${emp.name} (${emp.id})</div><hr>`;
+      items.forEach(it=> html += `<div>${it.name} x${it.qty} ${fmt(it.price*it.qty)}</div>`);
+      html += `<hr><div>Totaal: ${fmt(total)}</div><div>Ontvangen: ${fmt(received)}</div><div>Teruggave: ${fmt(change)}</div><div>Betaalwijze: ${method}</div><hr><div style='text-align:center'>Dank voor uw aankoop!</div>`;
+      html += `</body></html>`;
+      w.document.write(html); w.document.close();
+      w.print();
+      setTimeout(()=>w.close(),1500);
+    }
 
-// Ducking control
-duckAmount.oninput = ()=>{ duckVal.textContent = duckAmount.value; }
-function applyDucking(){
-  // reduce musicGain when mic is active
-  if (!isMicOn) { musicGain.gain.setValueAtTime(1.0, audioContext.currentTime); return; }
-  const target = parseFloat(duckAmount.value);
-  musicGain.gain.cancelScheduledValues(audioContext.currentTime);
-  musicGain.gain.linearRampToValueAtTime(target, audioContext.currentTime + 0.05);
-}
+    // shift report
+    q('#shiftReport').addEventListener('click', ()=>{
+      const arr = JSON.parse(localStorage.getItem('kassa_sales_v1')||'[]');
+      const my = arr.filter(s=> s.emp && s.emp.id === (state.logged && state.logged.id));
+      if(my.length===0){ alert('Geen transacties voor deze medewerker'); return }
+      let total = 0; let cash=0; let card=0; my.forEach(s=>{ total += s.amount; if(s.type==='cash') cash += s.amount; if(s.type==='card') card += s.amount });
+      alert('Shift rapport\nMedewerker: '+state.logged.name+'\nTransacties: '+my.length+'\nTotaal: '+fmt(total)+'\nContant: '+fmt(cash)+'\nCard: '+fmt(card));
+    });
 
-// Periodically monitor mic state for ducking (simple)
-setInterval(()=>{ if (!audioContext) return; if (isMicOn){ applyDucking(); } else { if (musicGain) musicGain.gain.setValueAtTime(1.0, audioContext.currentTime); } }, 250);
+    // logout
+    q('#logout').addEventListener('click', ()=>{
+      if(!confirm('Uitloggen?')) return;
+      state.logged=null; currentEmp=''; currentPin=''; q('#loginArea').style.display='flex'; q('#catalogArea').style.display='none'; q('#empNumberInput').value=''; q('#passwordBlock').style.display='none'; q('#loggedEmp').textContent='-';
+    });
 
-// Master volume control
-masterVol.oninput = ()=>{ if (!masterGain) initAudio(); masterGain.gain.value = parseFloat(masterVol.value); }
+    // keypad right (tender)
+    document.querySelectorAll('.num-pad .numpad').forEach(b=>b.addEventListener('click', e=>{
+      q('#tenderInput').value += e.target.textContent;
+    }));
+    q('#nClear').addEventListener('click', ()=> q('#tenderInput').value='');
+    q('#nEnter').addEventListener('click', ()=> q('#payCash').click());
 
-// Jingles
-addJingleBtn.onclick = ()=> jinglePicker.click();
-jinglePicker.onchange = async (e)=>{
-  const f = e.target.files[0]; if (!f) return; const url = URL.createObjectURL(f); const id = 'j_'+Date.now(); jingles.push({id,name:f.name,blob:f,url}); renderJingles(); e.target.value='';
-}
-function renderJingles(){ jinglesList.innerHTML=''; jingles.forEach((j,i)=>{
-  const d = document.createElement('div'); d.className='playlist-item'; d.innerHTML=`<div>${j.name}</div><div style='display:flex;gap:8px'><button data-i='${i}'>Play</button><button data-rem='${i}' class='secondary'>Remove</button></div>`; jinglesList.appendChild(d);
-}); jinglesList.querySelectorAll('button[data-i]').forEach(b=> b.onclick = ()=> playJingle(parseInt(b.dataset.i)));
-  jinglesList.querySelectorAll('button[data-rem]').forEach(b=> b.onclick = ()=> {jingles.splice(parseInt(b.dataset.rem),1); renderJingles();});
-}
-function playJingle(i){
-  const j = jingles[i];
-  const a = new Audio(j.url);
-  a.crossOrigin='anonymous';
-  a.play();
-  // connect to audio graph
-  setTimeout(()=>{ try{ const src = audioContext.createMediaElementSource(a); src.connect(musicGain); }catch(e){ } },150);
-}
+    // quick amounts
+    document.querySelectorAll('[data-amt]').forEach(b=>b.addEventListener('click', e=>{
+      const amt = parseFloat(e.target.dataset.amt); q('#tenderInput').value = amt; q('#received').textContent='—'; q('#change').textContent='—';
+    }));
 
-// Scheduler (simple local scheduler that starts playlists at given HH:MM)
-addSchedBtn.onclick = ()=>{
-  const time = schedTime.value.trim(); if (!time) return alert('Voer tijd in zoals 09:00');
-  const playlistIdx = schedPlaylist.selectedIndex; if (playlistIdx<0) return alert('Selecteer playlist (voor nu: de full playlist)');
-  scheduler.push({time, playlist: 'default'});
-  renderSchedule();
-};
-function renderSchedule(){ schedList.innerHTML=''; scheduler.forEach((s,i)=>{ const el = document.createElement('div'); el.className='small'; el.textContent = `${s.time} — ${s.playlist}`; const b = document.createElement('button'); b.textContent='Rem'; b.className='secondary'; b.style.marginLeft='8px'; b.onclick=()=>{ scheduler.splice(i,1); renderSchedule(); }; el.appendChild(b); schedList.appendChild(el); }); }
-function updateSchedOptions(){ schedPlaylist.innerHTML = '<option>Default (complete playlist)</option>'; }
-updateSchedOptions();
+    // initial render
+    renderCatalog(products);
+    renderCart();
 
-// Scheduler runner (checks every 20s)
-setInterval(()=>{
-  const now = new Date(); const hh = now.getHours().toString().padStart(2,'0'); const mm = now.getMinutes().toString().padStart(2,'0'); const cur = hh+':'+mm;
-  scheduler.forEach(s=>{ if (s.time===cur){ if (playlist.length>0) playIndex(0); } });
-},20000);
+    // keyboard support for barcode / quick testing
+    window.addEventListener('keydown', e=>{
+      if(e.key==='F2') q('#logout').click();
+      if(e.key==='Enter' && document.activeElement === q('#barcodeInput')) q('#addManual').click();
+    });
 
-// Recording (MediaRecorder of combined stream)
-startRecordBtn.onclick = ()=>{
-  initAudio();
-  // combine audio destination stream and camera video (if any)
-  const audioStream = destinationNode.stream;
-  let finalStream = new MediaStream();
-  audioStream.getAudioTracks().forEach(t=> finalStream.addTrack(t));
-  if (camStream){ camStream.getVideoTracks().forEach(t=> finalStream.addTrack(t)); }
-  // start MediaRecorder
-  recordedChunks = [];
-  recorder = new MediaRecorder(finalStream, {mimeType:'video/webm;codecs=vp8,opus'});
-  recorder.ondataavailable = e=>{ if (e.data.size>0) recordedChunks.push(e.data); };
-  recorder.onstop = ()=>{
-    const blob = new Blob(recordedChunks, {type:'video/webm'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download = 'mijn-radio-'+Date.now()+'.webm'; a.click();
-  };
-  recorder.start(1000);
-  startRecordBtn.disabled = true; stopRecordBtn.disabled = false;
-}
-stopRecordBtn.onclick = ()=>{ if (recorder && recorder.state!=='inactive') recorder.stop(); startRecordBtn.disabled=false; stopRecordBtn.disabled=true; }
-stopRecordBtn.disabled=true;
+    // small helper: allow clicking product by pressing its id in input
 
-// Live (very minimal WebRTC client — expects a signaling websocket and server that accepts offer and returns answer and publishes to RTMP)
-startLiveBtn.onclick = async ()=>{
-  const url = serverUrlInput.value.trim(); if (!url) return alert('Voer WebSocket signaling URL in, bv wss://mijnserver.example/ws');
-  initAudio();
-  // build local stream
-  const audioStream = destinationNode.stream;
-  const pc = new RTCPeerConnection();
-  // add audio track
-  audioStream.getAudioTracks().forEach(t=> pc.addTrack(t, audioStream));
-  // add video if cam
-  if (camStream) camStream.getVideoTracks().forEach(t=> pc.addTrack(t, camStream));
-
-  // simple ICE logging
-  pc.onicecandidate = e=>{ if (e.candidate && liveSocket) liveSocket.send(JSON.stringify({type:'ice',candidate:e.candidate})); };
-
-  liveSocket = new WebSocket(url);
-  liveSocket.onopen = async ()=>{
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    liveSocket.send(JSON.stringify({type:'offer',sdp:offer.sdp}));
-  };
-  liveSocket.onmessage = async (evt)=>{
-    const msg = JSON.parse(evt.data);
-    if (msg.type==='answer'){ await pc.setRemoteDescription({type:'answer',sdp:msg.sdp}); }
-    if (msg.type==='ice') await pc.addIceCandidate(msg.candidate);
-  };
-  startLiveBtn.disabled = true; stopLiveBtn.disabled=false;
-  // keep reference
-  window._pc = pc;
-}
-stopLiveBtn.onclick = ()=>{
-  if (liveSocket) liveSocket.close(); liveSocket = null; startLiveBtn.disabled=false; stopLiveBtn.disabled=true; if (window._pc){ window._pc.close(); window._pc=null; }
-}
-stopLiveBtn.disabled=true;
-
-// Clear playlist
-clearPlaylistBtn.onclick = ()=>{ playlist=[]; renderPlaylist(); updateSchedOptions(); }
-
-// Save/Load from localStorage
-function saveState(){ localStorage.setItem('radio_state_v1', JSON.stringify({playlist: playlist.map(p=>({name:p.name})), jingles:jingles.map(j=>({name:j.name})), scheduler})); }
-function loadState(){ const s = localStorage.getItem('radio_state_v1'); if (!s) return; try{ const obj = JSON.parse(s); /* we don't recreate blobs (files) automatically */ scheduler = obj.scheduler||[]; renderSchedule(); }catch(e){} }
-loadState();
-
-// Warn on unload
-window.addEventListener('beforeunload', (e)=>{ if (recorder && recorder.state==='recording') e.returnValue = 'Opname loopt nog, zeker stoppen?'; });
-
-</script>
-
+  </script>
 </body>
 </html>
