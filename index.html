@@ -1,414 +1,247 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Speel To Go — Kassa</title>
-  <style>
-    :root{--bg:#0f1724; --panel:#0b1220; --accent:#06b6d4; --muted:#94a3b8; --glass: rgba(255,255,255,0.03); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial}
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071021 0%, #041023 100%);color:#e6eef8}
-    .app{display:grid;grid-template-columns:360px 1fr 360px;gap:18px;padding:18px;height:100vh}
-    .panel{border-radius:12px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 30px rgba(2,6,23,0.6);height:100%;display:flex;flex-direction:column}
+<meta charset="UTF-8">
+<title>Custom Skin Upload</title>
 
-    /* LOGIN */
-    .login-screen{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px;border-radius:12px}
-    .brand{font-size:20px;font-weight:800;margin-bottom:6px;color:var(--accent)}
-    .sub{font-size:12px;color:var(--muted);margin-bottom:12px}
-    .display{background:var(--glass);padding:14px;border-radius:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-    .display .left{font-size:14px;color:var(--muted)}
-    .display .value{font-size:22px;letter-spacing:4px}
-    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    button.key{padding:14px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.04);font-size:16px;color:inherit}
-    .key.orange{background:linear-gradient(90deg,#ef9a9a33,#ef444422)}
+<style>
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f2f4f7;
+        margin: 0;
+        padding: 0;
+    }
 
-    /* catalog */
-    .search{display:flex;gap:8px;margin-bottom:12px}
-    .search input{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
-    .catalog{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;overflow:auto;padding-right:6px}
-    .product{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+    .wrapper {
+        max-width: 900px;
+        margin: 40px auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
 
-    .cart{flex:1;overflow:auto;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg,#021827, #001421)}
-    .cart-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.03)}
-    .totals{padding:10px;border-radius:8px;margin-top:8px;background:#031824}
+    h2 {
+        margin-bottom: 15px;
+    }
 
-    .right-area{display:flex;flex-direction:column;gap:12px}
-    .num-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    .btn-pay{padding:12px;border-radius:10px;border:0;background:linear-gradient(90deg,#06b6d4,#0891b2);cursor:pointer;font-weight:700}
+    label {
+        font-weight: 600;
+        display: block;
+        margin-top: 20px;
+        margin-bottom: 5px;
+    }
 
-    .small{font-size:13px;color:var(--muted)}
-    footer{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+    input[type="text"],
+    input[type="file"],
+    select {
+        width: 100%;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+    }
 
-    .drawer{height:6px;border-radius:6px;background:linear-gradient(90deg,#20344a,#071223);position:relative;overflow:hidden}
-    .drawer.open::after{content:'';position:absolute;left:0;top:0;bottom:0;width:60%;background:linear-gradient(90deg,#ffd800,#ff7b00);}    
+    .inline {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
 
-    @media(max-width:1000px){.app{grid-template-columns:1fr;grid-auto-rows:min-content;height:auto;padding:12px}}
+    .verify-btn {
+        background: #0d6efd;
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
 
-    /* receipt styles (for print) */
-    .receipt{font-family:monospace;max-width:320px;padding:8px}
-    .receipt h2{margin:6px 0;text-align:center}
-    .receipt .meta{font-size:12px;text-align:center;color:#444}
-    .receipt .items{margin-top:8px}
-    .receipt .items div{display:flex;justify-content:space-between}
-    .receipt .totals{margin-top:8px;font-weight:800}
-  </style>
+    .buy-btn {
+        float: right;
+        background: #198754;
+        color: white;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .checkbox {
+        margin-top: 10px;
+    }
+
+    .small-text {
+        font-size: 13px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .color-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .color-preview {
+        width: 32px;
+        height: 32px;
+        background: #000;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+
+    .buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+    }
+
+    .upload-btn {
+        flex: 1;
+        padding: 12px;
+        font-size: 15px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .upload-image {
+        background: #0d6efd;
+        color: white;
+    }
+
+    .upload-all {
+        background: #5ad7e5;
+        color: #000;
+    }
+
+    .progress {
+        height: 12px;
+        background: #e0e0e0;
+        border-radius: 6px;
+        margin-top: 20px;
+    }
+
+    footer {
+        text-align: center;
+        margin-top: 30px;
+        font-size: 13px;
+        color: #777;
+    }
+
+    footer a {
+        color: #0d6efd;
+        text-decoration: none;
+        margin: 0 5px;
+    }
+</style>
 </head>
+
 <body>
-  <div class="app" id="app">
-    <!-- LEFT: LOGIN / CATALOG -->
-    <div class="panel" id="left">
-      <div id="loginArea" class="login-screen">
-        <div class="brand">Speel To Go — Kassa</div>
-        <div class="sub">Officiële kassasysteem demo — Speel To Go</div>
-        <div class="login-panel" style="width:100%">
-          <div class="display">
-            <div class="left">Medewerker</div>
-            <div class="value" id="empDisplay">----</div>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:10px">
-            <input id="empNumberInput" type="text" inputmode="numeric" placeholder="Voer werknr" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
-            <button id="toPass" class="key">OK</button>
-          </div>
 
-          <div id="passwordBlock" style="display:none">
-            <div class="display">
-              <div class="left">Wachtwoord (PIN)</div>
-              <div class="value" id="passDisplay">••••</div>
-            </div>
-            <div class="keypad" style="margin-top:8px">
-              <button class="key num">1</button>
-              <button class="key num">2</button>
-              <button class="key num">3</button>
-              <button class="key num">4</button>
-              <button class="key num">5</button>
-              <button class="key num">6</button>
-              <button class="key num">7</button>
-              <button class="key num">8</button>
-              <button class="key num">9</button>
-              <button class="key orange" id="backspace">←</button>
-              <button class="key num">0</button>
-              <button class="key" id="loginBtn">Inloggen</button>
-            </div>
-          </div>
+<div class="wrapper">
 
-          <div style="margin-top:12px" class="small">(Demo: medewerkers: 1001 / PIN 1234 , 1002 / PIN 4321)</div>
-        </div>
-      </div>
+    <button class="buy-btn">Buy Skin Key / Credits</button>
 
-      <div id="catalogArea" style="display:none;flex-direction:column;height:100%">
-        <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-          <div><strong>Producten</strong></div>
-          <div class="small">Snel scannen of klik op een product</div>
-        </div>
-        <div class="search">
-          <input id="search" placeholder="Zoek op naam of barcode...">
-          <button id="clearSearch" class="key">✕</button>
-        </div>
-        <div class="catalog" id="catalog"></div>
-      </div>
+    <h2>Secret Skin Key</h2>
+
+    <div class="inline">
+        <input type="text" placeholder="Enter your unique skin key">
+        <button class="verify-btn">Verify</button>
     </div>
 
-    <!-- CENTER: CART -->
-    <div class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div><strong>Winkelwagen</strong></div>
-        <div class="small">Medewerker: <span id="loggedEmp">-</span></div>
-      </div>
-
-      <div class="cart" id="cart"></div>
-
-      <div class="totals">
-        <div style="display:flex;justify-content:space-between"><div>Subtotaal</div><div id="subtotal">€0.00</div></div>
-        <div style="display:flex;justify-content:space-between"><div>BTW (berekend)</div><div id="tax">€0.00</div></div>
-        <div style="display:flex;justify-content:space-between;font-weight:800;font-size:18px;margin-top:8px"><div>Totaal</div><div id="total">€0.00</div></div>
-      </div>
-
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <input id="barcodeInput" placeholder="Barcode / Zoek " style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
-        <button id="addManual" class="key">Voeg toe</button>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-        <div class="small">Kaslade:</div>
-        <div class="drawer" id="drawer"></div>
-      </div>
+    <div class="checkbox">
+        <input type="checkbox" checked> Hide Secret Key
     </div>
 
-    <!-- RIGHT: PAY PAD -->
-    <div class="panel" id="right">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Betalen</strong><div class="small">Snelbedragen</div></div>
+    <p class="small-text">
+        The skin key is required to authenticate and process your skin (do not share this with anyone).
+        Click verify to check the key validity (optional).
+    </p>
 
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button class="key" data-amt="5">€5</button>
-        <button class="key" data-amt="10">€10</button>
-        <button class="key" data-amt="20">€20</button>
-        <button class="key" data-amt="50">€50</button>
-      </div>
-
-      <div class="num-pad">
-        <button class="key numpad">1</button>
-        <button class="key numpad">2</button>
-        <button class="key numpad">3</button>
-        <button class="key numpad">4</button>
-        <button class="key numpad">5</button>
-        <button class="key numpad">6</button>
-        <button class="key numpad">7</button>
-        <button class="key numpad">8</button>
-        <button class="key numpad">9</button>
-        <button class="key orange" id="nClear">C</button>
-        <button class="key numpad">0</button>
-        <button class="key" id="nEnter">OK</button>
-      </div>
-
-      <div style="margin-top:12px">
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="tenderInput" placeholder="Bedrag ontvangen" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
-          <button id="payCash" class="btn-pay">Contant</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <button id="payCard" class="btn-pay">Pin/Kaart</button>
-          <button id="refund" class="key" style="background:#2a2542">Retour</button>
-        </div>
-
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-          <button id="shiftReport" class="key">Shift rapport</button>
-          <button id="logout" class="key">Uitloggen</button>
-        </div>
-
-        <div style="margin-top:12px;font-size:13px;color:var(--muted)">Ontvangen: <span id="received">—</span>  Teruggave: <span id="change">—</span></div>
-      </div>
-
-      <footer>Speel To Go — Officiële kassabon demo</footer>
+    <div class="checkbox">
+        <input type="checkbox"> Multi Account(s)
     </div>
-  </div>
 
-  <script>
-    /************************************************
-     * Officiële-achtige kassa demo voor "Speel To Go"
-     * - Client-side demo, bewaar verkoop in localStorage
-     * - Bon lay-out geüpdatet met officiële winkelgegevens
-     ************************************************/
+    <div class="checkbox">
+        <input type="checkbox"> Use Image Link
+    </div>
 
-    const STORE = {
-      name: 'Speel To Go',
-      address: 'Hoofdstraat 12, 1234 AB Amsterdam',
-      kvk: 'KVK 12345678',
-      btw: 'NL123456789B01',
-      phone: '020-1234567'
-    };
+    <label>Upload Image</label>
+    <input type="file">
 
-    // medewerkers (demo)
-    const employees = {
-      '1001': {name: 'Jan', pin: '1234'},
-      '1002': {name: 'Sanne', pin: '4321'}
-    };
+    <p class="small-text">
+        Upload the image with no maximum size limit. Supported formats: has to be an image or a gif.
+    </p>
 
-    // productcatalogus
-    const products = [
-      {id:'0001', name:'Koffie', price:2.50, vat:21},
-      {id:'0002', name:'Broodje Kaas', price:3.75, vat:21},
-      {id:'0003', name:'Cola 330ml', price:2.00, vat:21},
-      {id:'0004', name:'Appel', price:0.70, vat:9},
-      {id:'0005', name:'Water 500ml', price:1.50, vat:21}
-    ];
+    <div class="checkbox">
+        <input type="checkbox"> Show Image Preview to Choose Border Color
+    </div>
 
-    // state
-    let state = {logged:null, cart:[], currentInput:'', tenderInput:'', focused:'tender'};
+    <label>Skin Name</label>
+    <input type="text" placeholder="Enter a name for your skin">
 
-    const q = s => document.querySelector(s);
-    const fmt = n => '€'+n.toFixed(2).replace('.',',');
+    <p class="small-text">
+        Give your skin a cool name (all unicodes supported).
+    </p>
 
-    function renderCatalog(list){
-      const el = q('#catalog'); el.innerHTML='';
-      list.forEach(p=>{
-        const d = document.createElement('div'); d.className='product';
-        d.innerHTML = `<div style="font-weight:700">${p.name}</div><div class="small">${p.id} — ${fmt(p.price)}</div>`;
-        d.addEventListener('click', ()=> addToCart(p.id));
-        el.appendChild(d);
-      });
-    }
+    <div class="checkbox">
+        <input type="checkbox"> Use No Name
+    </div>
 
-    // cart ops
-    function addToCart(id, qty=1){
-      const prod = products.find(p=>p.id===id) || products.find(p=>p.name.toLowerCase()===(id+'').toLowerCase());
-      if(!prod){alert('Product niet gevonden'); return}
-      const found = state.cart.find(c=>c.id===prod.id);
-      if(found) found.qty += qty; else state.cart.push({id:prod.id,name:prod.name,price:prod.price,vat:prod.vat,qty:qty});
-      renderCart();
-    }
-    function changeQty(id,delta){
-      const c = state.cart.find(x=>x.id===id); if(!c) return; c.qty += delta; if(c.qty<=0) state.cart = state.cart.filter(x=>x.id!==id); renderCart();
-    }
-    function removeItem(id){ state.cart = state.cart.filter(x=>x.id!==id); renderCart(); }
+    <label>Selected Border Color: <span style="background:#000;color:#fff;padding:3px 6px;border-radius:4px;">#000000</span></label>
 
-    function calculateTotals(){
-      let subtotal = 0;
-      const vatBuckets = {}; // {vatRate: amount}
-      state.cart.forEach(item=>{
-        const line = item.price * item.qty; subtotal += line;
-        const vatAmount = line * (item.vat/100);
-        vatBuckets[item.vat] = (vatBuckets[item.vat] || 0) + vatAmount;
-      });
-      const tax = Object.values(vatBuckets).reduce((a,b)=>a+b,0);
-      const total = subtotal + tax;
-      return {subtotal, tax, total, vatBuckets};
-    }
+    <div class="color-box">
+        <div class="color-preview"></div>
+        <input type="text" value="#000000">
+    </div>
 
-    function renderCart(){
-      const el = q('#cart'); el.innerHTML='';
-      state.cart.forEach(item=>{
-        const row = document.createElement('div'); row.className='cart-row';
-        const lineTotal = item.price*item.qty;
-        row.innerHTML = `<div><strong>${item.name}</strong><div class='small'>${item.id}</div></div><div style='text-align:right'><div>${fmt(lineTotal)}</div><div class='small'>x${item.qty} (€${item.price.toFixed(2)})</div><div style='margin-top:6px'><button class='key' data-rm='${item.id}'>-</button> <button class='key' data-add='${item.id}'>+</button> <button class='key' data-del='${item.id}'>Verwijder</button></div></div>`;
-        el.appendChild(row);
-      });
-      const totals = calculateTotals();
-      q('#subtotal').textContent = fmt(totals.subtotal);
-      q('#tax').textContent = fmt(totals.tax);
-      q('#total').textContent = fmt(totals.total);
+    <p class="small-text">
+        This color will be used as the border color for your skin.
+    </p>
 
-      // bind row buttons
-      el.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click', e=>changeQty(e.target.dataset.add,1)));
-      el.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click', e=>changeQty(e.target.dataset.rm,-1)));
-      el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', e=>removeItem(e.target.dataset.del)));
-    }
+    <label>Select Skin Quality</label>
+    <select>
+        <option>Excellent (default) 4k</option>
+        <option>High</option>
+        <option>Medium</option>
+        <option>Low</option>
+    </select>
 
-    // LOGIN UI
-    const empDisplay = q('#empDisplay');
-    const passDisplay = q('#passDisplay');
-    let currentEmp=''; let currentPin='';
+    <p class="small-text">
+        Select the 4K quality option for this skin.
+    </p>
 
-    q('#toPass').addEventListener('click', ()=>{
-      const v = q('#empNumberInput').value.trim();
-      if(!v){alert('Vul werknr in');return}
-      currentEmp = v; empDisplay.textContent = v; q('#passwordBlock').style.display='block'; q('#empNumberInput').blur();
-    });
+    <label>Select Skin Creation Option</label>
+    <select>
+        <option>90 DNA</option>
+        <option>Coins</option>
+        <option>Token</option>
+    </select>
 
-    document.querySelectorAll('.key.num').forEach(btn=>btn.addEventListener('click', ()=>{
-      currentPin += btn.textContent.trim(); passDisplay.textContent = '•'.repeat(currentPin.length);
-    }));
-    q('#backspace').addEventListener('click', ()=>{ currentPin = currentPin.slice(0,-1); passDisplay.textContent = '•'.repeat(currentPin.length); });
-    q('#loginBtn').addEventListener('click', ()=>{
-      if(!currentEmp){alert('Geen werknr');return}
-      const emp = employees[currentEmp];
-      if(!emp){alert('Onbekend werknr'); return}
-      if(currentPin === emp.pin){
-        state.logged = {id:currentEmp, name:emp.name};
-        q('#loginArea').style.display='none'; q('#catalogArea').style.display='flex'; q('#loggedEmp').textContent = emp.name + ' ('+currentEmp+')';
-        renderCatalog(products);
-        alert('Welkom, '+emp.name);
-      } else { alert('Onjuist PIN'); currentPin=''; passDisplay.textContent=''; }
-    });
+    <p class="small-text">
+        Select what you want to choose create this skin: DNA, Coins, or a Token.
+    </p>
 
-    // search
-    q('#search').addEventListener('input', e=>{
-      const s = e.target.value.trim().toLowerCase();
-      const filtered = products.filter(p=>p.name.toLowerCase().includes(s) || p.id.includes(s));
-      renderCatalog(filtered);
-    });
-    q('#clearSearch').addEventListener('click', ()=>{q('#search').value=''; renderCatalog(products)});
+    <div class="buttons">
+        <button class="upload-btn upload-image">Upload Image</button>
+        <button class="upload-btn upload-all">Upload All</button>
+    </div>
 
-    // barcode input
-    q('#addManual').addEventListener('click', ()=>{
-      const v = q('#barcodeInput').value.trim(); if(!v) return; addToCart(v); q('#barcodeInput').value='';
-    });
-    q('#barcodeInput').addEventListener('keypress', e=>{ if(e.key==='Enter'){ q('#addManual').click(); }});
+    <div class="progress"></div>
 
-    // pay controls
-    q('#payCash').addEventListener('click', ()=>{
-      if(state.cart.length===0){alert('Winkelwagen leeg');return}
-      const totals = calculateTotals();
-      const total = totals.total;
-      const received = parseFloat((q('#tenderInput').value || '').replace(',','.'))||0;
-      if(received < total){ alert('Ontvangen bedrag is te laag'); return }
-      const change = received - total;
-      q('#received').textContent = fmt(received);
-      q('#change').textContent = fmt(change);
-      // record sale
-      recordSale({type:'cash', amount:total, received, change, items:state.cart.slice(), emp:state.logged, vat:totals.vatBuckets});
-      // open drawer
-      q('#drawer').classList.add('open'); setTimeout(()=>q('#drawer').classList.remove('open'),1200);
-      // print receipt
-      printReceipt({emp:state.logged, items:state.cart, totals, received, change, method:'Contant'});
-      state.cart=[]; renderCart(); q('#tenderInput').value='';
-    });
+    <p class="small-text">Expect a completion time of around 40 - 50 seconds</p>
 
-    q('#payCard').addEventListener('click', ()=>{
-      if(state.cart.length===0){alert('Winkelwagen leeg');return}
-      const totals = calculateTotals();
-      const total = totals.total;
-      if(!confirm('Simuleer pinbetaling voor '+fmt(total)+'?')) return;
-      recordSale({type:'card', amount:total, emp:state.logged, items:state.cart.slice(), vat:totals.vatBuckets});
-      printReceipt({emp:state.logged, items:state.cart, totals, method:'Pin/Kaart'});
-      state.cart=[]; renderCart();
-    });
+</div>
 
-    function recordSale(sale){
-      const key = 'kassa_sales_v1';
-      const arr = JSON.parse(localStorage.getItem(key) || '[]');
-      sale.time = new Date().toISOString(); arr.push(sale); localStorage.setItem(key, JSON.stringify(arr));
-    }
+<footer>
+    © 2025 biteyt.com. All rights reserved.
+    <br>
+    <a href="#">Terms of Service</a> |
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Refund Policy</a>
+</footer>
 
-    function printReceipt({emp, items, totals, received=0, change=0, method='Contant'}){
-      const w = window.open('','receipt','width=320,height=640');
-      const now = new Date();
-      let html = `<!doctype html><html><head><meta charset="utf-8"><title>Bon - ${STORE.name}</title><style>body{font-family:monospace;padding:8px}h2{text-align:center;margin:6px 0} .meta{text-align:center;font-size:12px;color:#333} .items{margin-top:8px} .items div{display:flex;justify-content:space-between} .totals{margin-top:8px;font-weight:800}</style></head><body>`;
-      html += `<div class="receipt"><h2>${STORE.name}</h2><div class="meta">${STORE.address}<br>${STORE.phone}<br>${STORE.kvk} • ${STORE.btw}</div><hr>`;
-      html += `<div>Bonnummer: ${Math.floor(Math.random()*900000+100000)}</div><div>Datum: ${now.toLocaleString('nl-NL')}</div><div>Medewerker: ${emp ? emp.name + ' ('+emp.id+')' : '-'}</div><hr>`;
-      html += `<div class="items">`;
-      items.forEach(it=>{
-        const lineTotal = (it.price*it.qty).toFixed(2).replace('.',',');
-        html += `<div><span>${it.name} x${it.qty}</span><span>${lineTotal}</span></div>`;
-      });
-      html += `</div><hr>`;
-      html += `<div class="totals"><div style="display:flex;justify-content:space-between"><div>Subtotaal</div><div>${fmt(totals.subtotal)}</div></div>`;
-      // vat breakdown
-      Object.keys(totals.vatBuckets).forEach(rate=>{
-        html += `<div style="display:flex;justify-content:space-between"><div>BTW ${rate}%</div><div>${fmt(totals.vatBuckets[rate])}</div></div>`;
-      });
-      html += `<div style="display:flex;justify-content:space-between;margin-top:6px"><div>Totaal</div><div>${fmt(totals.total)}</div></div></div>`;
-      html += `<hr><div>Betaalwijze: ${method}</div><div>Ontvangen: ${fmt(received)}</div><div>Teruggave: ${fmt(change)}</div><hr><div style='text-align:center'>Bedankt voor uw aankoop!<br>Uw bewijs van betaling</div>`;
-      html += `</div></body></html>`;
-      w.document.write(html); w.document.close();
-      w.print();
-      setTimeout(()=>w.close(),1500);
-    }
-
-    // shift report
-    q('#shiftReport').addEventListener('click', ()=>{
-      if(!state.logged){alert('Niet ingelogd');return}
-      const arr = JSON.parse(localStorage.getItem('kassa_sales_v1')||'[]');
-      const my = arr.filter(s=> s.emp && s.emp.id === (state.logged && state.logged.id));
-      if(my.length===0){ alert('Geen transacties voor deze medewerker'); return }
-      let total = 0; let cash=0; let card=0; my.forEach(s=>{ total += s.amount; if(s.type==='cash') cash += s.amount; if(s.type==='card') card += s.amount });
-      alert('Shift rapport
-Medewerker: '+state.logged.name+'
-Transacties: '+my.length+'
-Totaal: '+fmt(total)+'
-Contant: '+fmt(cash)+'
-Card: '+fmt(card));
-    });
-
-    q('#logout').addEventListener('click', ()=>{
-      if(!confirm('Uitloggen?')) return;
-      state.logged=null; currentEmp=''; currentPin=''; q('#loginArea').style.display='flex'; q('#catalogArea').style.display='none'; q('#empNumberInput').value=''; q('#passwordBlock').style.display='none'; q('#loggedEmp').textContent='-';
-    });
-
-    // tender keypad
-    document.querySelectorAll('.num-pad .numpad').forEach(b=>b.addEventListener('click', e=>{
-      q('#tenderInput').value += e.target.textContent;
-    }));
-    q('#nClear').addEventListener('click', ()=> q('#tenderInput').value='');
-    q('#nEnter').addEventListener('click', ()=> q('#payCash').click());
-
-    // quick amounts
-    document.querySelectorAll('[data-amt]').forEach(b=>b.addEventListener('click', e=>{
-      const amt = parseFloat(e.target.dataset.amt); q('#tenderInput').value = amt; q('#received').textContent='—'; q('#change').textContent='—';
-    }));
-
-    // initial render
-    renderCatalog(products);
-    renderCart();
-  </script>
 </body>
 </html>
