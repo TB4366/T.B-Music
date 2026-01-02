@@ -5,42 +5,35 @@
 <title>Bot Controller</title>
 <style>
 body {
-    background: #0e0e0e;
-    color: #eee;
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    max-width: 520px;
+    background:#0e0e0e;
+    color:#eee;
+    font-family:Arial;
+    padding:20px;
+    max-width:520px;
 }
-label {
-    display: block;
-    margin-top: 12px;
-}
+label { margin-top:10px; display:block; }
 input, select, button {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    font-size: 14px;
+    width:100%;
+    padding:8px;
+    margin-top:5px;
 }
 .buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-button {
-    cursor: pointer;
+    display:flex;
+    gap:10px;
+    margin-top:15px;
 }
 button.disabled {
-    opacity: 0.4;
-    pointer-events: none;
+    opacity:0.4;
+    pointer-events:none;
 }
 #log {
-    margin-top: 20px;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    padding: 10px;
-    height: 240px;
-    overflow-y: auto;
-    font-size: 13px;
+    margin-top:20px;
+    background:#1a1a1a;
+    border:1px solid #333;
+    padding:10px;
+    height:230px;
+    overflow-y:auto;
+    font-size:13px;
 }
 </style>
 </head>
@@ -48,39 +41,14 @@ button.disabled {
 
 <h2>Bot Setup</h2>
 
-<label>UID (bots volgen deze speler)</label>
-<input id="uid" placeholder="Voer UID in">
+<label>Game Server (WebSocket)</label>
+<input id="server" placeholder="ws://localhost:8080/game">
+
+<label>UID (bots volgen)</label>
+<input id="uid">
 
 <label>Party Code</label>
-<input id="partyCode" placeholder="Bijv. ABC123">
-
-<label>Region</label>
-<select id="region">
-    <option value="">-- selecteer region --</option>
-    <option>EU West 3</option>
-    <option>EU West 2</option>
-    <option>US East 1</option>
-    <option>US East 2</option>
-    <option>US West 1</option>
-    <option>EU Centraal 1</option>
-    <option>AP Southeast 1</option>
-    <option>AP Northeast 1</option>
-    <option>ME South 1</option>
-    <option>SA East 1</option>
-</select>
-
-<label>Set Bot Power (aantal bots)</label>
-<select id="botPower">
-    <option value="">-- selecteer --</option>
-    <option value="10">10</option>
-    <option value="20">20</option>
-    <option value="30">30</option>
-    <option value="40">40</option>
-    <option value="50">50</option>
-</select>
-
-<label>Tijd (minuten)</label>
-<input id="time" type="number" min="1" placeholder="Bijv. 5">
+<input id="partyCode">
 
 <label>Game Mode</label>
 <select id="gameMode">
@@ -100,23 +68,18 @@ button.disabled {
 /* =========================
    CORE STATE
 ========================= */
-
+let socket = null;
 let botsRunning = false;
 let bot_mode = false;
-let botsStartSuccess = false;
-let stopTimeout = null;
 
 /* =========================
    VALIDATION
 ========================= */
-
 function canStartBots() {
     return (
+        document.getElementById("server").value.trim() !== "" &&
         document.getElementById("uid").value.trim() !== "" &&
         document.getElementById("partyCode").value.trim() !== "" &&
-        document.getElementById("region").value !== "" &&
-        document.getElementById("botPower").value !== "" &&
-        document.getElementById("time").value > 0 &&
         document.getElementById("gameMode").value !== "" &&
         !botsRunning
     );
@@ -125,100 +88,103 @@ function canStartBots() {
 /* =========================
    UI UPDATE
 ========================= */
-
-document.querySelectorAll("input, select").forEach(el => {
-    el.addEventListener("input", updateStartButton);
-    el.addEventListener("change", updateStartButton);
+["server","uid","partyCode","gameMode"].forEach(id=>{
+    document.getElementById(id).addEventListener("input",updateBtn);
+    document.getElementById(id).addEventListener("change",updateBtn);
 });
+function updateBtn(){
+    document.getElementById("startBtn")
+        .classList.toggle("disabled",!canStartBots());
+}
 
-function updateStartButton() {
-    const btn = document.getElementById("startBtn");
-    btn.classList.toggle("disabled", !canStartBots());
+/* =========================
+   CONNECT TO SERVER
+========================= */
+function connectServer() {
+    const url = document.getElementById("server").value;
+    socket = new WebSocket(url);
+
+    socket.onopen = () => {
+        log("Verbonden met game server");
+        socket.send(JSON.stringify({ type:"connectBotController" }));
+    };
+
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.message) log("SERVER: " + data.message);
+    };
+
+    socket.onerror = () => log("Server fout");
+    socket.onclose = () => log("Verbinding gesloten");
 }
 
 /* =========================
    START BOTS
 ========================= */
-
 function startBots() {
     if (!canStartBots()) {
-        log("Kan bots niet starten: gegevens ontbreken");
+        log("Start mislukt: invoer ontbreekt");
         return;
     }
 
+    connectServer();
+
     botsRunning = true;
     bot_mode = true;
-    botsStartSuccess = true;
 
-    const uid = uidValue();
-    const party = partyValue();
-    const region = regionValue();
-    const power = botPowerValue();
-    const time = timeValue();
-    const mode = gameModeValue();
+    const payload = {
+        type: "startBots",
+        uid: document.getElementById("uid").value,
+        party: document.getElementById("partyCode").value,
+        mode: document.getElementById("gameMode").value
+    };
 
-    log("Start Bots");
-    log("UID volgen: " + uid);
-    log("Party code: " + party);
-    log("Region: " + region);
-    log("Bot Power: " + power + " bots");
-    log("Game mode: " + mode);
-    log("Tijd: " + time + " minuten");
-
-    bottingLoop(uid, power, mode);
-
-    stopTimeout = setTimeout(() => {
-        log("Tijd verstreken");
-        stopBots();
-    }, time * 60000);
+    setTimeout(() => {
+        socket.send(JSON.stringify(payload));
+        log("Start Bots verzonden naar server");
+        botLoop();
+    }, 500);
 }
 
 /* =========================
    STOP BOTS
 ========================= */
-
 function stopBots() {
     if (!botsRunning) return;
 
     botsRunning = false;
     bot_mode = false;
-    botsStartSuccess = false;
 
-    clearTimeout(stopTimeout);
+    if (socket) {
+        socket.send(JSON.stringify({ type:"stopBots" }));
+        socket.close();
+    }
+
     log("Bots stopped");
 }
 
 /* =========================
-   BOT LOOP
+   BOT LOOP (server gestuurd)
 ========================= */
+function botLoop() {
+    if (!botsRunning || !socket) return;
 
-function bottingLoop(uid, power, mode) {
-    if (!botsRunning) return;
+    socket.send(JSON.stringify({
+        type: "botAction",
+        uid: document.getElementById("uid").value,
+        mode: document.getElementById("gameMode").value
+    }));
 
-    log(`Botting (${mode}) → ${power} bots volgen UID ${uid}`);
-
-    setTimeout(() => bottingLoop(uid, power, mode), 1000);
+    setTimeout(botLoop, 1000);
 }
-
-/* =========================
-   HELPERS
-========================= */
-
-const uidValue = () => document.getElementById("uid").value.trim();
-const partyValue = () => document.getElementById("partyCode").value.trim();
-const regionValue = () => document.getElementById("region").value;
-const botPowerValue = () => document.getElementById("botPower").value;
-const timeValue = () => document.getElementById("time").value;
-const gameModeValue = () => document.getElementById("gameMode").value;
 
 /* =========================
    LOG
 ========================= */
-
 function log(msg) {
-    const logDiv = document.getElementById("log");
-    logDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
-    logDiv.scrollTop = logDiv.scrollHeight;
+    const l = document.getElementById("log");
+    l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+    l.scrollTop = l.scrollHeight;
 }
 </script>
 
