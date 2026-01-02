@@ -9,14 +9,11 @@ body {
     color: #eee;
     font-family: Arial, sans-serif;
     padding: 20px;
-    max-width: 500px;
-}
-h2 {
-    margin-bottom: 10px;
+    max-width: 520px;
 }
 label {
     display: block;
-    margin-top: 10px;
+    margin-top: 12px;
 }
 input, select, button {
     width: 100%;
@@ -41,7 +38,7 @@ button.disabled {
     background: #1a1a1a;
     border: 1px solid #333;
     padding: 10px;
-    height: 220px;
+    height: 240px;
     overflow-y: auto;
     font-size: 13px;
 }
@@ -51,15 +48,40 @@ button.disabled {
 
 <h2>Bot Setup</h2>
 
-<!-- UID -->
 <label>UID (bots volgen deze speler)</label>
 <input id="uid" placeholder="Voer UID in">
 
-<!-- Party code -->
 <label>Party Code</label>
 <input id="partyCode" placeholder="Bijv. ABC123">
 
-<!-- Game mode -->
+<label>Region</label>
+<select id="region">
+    <option value="">-- selecteer region --</option>
+    <option>EU West 3</option>
+    <option>EU West 2</option>
+    <option>US East 1</option>
+    <option>US East 2</option>
+    <option>US West 1</option>
+    <option>EU Centraal 1</option>
+    <option>AP Southeast 1</option>
+    <option>AP Northeast 1</option>
+    <option>ME South 1</option>
+    <option>SA East 1</option>
+</select>
+
+<label>Set Bot Power (aantal bots)</label>
+<select id="botPower">
+    <option value="">-- selecteer --</option>
+    <option value="10">10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="40">40</option>
+    <option value="50">50</option>
+</select>
+
+<label>Tijd (minuten)</label>
+<input id="time" type="number" min="1" placeholder="Bijv. 5">
+
 <label>Game Mode</label>
 <select id="gameMode">
     <option value="">-- selecteer --</option>
@@ -67,65 +89,51 @@ button.disabled {
     <option value="burst">Burst</option>
 </select>
 
-<!-- Buttons -->
 <div class="buttons">
     <button id="startBtn" class="disabled" onclick="startBots()">Start</button>
     <button onclick="stopBots()">Stop</button>
 </div>
 
-<!-- Logs -->
 <div id="log"></div>
 
 <script>
 /* =========================
-   CORE STATE (zoals dylib)
+   CORE STATE
 ========================= */
 
 let botsRunning = false;
 let bot_mode = false;
 let botsStartSuccess = false;
+let stopTimeout = null;
 
 /* =========================
    VALIDATION
 ========================= */
 
 function canStartBots() {
-    const uid = document.getElementById("uid").value.trim();
-    const party = document.getElementById("partyCode").value.trim();
-    const mode = document.getElementById("gameMode").value;
-
     return (
-        uid !== "" &&
-        party !== "" &&
-        mode !== "" &&
+        document.getElementById("uid").value.trim() !== "" &&
+        document.getElementById("partyCode").value.trim() !== "" &&
+        document.getElementById("region").value !== "" &&
+        document.getElementById("botPower").value !== "" &&
+        document.getElementById("time").value > 0 &&
+        document.getElementById("gameMode").value !== "" &&
         !botsRunning
     );
 }
 
 /* =========================
-   UI ENABLE/DISABLE
+   UI UPDATE
 ========================= */
 
-["uid", "partyCode", "gameMode"].forEach(id => {
-    document.getElementById(id).addEventListener("input", updateStartButton);
-    document.getElementById(id).addEventListener("change", updateStartButton);
+document.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("input", updateStartButton);
+    el.addEventListener("change", updateStartButton);
 });
 
 function updateStartButton() {
     const btn = document.getElementById("startBtn");
-    if (canStartBots()) {
-        btn.classList.remove("disabled");
-    } else {
-        btn.classList.add("disabled");
-    }
-}
-
-/* =========================
-   BOT MODE HANDLER
-========================= */
-
-function handleBotModeChange(enabled) {
-    bot_mode = enabled;
+    btn.classList.toggle("disabled", !canStartBots());
 }
 
 /* =========================
@@ -142,16 +150,27 @@ function startBots() {
     bot_mode = true;
     botsStartSuccess = true;
 
-    const uid = document.getElementById("uid").value.trim();
-    const party = document.getElementById("partyCode").value.trim();
-    const mode = document.getElementById("gameMode").value;
+    const uid = uidValue();
+    const party = partyValue();
+    const region = regionValue();
+    const power = botPowerValue();
+    const time = timeValue();
+    const mode = gameModeValue();
 
     log("Start Bots");
     log("UID volgen: " + uid);
     log("Party code: " + party);
+    log("Region: " + region);
+    log("Bot Power: " + power + " bots");
     log("Game mode: " + mode);
+    log("Tijd: " + time + " minuten");
 
-    bottingLoop(uid, mode);
+    bottingLoop(uid, power, mode);
+
+    stopTimeout = setTimeout(() => {
+        log("Tijd verstreken");
+        stopBots();
+    }, time * 60000);
 }
 
 /* =========================
@@ -165,29 +184,40 @@ function stopBots() {
     bot_mode = false;
     botsStartSuccess = false;
 
+    clearTimeout(stopTimeout);
     log("Bots stopped");
 }
 
 /* =========================
-   BOT LOOP (volgt UID)
+   BOT LOOP
 ========================= */
 
-function bottingLoop(uid, mode) {
+function bottingLoop(uid, power, mode) {
     if (!botsRunning) return;
 
-    log("Botting → volgen UID " + uid + " (" + mode + ")");
+    log(`Botting (${mode}) → ${power} bots volgen UID ${uid}`);
 
-    setTimeout(() => bottingLoop(uid, mode), 1000);
+    setTimeout(() => bottingLoop(uid, power, mode), 1000);
 }
 
 /* =========================
-   LOG SYSTEM
+   HELPERS
 ========================= */
 
-function log(message) {
+const uidValue = () => document.getElementById("uid").value.trim();
+const partyValue = () => document.getElementById("partyCode").value.trim();
+const regionValue = () => document.getElementById("region").value;
+const botPowerValue = () => document.getElementById("botPower").value;
+const timeValue = () => document.getElementById("time").value;
+const gameModeValue = () => document.getElementById("gameMode").value;
+
+/* =========================
+   LOG
+========================= */
+
+function log(msg) {
     const logDiv = document.getElementById("log");
-    logDiv.innerHTML +=
-        `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+    logDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 </script>
