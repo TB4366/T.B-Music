@@ -2,54 +2,71 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Bot Controller</title>
+<title>Agar.io Bot Controller</title>
 <style>
 body {
-    background:#0e0e0e;
-    color:#eee;
-    font-family:Arial;
-    padding:20px;
-    max-width:520px;
+    background: #0e0e0e;
+    color: #eee;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 600px;
+    margin: auto;
 }
-label { margin-top:10px; display:block; }
+h2 {
+    margin-bottom: 10px;
+}
+label {
+    display: block;
+    margin-top: 10px;
+}
 input, select, button {
-    width:100%;
-    padding:8px;
-    margin-top:5px;
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    font-size: 14px;
 }
 .buttons {
-    display:flex;
-    gap:10px;
-    margin-top:15px;
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+button {
+    cursor: pointer;
 }
 button.disabled {
-    opacity:0.4;
-    pointer-events:none;
+    opacity: 0.4;
+    pointer-events: none;
 }
 #log {
-    margin-top:20px;
-    background:#1a1a1a;
-    border:1px solid #333;
-    padding:10px;
-    height:230px;
-    overflow-y:auto;
-    font-size:13px;
+    margin-top: 20px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 10px;
+    height: 220px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+#agarFace {
+    display: block;
+    margin: 20px auto;
+    background: #111;
+    border-radius: 50%;
 }
 </style>
 </head>
 <body>
 
-<h2>Bot Setup</h2>
+<h2>Agar.io Bot Setup</h2>
 
-<label>Game Server (WebSocket)</label>
-<input id="server" placeholder="ws://localhost:8080/game">
+<!-- UID -->
+<label>UID (bots volgen deze speler)</label>
+<input id="uid" placeholder="Voer UID in">
 
-<label>UID (bots volgen)</label>
-<input id="uid">
-
+<!-- Party code -->
 <label>Party Code</label>
-<input id="partyCode">
+<input id="partyCode" placeholder="Bijv. ABC123">
 
+<!-- Game mode -->
 <label>Game Mode</label>
 <select id="gameMode">
     <option value="">-- selecteer --</option>
@@ -57,135 +74,160 @@ button.disabled {
     <option value="burst">Burst</option>
 </select>
 
+<!-- Buttons -->
 <div class="buttons">
-    <button id="startBtn" class="disabled" onclick="startBots()">Start</button>
+    <button id="startBtn" class="disabled" onclick="startBots()" disabled>Start</button>
     <button onclick="stopBots()">Stop</button>
 </div>
 
+<!-- Agar.io gezicht -->
+<canvas id="agarFace" width="120" height="120"></canvas>
+
+<!-- Logs -->
 <div id="log"></div>
 
 <script>
 /* =========================
    CORE STATE
 ========================= */
-let socket = null;
 let botsRunning = false;
-let bot_mode = false;
+let botsStartSuccess = false;
+let botTick = 0;
+let botTimer = null;
 
 /* =========================
    VALIDATION
 ========================= */
 function canStartBots() {
-    return (
-        document.getElementById("server").value.trim() !== "" &&
-        document.getElementById("uid").value.trim() !== "" &&
-        document.getElementById("partyCode").value.trim() !== "" &&
-        document.getElementById("gameMode").value !== "" &&
-        !botsRunning
-    );
+    const uid = document.getElementById("uid").value.trim();
+    const party = document.getElementById("partyCode").value.trim();
+    const mode = document.getElementById("gameMode").value;
+    return uid !== "" && party !== "" && mode !== "" && !botsRunning;
 }
 
 /* =========================
-   UI UPDATE
+   UI ENABLE/DISABLE
 ========================= */
-["server","uid","partyCode","gameMode"].forEach(id=>{
-    document.getElementById(id).addEventListener("input",updateBtn);
-    document.getElementById(id).addEventListener("change",updateBtn);
+["uid", "partyCode", "gameMode"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updateStartButton);
+    document.getElementById(id).addEventListener("change", updateStartButton);
 });
-function updateBtn(){
-    document.getElementById("startBtn")
-        .classList.toggle("disabled",!canStartBots());
+
+function updateStartButton() {
+    const btn = document.getElementById("startBtn");
+    btn.disabled = !canStartBots();
+    btn.classList.toggle("disabled", !canStartBots());
 }
 
 /* =========================
-   CONNECT TO SERVER
-========================= */
-function connectServer() {
-    const url = document.getElementById("server").value;
-    socket = new WebSocket(url);
-
-    socket.onopen = () => {
-        log("Verbonden met game server");
-        socket.send(JSON.stringify({ type:"connectBotController" }));
-    };
-
-    socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.message) log("SERVER: " + data.message);
-    };
-
-    socket.onerror = () => log("Server fout");
-    socket.onclose = () => log("Verbinding gesloten");
-}
-
-/* =========================
-   START BOTS
+   START / STOP BOTS
 ========================= */
 function startBots() {
     if (!canStartBots()) {
-        log("Start mislukt: invoer ontbreekt");
+        log("Kan bots niet starten: gegevens ontbreken");
         return;
     }
 
-    connectServer();
-
     botsRunning = true;
-    bot_mode = true;
+    botsStartSuccess = true;
 
-    const payload = {
-        type: "startBots",
-        uid: document.getElementById("uid").value,
-        party: document.getElementById("partyCode").value,
-        mode: document.getElementById("gameMode").value
-    };
+    const uid = document.getElementById("uid").value.trim();
+    const party = document.getElementById("partyCode").value.trim();
+    const mode = document.getElementById("gameMode").value;
 
-    setTimeout(() => {
-        socket.send(JSON.stringify(payload));
-        log("Start Bots verzonden naar server");
-        botLoop();
-    }, 500);
+    // Lock inputs
+    ["uid", "partyCode", "gameMode"].forEach(id => {
+        document.getElementById(id).disabled = true;
+    });
+    document.getElementById("startBtn").disabled = true;
+
+    log("Start Bots");
+    log("UID volgen: " + uid);
+    log("Party code: " + party);
+    log("Game mode: " + mode);
+
+    botTick = 0;
+    botLoop(uid, mode);
 }
 
-/* =========================
-   STOP BOTS
-========================= */
 function stopBots() {
     if (!botsRunning) return;
 
     botsRunning = false;
-    bot_mode = false;
+    botsStartSuccess = false;
+    clearTimeout(botTimer);
 
-    if (socket) {
-        socket.send(JSON.stringify({ type:"stopBots" }));
-        socket.close();
-    }
+    // Unlock inputs
+    ["uid", "partyCode", "gameMode"].forEach(id => {
+        document.getElementById(id).disabled = false;
+    });
+    updateStartButton();
 
     log("Bots stopped");
 }
 
 /* =========================
-   BOT LOOP (server gestuurd)
+   BOT LOOP
 ========================= */
-function botLoop() {
-    if (!botsRunning || !socket) return;
+function botLoop(uid, mode) {
+    if (!botsRunning) return;
 
-    socket.send(JSON.stringify({
-        type: "botAction",
-        uid: document.getElementById("uid").value,
-        mode: document.getElementById("gameMode").value
-    }));
+    botTick++;
+    if (botTick % 5 === 0) { // log elke 5 seconden
+        log(`Botting → volgen UID ${uid} (${mode})`);
+    }
 
-    setTimeout(botLoop, 1000);
+    botTimer = setTimeout(() => botLoop(uid, mode), 1000);
 }
 
 /* =========================
-   LOG
+   LOG SYSTEM
 ========================= */
-function log(msg) {
-    const l = document.getElementById("log");
-    l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
-    l.scrollTop = l.scrollHeight;
+function log(message) {
+    const logDiv = document.getElementById("log");
+    logDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
 }
+
+/* =========================
+   AGAR.IO GEZICHT
+========================= */
+const canvas = document.getElementById("agarFace");
+const ctx = canvas.getContext("2d");
+
+function drawAgarFace() {
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 50;
+
+    // Body
+    ctx.fillStyle = "#4CAF50";
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(centerX - 20, centerY - 10, 10, 0, Math.PI * 2);
+    ctx.arc(centerX + 20, centerY - 10, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(centerX - 20, centerY - 10, 5, 0, Math.PI * 2);
+    ctx.arc(centerX + 20, centerY - 10, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mouth
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + 10, 20, 0, Math.PI, false);
+    ctx.stroke();
+}
+
+drawAgarFace();
 </script>
 
 </body>
