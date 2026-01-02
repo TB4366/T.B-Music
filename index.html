@@ -1,247 +1,168 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<title>Custom Skin Upload</title>
+    <meta charset="UTF-8">
+    <title>Bot System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #eee;
+            padding: 20px;
+        }
 
-<style>
-    body {
-        font-family: Arial, Helvetica, sans-serif;
-        background: #f2f4f7;
-        margin: 0;
-        padding: 0;
-    }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
 
-    .wrapper {
-        max-width: 900px;
-        margin: 40px auto;
-        background: #fff;
-        padding: 30px;
-        border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #222;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
 
-    h2 {
-        margin-bottom: 15px;
-    }
-
-    label {
-        font-weight: 600;
-        display: block;
-        margin-top: 20px;
-        margin-bottom: 5px;
-    }
-
-    input[type="text"],
-    input[type="file"],
-    select {
-        width: 100%;
-        padding: 10px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        font-size: 14px;
-    }
-
-    .inline {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .verify-btn {
-        background: #0d6efd;
-        color: white;
-        border: none;
-        padding: 10px 18px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .buy-btn {
-        float: right;
-        background: #198754;
-        color: white;
-        border: none;
-        padding: 8px 14px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .checkbox {
-        margin-top: 10px;
-    }
-
-    .small-text {
-        font-size: 13px;
-        color: #666;
-        margin-top: 5px;
-    }
-
-    .color-box {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .color-preview {
-        width: 32px;
-        height: 32px;
-        background: #000;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-    }
-
-    .buttons {
-        display: flex;
-        gap: 15px;
-        margin-top: 25px;
-    }
-
-    .upload-btn {
-        flex: 1;
-        padding: 12px;
-        font-size: 15px;
-        border-radius: 4px;
-        border: none;
-        cursor: pointer;
-    }
-
-    .upload-image {
-        background: #0d6efd;
-        color: white;
-    }
-
-    .upload-all {
-        background: #5ad7e5;
-        color: #000;
-    }
-
-    .progress {
-        height: 12px;
-        background: #e0e0e0;
-        border-radius: 6px;
-        margin-top: 20px;
-    }
-
-    footer {
-        text-align: center;
-        margin-top: 30px;
-        font-size: 13px;
-        color: #777;
-    }
-
-    footer a {
-        color: #0d6efd;
-        text-decoration: none;
-        margin: 0 5px;
-    }
-</style>
+        .bot {
+            color: #0f0;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="wrapper">
+<h1>Botting System</h1>
 
-    <button class="buy-btn">Buy Skin Key / Credits</button>
+<button onclick="startBots()">Start Bots</button>
+<button onclick="stopBots()">Stop Bots</button>
 
-    <h2>Secret Skin Key</h2>
+<p>
+    Bot snelheid (ms):
+    <input type="number" id="speed" value="1000">
+</p>
 
-    <div class="inline">
-        <input type="text" placeholder="Enter your unique skin key">
-        <button class="verify-btn">Verify</button>
-    </div>
+<div id="log"></div>
 
-    <div class="checkbox">
-        <input type="checkbox" checked> Hide Secret Key
-    </div>
+<script>
+/* ================================
+   BOT DATA (komt overeen met dylib)
+================================ */
 
-    <p class="small-text">
-        The skin key is required to authenticate and process your skin (do not share this with anyone).
-        Click verify to check the key validity (optional).
-    </p>
+let botsRunning = false;
+let bot_mode = false;
+let botSpeed = 1000;
 
-    <div class="checkbox">
-        <input type="checkbox"> Multi Account(s)
-    </div>
+let botnames = [
+    "Bot_Alpha",
+    "Bot_Bravo",
+    "Bot_Charlie"
+];
 
-    <div class="checkbox">
-        <input type="checkbox"> Use Image Link
-    </div>
+let bots = [];
+let botInterval = null;
 
-    <label>Upload Image</label>
-    <input type="file">
+/* ================================
+   BOT CLASS
+================================ */
 
-    <p class="small-text">
-        Upload the image with no maximum size limit. Supported formats: has to be an image or a gif.
-    </p>
+class Bot {
+    constructor(name) {
+        this.name = name;
+        this.active = false;
+    }
 
-    <div class="checkbox">
-        <input type="checkbox"> Show Image Preview to Choose Border Color
-    </div>
+    start() {
+        this.active = true;
+        log(`${this.name} gestart`);
+    }
 
-    <label>Skin Name</label>
-    <input type="text" placeholder="Enter a name for your skin">
+    stop() {
+        this.active = false;
+        log(`${this.name} gestopt`);
+    }
 
-    <p class="small-text">
-        Give your skin a cool name (all unicodes supported).
-    </p>
+    update() {
+        if (!this.active) return;
+        log(`${this.name} update`);
+    }
 
-    <div class="checkbox">
-        <input type="checkbox"> Use No Name
-    </div>
+    performAction() {
+        if (!this.active) return;
+        log(`${this.name} voert actie uit`);
+    }
+}
 
-    <label>Selected Border Color: <span style="background:#000;color:#fff;padding:3px 6px;border-radius:4px;">#000000</span></label>
+/* ================================
+   BOT FUNCTIONS (start/stop/botting)
+================================ */
 
-    <div class="color-box">
-        <div class="color-preview"></div>
-        <input type="text" value="#000000">
-    </div>
+function canStartBots() {
+    return !botsRunning;
+}
 
-    <p class="small-text">
-        This color will be used as the border color for your skin.
-    </p>
+function startBots() {
+    if (!canStartBots()) {
+        log("Bots draaien al");
+        return;
+    }
 
-    <label>Select Skin Quality</label>
-    <select>
-        <option>Excellent (default) 4k</option>
-        <option>High</option>
-        <option>Medium</option>
-        <option>Low</option>
-    </select>
+    botsRunning = true;
+    bot_mode = true;
+    botSpeed = parseInt(document.getElementById("speed").value);
 
-    <p class="small-text">
-        Select the 4K quality option for this skin.
-    </p>
+    bots = botnames.map(name => new Bot(name));
 
-    <label>Select Skin Creation Option</label>
-    <select>
-        <option>90 DNA</option>
-        <option>Coins</option>
-        <option>Token</option>
-    </select>
+    bots.forEach(bot => bot.start());
 
-    <p class="small-text">
-        Select what you want to choose create this skin: DNA, Coins, or a Token.
-    </p>
+    log("Start Bots");
 
-    <div class="buttons">
-        <button class="upload-btn upload-image">Upload Image</button>
-        <button class="upload-btn upload-all">Upload All</button>
-    </div>
+    botInterval = setInterval(bottingLoop, botSpeed);
+}
 
-    <div class="progress"></div>
+function stopBots() {
+    if (!botsRunning) return;
 
-    <p class="small-text">Expect a completion time of around 40 - 50 seconds</p>
+    botsRunning = false;
+    bot_mode = false;
 
-</div>
+    bots.forEach(bot => bot.stop());
+    bots = [];
 
-<footer>
-    © 2025 biteyt.com. All rights reserved.
-    <br>
-    <a href="#">Terms of Service</a> |
-    <a href="#">Privacy Policy</a> |
-    <a href="#">Refund Policy</a>
-</footer>
+    clearInterval(botInterval);
+    botInterval = null;
+
+    log("Bots stopped");
+}
+
+/* ================================
+   BOT LOOP (botting)
+================================ */
+
+function bottingLoop() {
+    if (!botsRunning) return;
+
+    bots.forEach(bot => {
+        bot.update();
+        bot.performAction();
+    });
+}
+
+/* ================================
+   LOG SYSTEM
+================================ */
+
+function log(message) {
+    const logDiv = document.getElementById("log");
+    const p = document.createElement("p");
+    p.className = "bot";
+    p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    logDiv.appendChild(p);
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+</script>
 
 </body>
 </html>
