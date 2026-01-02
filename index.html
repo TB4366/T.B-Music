@@ -2,98 +2,113 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Bot System</title>
+<title>Bot Controller</title>
 <style>
 body {
-    background: #0f0f0f;
+    background: #0e0e0e;
     color: #eee;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     padding: 20px;
+    max-width: 500px;
 }
-input, button {
-    margin: 5px 0;
-    padding: 6px;
+h2 {
+    margin-bottom: 10px;
+}
+label {
+    display: block;
+    margin-top: 10px;
+}
+input, select, button {
     width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    font-size: 14px;
+}
+.buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
 }
 button {
     cursor: pointer;
 }
+button.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
 #log {
-    margin-top: 15px;
-    background: #1c1c1c;
+    margin-top: 20px;
+    background: #1a1a1a;
+    border: 1px solid #333;
     padding: 10px;
     height: 220px;
     overflow-y: auto;
-    border: 1px solid #333;
-}
-.disabled {
-    opacity: 0.4;
-    pointer-events: none;
+    font-size: 13px;
 }
 </style>
 </head>
 <body>
 
-<h2>Bot Instellingen (verplicht)</h2>
+<h2>Bot Setup</h2>
 
-<label>Bot Names (comma separated)</label>
-<input id="botnames" placeholder="Bot_Alpha,Bot_Bravo">
+<!-- UID -->
+<label>UID (bots volgen deze speler)</label>
+<input id="uid" placeholder="Voer UID in">
 
-<label>Bot Speed (ms)</label>
-<input id="botSpeed" type="number" placeholder="1000">
+<!-- Party code -->
+<label>Party Code</label>
+<input id="partyCode" placeholder="Bijv. ABC123">
 
-<label>Bot Key</label>
-<input id="botkey" placeholder="B">
+<!-- Game mode -->
+<label>Game Mode</label>
+<select id="gameMode">
+    <option value="">-- selecteer --</option>
+    <option value="classic">Classic</option>
+    <option value="burst">Burst</option>
+</select>
 
-<label>
-    <input type="checkbox" id="botting"> Botting enabled
-</label>
+<!-- Buttons -->
+<div class="buttons">
+    <button id="startBtn" class="disabled" onclick="startBots()">Start</button>
+    <button onclick="stopBots()">Stop</button>
+</div>
 
-<label>
-    <input type="checkbox" id="bot_mode"> Bot Mode
-</label>
-
-<button id="startBtn" onclick="startBots()" class="disabled">Start Bots</button>
-<button onclick="stopBots()">Stop Bots</button>
-
+<!-- Logs -->
 <div id="log"></div>
 
 <script>
-/* ===============================
-   CORE FLAGS (uit jouw lijst)
-================================ */
+/* =========================
+   CORE STATE (zoals dylib)
+========================= */
 
 let botsRunning = false;
+let bot_mode = false;
 let botsStartSuccess = false;
 
-/* ===============================
-   VALIDATIE
-================================ */
+/* =========================
+   VALIDATION
+========================= */
 
 function canStartBots() {
-    const names = document.getElementById("botnames").value.trim();
-    const speed = document.getElementById("botSpeed").value;
-    const key = document.getElementById("botkey").value.trim();
-    const botting = document.getElementById("botting").checked;
-    const mode = document.getElementById("bot_mode").checked;
+    const uid = document.getElementById("uid").value.trim();
+    const party = document.getElementById("partyCode").value.trim();
+    const mode = document.getElementById("gameMode").value;
 
     return (
-        names !== "" &&
-        speed > 0 &&
-        key !== "" &&
-        botting === true &&
-        mode === true &&
+        uid !== "" &&
+        party !== "" &&
+        mode !== "" &&
         !botsRunning
     );
 }
 
-/* ===============================
-   ENABLE BUTTON LOGIC
-================================ */
+/* =========================
+   UI ENABLE/DISABLE
+========================= */
 
-document.querySelectorAll("input").forEach(el => {
-    el.addEventListener("input", updateStartButton);
-    el.addEventListener("change", updateStartButton);
+["uid", "partyCode", "gameMode"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updateStartButton);
+    document.getElementById(id).addEventListener("change", updateStartButton);
 });
 
 function updateStartButton() {
@@ -105,78 +120,75 @@ function updateStartButton() {
     }
 }
 
-/* ===============================
+/* =========================
    BOT MODE HANDLER
-================================ */
+========================= */
 
-function handleBotModeChange() {
-    updateStartButton();
+function handleBotModeChange(enabled) {
+    bot_mode = enabled;
 }
 
-/* ===============================
+/* =========================
    START BOTS
-================================ */
+========================= */
 
 function startBots() {
     if (!canStartBots()) {
-        log("Kan bots niet starten: instellingen incompleet");
+        log("Kan bots niet starten: gegevens ontbreken");
         return;
     }
 
     botsRunning = true;
+    bot_mode = true;
     botsStartSuccess = true;
 
+    const uid = document.getElementById("uid").value.trim();
+    const party = document.getElementById("partyCode").value.trim();
+    const mode = document.getElementById("gameMode").value;
+
     log("Start Bots");
-    log("Botting actief");
+    log("UID volgen: " + uid);
+    log("Party code: " + party);
+    log("Game mode: " + mode);
 
-    const botnames = document.getElementById("botnames")
-        .value.split(",");
-
-    const botSpeed = document.getElementById("botSpeed").value;
-    const botkey = document.getElementById("botkey").value;
-
-    log("Bots: " + botnames.join(", "));
-    log("Speed: " + botSpeed + "ms");
-    log("Key: " + botkey);
-
-    botLoop(botnames, botSpeed);
+    bottingLoop(uid, mode);
 }
 
-/* ===============================
+/* =========================
    STOP BOTS
-================================ */
+========================= */
 
 function stopBots() {
     if (!botsRunning) return;
 
     botsRunning = false;
+    bot_mode = false;
     botsStartSuccess = false;
 
     log("Bots stopped");
 }
 
-/* ===============================
-   BOT LOOP / BOTTING
-================================ */
+/* =========================
+   BOT LOOP (volgt UID)
+========================= */
 
-function botLoop(botnames, speed) {
+function bottingLoop(uid, mode) {
     if (!botsRunning) return;
 
-    botnames.forEach(name => {
-        log("Botting: " + name.trim());
-    });
+    log("Botting → volgen UID " + uid + " (" + mode + ")");
 
-    setTimeout(() => botLoop(botnames, speed), speed);
+    setTimeout(() => bottingLoop(uid, mode), 1000);
 }
 
-/* ===============================
-   LOG
-================================ */
+/* =========================
+   LOG SYSTEM
+========================= */
 
-function log(msg) {
-    const div = document.getElementById("log");
-    div.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
-    div.scrollTop = div.scrollHeight;
+function log(message) {
+    const logDiv = document.getElementById("log");
+    logDiv.innerHTML +=
+        `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
 }
 </script>
 
