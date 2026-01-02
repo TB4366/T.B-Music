@@ -1,166 +1,182 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <title>Bot System</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #111;
-            color: #eee;
-            padding: 20px;
-        }
-
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        #log {
-            margin-top: 20px;
-            padding: 10px;
-            background: #222;
-            height: 200px;
-            overflow-y: auto;
-            border: 1px solid #444;
-        }
-
-        .bot {
-            color: #0f0;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Bot System</title>
+<style>
+body {
+    background: #0f0f0f;
+    color: #eee;
+    font-family: Arial;
+    padding: 20px;
+}
+input, button {
+    margin: 5px 0;
+    padding: 6px;
+    width: 100%;
+}
+button {
+    cursor: pointer;
+}
+#log {
+    margin-top: 15px;
+    background: #1c1c1c;
+    padding: 10px;
+    height: 220px;
+    overflow-y: auto;
+    border: 1px solid #333;
+}
+.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+</style>
 </head>
 <body>
 
-<h1>Botting System</h1>
+<h2>Bot Instellingen (verplicht)</h2>
 
-<button onclick="startBots()">Start Bots</button>
+<label>Bot Names (comma separated)</label>
+<input id="botnames" placeholder="Bot_Alpha,Bot_Bravo">
+
+<label>Bot Speed (ms)</label>
+<input id="botSpeed" type="number" placeholder="1000">
+
+<label>Bot Key</label>
+<input id="botkey" placeholder="B">
+
+<label>
+    <input type="checkbox" id="botting"> Botting enabled
+</label>
+
+<label>
+    <input type="checkbox" id="bot_mode"> Bot Mode
+</label>
+
+<button id="startBtn" onclick="startBots()" class="disabled">Start Bots</button>
 <button onclick="stopBots()">Stop Bots</button>
-
-<p>
-    Bot snelheid (ms):
-    <input type="number" id="speed" value="1000">
-</p>
 
 <div id="log"></div>
 
 <script>
-/* ================================
-   BOT DATA (komt overeen met dylib)
+/* ===============================
+   CORE FLAGS (uit jouw lijst)
 ================================ */
 
 let botsRunning = false;
-let bot_mode = false;
-let botSpeed = 1000;
+let botsStartSuccess = false;
 
-let botnames = [
-    "Bot_Alpha",
-    "Bot_Bravo",
-    "Bot_Charlie"
-];
-
-let bots = [];
-let botInterval = null;
-
-/* ================================
-   BOT CLASS
-================================ */
-
-class Bot {
-    constructor(name) {
-        this.name = name;
-        this.active = false;
-    }
-
-    start() {
-        this.active = true;
-        log(`${this.name} gestart`);
-    }
-
-    stop() {
-        this.active = false;
-        log(`${this.name} gestopt`);
-    }
-
-    update() {
-        if (!this.active) return;
-        log(`${this.name} update`);
-    }
-
-    performAction() {
-        if (!this.active) return;
-        log(`${this.name} voert actie uit`);
-    }
-}
-
-/* ================================
-   BOT FUNCTIONS (start/stop/botting)
+/* ===============================
+   VALIDATIE
 ================================ */
 
 function canStartBots() {
-    return !botsRunning;
+    const names = document.getElementById("botnames").value.trim();
+    const speed = document.getElementById("botSpeed").value;
+    const key = document.getElementById("botkey").value.trim();
+    const botting = document.getElementById("botting").checked;
+    const mode = document.getElementById("bot_mode").checked;
+
+    return (
+        names !== "" &&
+        speed > 0 &&
+        key !== "" &&
+        botting === true &&
+        mode === true &&
+        !botsRunning
+    );
 }
+
+/* ===============================
+   ENABLE BUTTON LOGIC
+================================ */
+
+document.querySelectorAll("input").forEach(el => {
+    el.addEventListener("input", updateStartButton);
+    el.addEventListener("change", updateStartButton);
+});
+
+function updateStartButton() {
+    const btn = document.getElementById("startBtn");
+    if (canStartBots()) {
+        btn.classList.remove("disabled");
+    } else {
+        btn.classList.add("disabled");
+    }
+}
+
+/* ===============================
+   BOT MODE HANDLER
+================================ */
+
+function handleBotModeChange() {
+    updateStartButton();
+}
+
+/* ===============================
+   START BOTS
+================================ */
 
 function startBots() {
     if (!canStartBots()) {
-        log("Bots draaien al");
+        log("Kan bots niet starten: instellingen incompleet");
         return;
     }
 
     botsRunning = true;
-    bot_mode = true;
-    botSpeed = parseInt(document.getElementById("speed").value);
-
-    bots = botnames.map(name => new Bot(name));
-
-    bots.forEach(bot => bot.start());
+    botsStartSuccess = true;
 
     log("Start Bots");
+    log("Botting actief");
 
-    botInterval = setInterval(bottingLoop, botSpeed);
+    const botnames = document.getElementById("botnames")
+        .value.split(",");
+
+    const botSpeed = document.getElementById("botSpeed").value;
+    const botkey = document.getElementById("botkey").value;
+
+    log("Bots: " + botnames.join(", "));
+    log("Speed: " + botSpeed + "ms");
+    log("Key: " + botkey);
+
+    botLoop(botnames, botSpeed);
 }
+
+/* ===============================
+   STOP BOTS
+================================ */
 
 function stopBots() {
     if (!botsRunning) return;
 
     botsRunning = false;
-    bot_mode = false;
-
-    bots.forEach(bot => bot.stop());
-    bots = [];
-
-    clearInterval(botInterval);
-    botInterval = null;
+    botsStartSuccess = false;
 
     log("Bots stopped");
 }
 
-/* ================================
-   BOT LOOP (botting)
+/* ===============================
+   BOT LOOP / BOTTING
 ================================ */
 
-function bottingLoop() {
+function botLoop(botnames, speed) {
     if (!botsRunning) return;
 
-    bots.forEach(bot => {
-        bot.update();
-        bot.performAction();
+    botnames.forEach(name => {
+        log("Botting: " + name.trim());
     });
+
+    setTimeout(() => botLoop(botnames, speed), speed);
 }
 
-/* ================================
-   LOG SYSTEM
+/* ===============================
+   LOG
 ================================ */
 
-function log(message) {
-    const logDiv = document.getElementById("log");
-    const p = document.createElement("p");
-    p.className = "bot";
-    p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-    logDiv.appendChild(p);
-    logDiv.scrollTop = logDiv.scrollHeight;
+function log(msg) {
+    const div = document.getElementById("log");
+    div.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+    div.scrollTop = div.scrollHeight;
 }
 </script>
 
